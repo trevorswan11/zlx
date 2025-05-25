@@ -15,12 +15,19 @@ pub fn build(b: *std.Build) void {
         .name = "zlx",
         .root_module = exe_mod,
     });
-    b.installArtifact(exe);
+
+    // zig-regex module
+    const regex_mod = b.addModule("regex", .{
+        .root_source_file = b.path("libs/zig-regex/src/regex.zig"),
+    });
+    exe.root_module.addImport("regex", regex_mod);
 
     // Add steps
     addRunStep(b, exe);
     addTestStep(b, exe_mod);
     addFmtStep(b);
+    
+    b.installArtifact(exe);
 }
 
 fn addRunStep(b: *std.Build, exe: *std.Build.Step.Compile) void {
