@@ -4,77 +4,77 @@ const std = @import("std");
 pub const TokenKind = enum(u32) {
     EOF = 0, // iota
     NULL,
-	TRUE,
-	FALSE,
-	NUMBER,
-	STRING,
-	IDENTIFIER,
+    TRUE,
+    FALSE,
+    NUMBER,
+    STRING,
+    IDENTIFIER,
 
-	// Grouping & Braces
-	OPEN_BRACKET,
-	CLOSE_BRACKET,
-	OPEN_CURLY,
-	CLOSE_CURLY,
-	OPEN_PAREN,
-	CLOSE_PAREN,
+    // Grouping & Braces
+    OPEN_BRACKET,
+    CLOSE_BRACKET,
+    OPEN_CURLY,
+    CLOSE_CURLY,
+    OPEN_PAREN,
+    CLOSE_PAREN,
 
-	// Equivilance
-	ASSIGNMENT,
-	EQUALS,
-	NOT_EQUALS,
-	NOT,
+    // Equivilance
+    ASSIGNMENT,
+    EQUALS,
+    NOT_EQUALS,
+    NOT,
 
-	// Conditional
-	LESS,
-	LESS_EQUALS,
-	GREATER,
-	GREATER_EQUALS,
+    // Conditional
+    LESS,
+    LESS_EQUALS,
+    GREATER,
+    GREATER_EQUALS,
 
-	// Logical
-	OR,
-	AND,
+    // Logical
+    OR,
+    AND,
 
-	// Symbols
-	DOT,
-	DOT_DOT,
-	SEMI_COLON,
-	COLON,
-	QUESTION,
-	COMMA,
+    // Symbols
+    DOT,
+    DOT_DOT,
+    SEMI_COLON,
+    COLON,
+    QUESTION,
+    COMMA,
 
-	// Shorthand
-	PLUS_PLUS,
-	MINUS_MINUS,
-	PLUS_EQUALS,
-	MINUS_EQUALS,
-	NULLISH_ASSIGNMENT, // ??=
+    // Shorthand
+    PLUS_PLUS,
+    MINUS_MINUS,
+    PLUS_EQUALS,
+    MINUS_EQUALS,
+    NULLISH_ASSIGNMENT, // ??=
 
-	//Maths
-	PLUS,
-	DASH,
-	SLASH,
-	STAR,
-	PERCENT,
+    //Maths
+    PLUS,
+    DASH,
+    SLASH,
+    STAR,
+    PERCENT,
 
-	// Reserved Keywords
-	LET,
-	CONST,
-	CLASS,
-	NEW,
-	IMPORT,
-	FROM,
-	FN,
-	IF,
-	ELSE,
-	FOREACH,
-	WHILE,
-	FOR,
-	EXPORT,
-	TYPEOF,
-	IN,
+    // Reserved Keywords
+    LET,
+    CONST,
+    CLASS,
+    NEW,
+    IMPORT,
+    FROM,
+    FN,
+    IF,
+    ELSE,
+    FOREACH,
+    WHILE,
+    FOR,
+    EXPORT,
+    TYPEOF,
+    IN,
 
-	// Misc
-	NUM_TOKENS,
+    // Misc
+    NUM_TOKENS,
 };
 
 // Token
@@ -83,24 +83,20 @@ pub const Token = struct {
 
     kind: TokenKind,
     value: []const u8,
-    reserved: std.StringHashMap(TokenKind),
-    allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator, kind: TokenKind, value: []const u8) !Self {
+    pub fn init(kind: TokenKind, value: []const u8) Self {
         return Self{
             .kind = kind,
             .value = value,
-            .reserved = try getReservedMap(allocator),
-            .allocator = allocator,
         };
     }
 
     pub fn debug(self: *Self) !void {
         const stdout = std.io.getStdOut().writer();
-        if (self.isOneOfMany(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING })) {
-            try stdout.print("{s} ({s})\n", tokenKindString(self.kind), self.value);
+        if (self.isOneOfMany(@constCast(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING }))) {
+            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.kind), self.value });
         } else {
-            try stdout.print("{s} ()\n", tokenKindString(self.kind));
+            try stdout.print("{s} ()\n", .{try tokenKindString(self.kind)});
         }
     }
 
@@ -112,6 +108,28 @@ pub const Token = struct {
         }
         return false;
     }
+
+    pub fn getReservedMap(allocator: std.mem.Allocator) !std.StringHashMap(TokenKind) {
+        var reserved = std.StringHashMap(TokenKind).init(allocator);
+
+        try reserved.put("let", .LET);
+        try reserved.put("const", .CONST);
+        try reserved.put("class", .CLASS);
+        try reserved.put("new", .NEW);
+        try reserved.put("import", .IMPORT);
+        try reserved.put("from", .FROM);
+        try reserved.put("fn", .FN);
+        try reserved.put("if", .IF);
+        try reserved.put("else", .ELSE);
+        try reserved.put("foreach", .FOREACH);
+        try reserved.put("while", .WHILE);
+        try reserved.put("for", .FOR);
+        try reserved.put("export", .EXPORT);
+        try reserved.put("typeof", .TYPEOF);
+        try reserved.put("in", .IN);
+
+        return reserved;
+    }
 };
 
 pub fn tokenKindString(kind: TokenKind) ![]const u8 {
@@ -121,26 +139,4 @@ pub fn tokenKindString(kind: TokenKind) ![]const u8 {
         buffer[i] = std.ascii.toLower(c);
     }
     return tag;
-}
-
-pub fn getReservedMap(allocator: std.mem.Allocator) !std.StringHashMap(TokenKind) {
-    var reserved = std.StringHashMap(TokenKind).init(allocator);
-
-    try reserved.put("let", .LET);
-    try reserved.put("const", .CONST);
-    try reserved.put("class", .CLASS);
-    try reserved.put("new", .NEW);
-    try reserved.put("import", .IMPORT);
-    try reserved.put("from", .FROM);
-    try reserved.put("fn", .FN);
-    try reserved.put("if", .IF);
-    try reserved.put("else", .ELSE);
-    try reserved.put("foreach", .FOREACH);
-    try reserved.put("while", .WHILE);
-    try reserved.put("for", .FOR);
-    try reserved.put("export", .EXPORT);
-    try reserved.put("typeof", .TYPEOF);
-    try reserved.put("in", .IN);
-
-    return reserved;
 }

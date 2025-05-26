@@ -13,7 +13,10 @@ const LexerError = error{
     UnrecognizedToken,
 };
 
-pub const RegexHandler = *const fn (lex: *Lexer, regex: *Regex) LexerError!void;
+pub const RegexHandler = struct {
+    ctx: *const anyopaque,
+    func: *const fn (*const anyopaque, *Lexer, *Regex) LexerError!void,
+};
 
 pub const RegexPattern = struct {
     regex: Regex,
@@ -43,44 +46,155 @@ pub const Lexer = struct {
 
     fn makePatterns(allocator: std.mem.Allocator) !std.ArrayList(RegexPattern) {
         var patterns = try std.ArrayList(RegexPattern).initCapacity(allocator, 40);
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\s+"), .handler = skipHandler });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "//.*"), .handler = commentHandler });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\"[^\"]*\""), .handler = stringHandler });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "[0-9]+(\\.[0-9]+)?"), .handler = numberHandler });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "[a-zA-Z_][a-zA-Z0-9_]*"), .handler = symbolHandler });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\s+"),
+            .handler = SimpleHandlerWrapper.wrap(skipHandler),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "//.*"),
+            .handler = SimpleHandlerWrapper.wrap(commentHandler),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\"[^\"]*\""),
+            .handler = SimpleHandlerWrapper.wrap(stringHandler),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "[0-9]+(\\.[0-9]+)?"),
+            .handler = SimpleHandlerWrapper.wrap(numberHandler),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "[a-zA-Z_][a-zA-Z0-9_]*"),
+            .handler = SimpleHandlerWrapper.wrap(symbolHandler),
+        });
 
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\["), .handler = defaultHandler(.OPEN_BRACKET, "[") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "]"), .handler = defaultHandler(.CLOSE_BRACKET, "]") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\{"), .handler = defaultHandler(.OPEN_CURLY, "{") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "}"), .handler = defaultHandler(.CLOSE_CURLY, "}") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\("), .handler = defaultHandler(.OPEN_PAREN, "(") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\)"), .handler = defaultHandler(.CLOSE_PAREN, ")") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "=="), .handler = defaultHandler(.EQUALS, "==") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "!="), .handler = defaultHandler(.NOT_EQUALS, "!=") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "="), .handler = defaultHandler(.ASSIGNMENT, "=") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "!"), .handler = defaultHandler(.NOT, "!") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "<="), .handler = defaultHandler(.LESS_EQUALS, "<=") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "<"), .handler = defaultHandler(.LESS, "<") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, ">="), .handler = defaultHandler(.GREATER_EQUALS, ">=") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, ">"), .handler = defaultHandler(.GREATER, ">") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\|\\|"), .handler = defaultHandler(.OR, "||") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "&&"), .handler = defaultHandler(.AND, "&&") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\.\\."), .handler = defaultHandler(.DOT_DOT, "..") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\."), .handler = defaultHandler(.DOT, ".") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, ";"), .handler = defaultHandler(.SEMI_COLON, ";") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, ":"), .handler = defaultHandler(.COLON, ":") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\?\\?="), .handler = defaultHandler(.NULLISH_ASSIGNMENT, "??=") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\?"), .handler = defaultHandler(.QUESTION, "?") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, ","), .handler = defaultHandler(.COMMA, ",") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\+\\+"), .handler = defaultHandler(.PLUS_PLUS, "++") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "--"), .handler = defaultHandler(.MINUS_MINUS, "--") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\+="), .handler = defaultHandler(.PLUS_EQUALS, "+=") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "-="), .handler = defaultHandler(.MINUS_EQUALS, "-=") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\+"), .handler = defaultHandler(.PLUS, "+") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "-"), .handler = defaultHandler(.DASH, "-") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "/"), .handler = defaultHandler(.SLASH, "/") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "\\*"), .handler = defaultHandler(.STAR, "*") });
-        try patterns.append(.{ .regex = try Regex.compile(allocator, "%"), .handler = defaultHandler(.PERCENT, "%") });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\["),
+            .handler = try defaultHandler(allocator, .OPEN_BRACKET, "["),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "]"),
+            .handler = try defaultHandler(allocator, .CLOSE_BRACKET, "]"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\{"),
+            .handler = try defaultHandler(allocator, .OPEN_CURLY, "{"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "}"),
+            .handler = try defaultHandler(allocator, .CLOSE_CURLY, "}"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\("),
+            .handler = try defaultHandler(allocator, .OPEN_PAREN, "("),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\)"),
+            .handler = try defaultHandler(allocator, .CLOSE_PAREN, ")"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "=="),
+            .handler = try defaultHandler(allocator, .EQUALS, "=="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "!="),
+            .handler = try defaultHandler(allocator, .NOT_EQUALS, "!="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "="),
+            .handler = try defaultHandler(allocator, .ASSIGNMENT, "="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "!"),
+            .handler = try defaultHandler(allocator, .NOT, "!"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "<="),
+            .handler = try defaultHandler(allocator, .LESS_EQUALS, "<="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "<"),
+            .handler = try defaultHandler(allocator, .LESS, "<"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, ">="),
+            .handler = try defaultHandler(allocator, .GREATER_EQUALS, ">="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, ">"),
+            .handler = try defaultHandler(allocator, .GREATER, ">"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\|\\|"),
+            .handler = try defaultHandler(allocator, .OR, "||"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "&&"),
+            .handler = try defaultHandler(allocator, .AND, "&&"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\.\\."),
+            .handler = try defaultHandler(allocator, .DOT_DOT, ".."),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\."),
+            .handler = try defaultHandler(allocator, .DOT, "."),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, ";"),
+            .handler = try defaultHandler(allocator, .SEMI_COLON, ";"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, ":"),
+            .handler = try defaultHandler(allocator, .COLON, ":"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\?\\?="),
+            .handler = try defaultHandler(allocator, .NULLISH_ASSIGNMENT, "??="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\?"),
+            .handler = try defaultHandler(allocator, .QUESTION, "?"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, ","),
+            .handler = try defaultHandler(allocator, .COMMA, ","),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\+\\+"),
+            .handler = try defaultHandler(allocator, .PLUS_PLUS, "++"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "--"),
+            .handler = try defaultHandler(allocator, .MINUS_MINUS, "--"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\+="),
+            .handler = try defaultHandler(allocator, .PLUS_EQUALS, "+="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "-="),
+            .handler = try defaultHandler(allocator, .MINUS_EQUALS, "-="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\+"),
+            .handler = try defaultHandler(allocator, .PLUS, "+"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "-"),
+            .handler = try defaultHandler(allocator, .DASH, "-"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "/"),
+            .handler = try defaultHandler(allocator, .SLASH, "/"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\*"),
+            .handler = try defaultHandler(allocator, .STAR, "*"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "%"),
+            .handler = try defaultHandler(allocator, .PERCENT, "%"),
+        });
 
         return patterns;
     }
@@ -113,13 +227,13 @@ pub const Lexer = struct {
 
 pub fn tokenize(source: []const u8) !std.ArrayList(Token) {
     const allocator = std.heap.page_allocator;
-    const lex = try Lexer.init(allocator, source);
+    var lex = try Lexer.init(allocator, source);
 
     while (!lex.atEOF()) {
         var matched = false;
         for (lex.patterns.items) |pattern| {
-            if (pattern.regex.match(lex.remainder())) {
-                pattern.handler(&lex, pattern.regex);
+            if (try @constCast(&pattern.regex).match(lex.remainder())) {
+                try pattern.handler.func(pattern.handler.ctx, &lex, @constCast(&pattern.regex));
                 matched = true;
                 break;
             }
@@ -130,70 +244,113 @@ pub fn tokenize(source: []const u8) !std.ArrayList(Token) {
         }
     }
 
-    lex.push(Token.init(std.heap.page_allocator, .EOF, "EOF"));
-    return lex.Tokens;
+    const tok = Token.init(.EOF, "EOF");
+    try lex.push(tok);
+    return lex.tokens;
 }
 
-pub fn defaultHandler(kind: TokenKind, value: []const u8) RegexHandler {
-    return struct {
-        fn handler(lex: *Lexer, _: *Regex) LexerError!void {
-            lex.advanceN(value.len);
-            try lex.push(Token.init(std.heap.page_allocator, kind, value));
-        }
-    }.handler;
+const DefaultHandlerCtx = struct {
+    kind: TokenKind,
+    value: []const u8,
+
+    pub fn call(ctx: *const anyopaque, lex: *Lexer, _: *Regex) LexerError!void {
+        const self: *const DefaultHandlerCtx = @alignCast(@ptrCast(ctx));
+        try lex.push(Token.init(self.kind, self.value));
+        lex.advanceN(self.value.len);
+    }
+};
+
+pub fn defaultHandler(
+    allocator: std.mem.Allocator,
+    kind: TokenKind,
+    value: []const u8,
+) !RegexHandler {
+    const ctx = try allocator.create(DefaultHandlerCtx);
+    ctx.* = .{
+        .kind = kind,
+        .value = value,
+    };
+
+    return RegexHandler{
+        .ctx = ctx,
+        .func = DefaultHandlerCtx.call,
+    };
 }
 
-fn stringHandler(lex: *Lexer, regex: *regxp.Regex) LexerError!void {
+const SimpleHandlerWrapper = struct {
+    const Self = @This();
+
+    pub fn wrap(
+        func: *const fn (*Lexer, *Regex) LexerError!void,
+    ) RegexHandler {
+        const function_ctx: *const anyopaque = @ptrCast(func);
+        return RegexHandler{
+            .ctx = function_ctx,
+            .func = call,
+        };
+    }
+
+    fn call(ctx: *const anyopaque, lex: *Lexer, regex: *Regex) LexerError!void {
+        const real: *const fn (*Lexer, *Regex) LexerError!void = @ptrCast(ctx);
+        try real(lex, regex);
+    }
+};
+
+fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps| {
-        defer caps.deinit();
+        defer @constCast(&caps).deinit();
 
         const span = caps.boundsAt(0).?;
         const matched = text[span.lower..span.upper];
-        try lex.push(Token.init(std.heap.page_allocator, .STRING, matched));
+        const tok = Token.init(.STRING, matched);
+        try lex.push(tok);
         lex.advanceN(matched.len);
     }
 }
 
-fn numberHandler(lex: *Lexer, regex: *regxp.Regex) LexerError!void {
+fn numberHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps| {
-        defer caps.deinit();
+        defer @constCast(&caps).deinit();
 
         const span = caps.boundsAt(0).?;
         const matched = text[span.lower..span.upper];
-        try lex.push(Token.init(std.heap.page_allocator, .NUMBER, matched));
+        const tok = Token.init(.NUMBER, matched);
+        try lex.push(tok);
         lex.advanceN(matched.len);
     }
 }
 
-fn symbolHandler(lex: *Lexer, regex: *regxp.Regex) LexerError!void {
+fn symbolHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps| {
-        defer caps.deinit();
+        defer @constCast(&caps).deinit();
 
         const span = caps.boundsAt(0).?;
         const word = text[span.lower..span.upper];
 
-        const kind: TokenKind = tokens.reserved.get(word) orelse .IDENTIFIER;
-        try lex.push(Token.init(std.heap.page_allocator, kind, word));
+        const reserved = try Token.getReservedMap(std.heap.page_allocator);
+        const kind: TokenKind = reserved.get(word) orelse .IDENTIFIER;
+        const tok = Token.init(kind, word);
+        try lex.push(tok);
         lex.advanceN(word.len);
     }
 }
 
-fn skipHandler(lex: *Lexer, regex: *regxp.Regex) LexerError!void {
+fn skipHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps| {
-        defer caps.deinit();
+        defer @constCast(&caps).deinit();
         const span = caps.boundsAt(0).?;
         lex.advanceN(span.upper);
     }
 }
 
-fn commentHandler(lex: *Lexer, regex: *regxp.Regex) LexerError!void {
+fn commentHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps| {
-        defer caps.deinit();
+        defer @constCast(&caps).deinit();
         const span = caps.boundsAt(0).?;
         lex.advanceN(span.upper);
         lex.line += 1;
