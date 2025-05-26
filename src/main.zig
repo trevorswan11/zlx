@@ -1,5 +1,6 @@
 const std = @import("std");
-const lexer = @import("lexer/tokens.zig");
+const token = @import("lexer/token.zig");
+const tokenizer = @import("lexer/tokenizer.zig");
 
 pub fn main() !void {
     const example00 = try std.fs.cwd().openFile("examples/00.lang", .{});
@@ -10,6 +11,10 @@ pub fn main() !void {
 
     var buf: [1024]u8 = undefined;
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        std.debug.print("{s}", .{line});
+        const tokens = try tokenizer.tokenize(line);
+
+        for (tokens.items) |tok| {
+            try tok.debug();
+        } 
     }
 }

@@ -17,16 +17,16 @@ pub fn build(b: *std.Build) void {
     });
 
     // zig-regex module
-    const regex_mod = b.addModule("regex", .{
+    const regex_mod = b.addModule("regxp", .{
         .root_source_file = b.path("libs/zig-regex/src/regex.zig"),
     });
-    exe.root_module.addImport("regex", regex_mod);
+    exe.root_module.addImport("regxp", regex_mod);
 
     // Add steps
     addRunStep(b, exe);
     addTestStep(b, exe_mod);
     addFmtStep(b);
-    
+
     b.installArtifact(exe);
 }
 
