@@ -1,24 +1,23 @@
 const std = @import("std");
-const token = @import("lexer/token.zig");
-const tokenizer = @import("lexer/tokenizer.zig");
+const parser = @import("parser/parser.zig");
+
+pub fn readFile(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
+    const file = try std.fs.cwd().openFile(path, .{});
+    defer file.close();
+
+    const stat = try file.stat();
+    const buffer = try allocator.alloc(u8, stat.size);
+    _ = try file.readAll(buffer);
+    return buffer;
+}
 
 pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
-    const example00 = try std.fs.cwd().openFile("examples/01.lang", .{});
-    defer example00.close();
+    const allocator = std.heap.page_allocator;
+    const contents = try readFile(allocator, "../examples/01.lang");
+    defer allocator.free(contents);
 
-    var buf_reader = std.io.bufferedReader(example00.reader());
-    var in_stream = buf_reader.reader();
-
-    var buf: [1024]u8 = undefined;
-    while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
-        const tokens = try tokenizer.tokenize(line);
-        defer tokens.deinit();
-
-        for (tokens.items) |tok| {
-            try @constCast(&tok).debug();
-        }
-    }
+    parser.parse(allocator, contents);
     const t1 = std.time.nanoTimestamp();
     std.debug.print("Parsing took: {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
 }

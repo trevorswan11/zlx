@@ -1,8 +1,10 @@
 const std = @import("std");
 
 const token = @import("../lexer/token.zig");
+const tokenizer = @import("../lexer/tokenizer.zig");
 const ast = @import("../ast/ast.zig");
 const lus = @import("lookups.zig");
+const types = @import("types.zig");
 
 const stderr = std.io.getStdErr().writer();
 
@@ -14,10 +16,11 @@ pub const Parser = struct {
     pos: usize,
     allocator: std.mem.Allocator,
 
-    pub fn init(allocator: std.mem.Allocator) !Self {
+    pub fn init(allocator: std.mem.Allocator, tokens: std.ArrayList(token.Token)) !Self {
         try lus.createTokenLookups(allocator);
+        try types.createTypeTokenLookups(allocator);
         return Self{
-            .tokens = try std.ArrayList(token.Token).init(allocator),
+            .tokens = tokens,
             .pos = 0,
             .allocator = allocator,
         };
@@ -73,10 +76,11 @@ pub const Parser = struct {
     }
 };
 
-pub fn parse(allocator: std.mem.Allocator, tokens: []token.Token) !ast.Stmt {
+pub fn parse(allocator: std.mem.Allocator, source: []const u8) !ast.Stmt {
     const parseStmt = @import("stmt.zig").parseStmt;
     var body = try std.ArrayList(ast.Stmt).init(allocator);
-    var parser = try Parser.init(allocator);
+    const tokens = try tokenizer.tokenize(source);
+    var parser = try Parser.init(allocator, tokens);
     defer parser.deinit();
     try parser.tokens.appendSlice(tokens);
 

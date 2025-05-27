@@ -121,7 +121,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
     };
 }
 
-pub fn parseFnDeclarations(p: *parser.Parser) !ast.Stmt {
+pub fn parseFnDeclaration(p: *parser.Parser) !ast.Stmt {
     _ = p.advance();
     const function_name = try p.expect(.IDENTIFIER).value;
     const func_info = try parseFnParamsAndBody(p);
