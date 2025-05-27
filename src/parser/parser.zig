@@ -2,8 +2,6 @@ const std = @import("std");
 
 const token = @import("../lexer/token.zig");
 const ast = @import("../ast/ast.zig");
-const stmts = @import("../ast/statements.zig");
-const exprs = @import("../ast/expressions.zig");
 
 pub const Parser = struct {
     const Self = @This();
@@ -44,7 +42,7 @@ pub const Parser = struct {
     }
 };
 
-pub fn parse(allocator: std.mem.Allocator, tokens: []token.Token) !stmts.BlockStmt {
+pub fn parse(allocator: std.mem.Allocator, tokens: []token.Token) !ast.Stmt {
     const parseStmt = @import("stmt.zig").parseStmt;
     var body = try std.ArrayList(ast.Stmt).initCapacity(allocator, 10);
     var parser = try Parser.init(allocator);
@@ -52,11 +50,12 @@ pub fn parse(allocator: std.mem.Allocator, tokens: []token.Token) !stmts.BlockSt
     try parser.tokens.appendSlice(tokens);
 
     while (parser.hasTokens()) {
-        try body.append(parseStmt(parser));
+        try body.append(parseStmt(&parser));
     }
 
-    return stmts.BlockStmt{
-        .body = body,
-        .allocator = allocator,
+    return ast.Stmt{
+        .block = ast.BlockStmt{
+            .body = body,
+        },
     };
 }
