@@ -139,8 +139,7 @@ pub fn parseMemberExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) 
 
 pub fn parseArrayLiteralExpr(p: *parser.Parser) !ast.Expr {
     _ = try p.expect(.OPEN_BRACKET);
-    const allocator = std.heap.page_allocator;
-    var array_contents = try std.ArrayList(ast.Expr).initCapacity(allocator, 10);
+    var array_contents = try std.ArrayList(ast.Expr).initCapacity(p.allocator, p.numTokens());
 
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_BRACKET) {
         array_contents.append(try parseExpr(p, .LOGICAL));
@@ -168,8 +167,7 @@ pub fn parseGroupingExpr(p: *parser.Parser) !ast.Expr {
 
 pub fn parseCallExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !ast.Expr {
     _ = p.advance();
-    const allocator = std.heap.page_allocator;
-    var arguments = try std.ArrayList(ast.Expr).initCapacity(allocator, 10);
+    var arguments = try std.ArrayList(ast.Expr).initCapacity(p.allocator, p.numTokens());
     _ = bp;
 
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {

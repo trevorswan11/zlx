@@ -98,7 +98,7 @@ pub const BlockStmt = struct {
 pub const VarDeclarationStmt = struct {
     identifier: []const u8,
     constant: bool,
-    assigned_value: Expr,
+    assigned_value: ?Expr,
     explicit_type: Type,
 };
 
@@ -175,9 +175,7 @@ pub const Type = union(enum) {
 
 // === Parameter ===
 
-pub fn Parameter(comptime T: type) type {
-    return struct {
-        name: []const u8,
-        param_type: Type(T),
-    };
-}
+pub const Parameter = struct {
+    name: []const u8,
+    type: Type,
+};

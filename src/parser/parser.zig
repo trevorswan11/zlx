@@ -27,6 +27,10 @@ pub const Parser = struct {
         self.tokens.deinit();
     }
 
+    pub fn numTokens(self: *Self) usize {
+        return self.tokens.items.len;
+    }
+
     pub fn currentToken(self: *Self) token.Token {
         return self.tokens.items[self.pos];
     }
@@ -71,7 +75,7 @@ pub const Parser = struct {
 
 pub fn parse(allocator: std.mem.Allocator, tokens: []token.Token) !ast.Stmt {
     const parseStmt = @import("stmt.zig").parseStmt;
-    var body = try std.ArrayList(ast.Stmt).initCapacity(allocator, 10);
+    var body = try std.ArrayList(ast.Stmt).init(allocator);
     var parser = try Parser.init(allocator);
     defer parser.deinit();
     try parser.tokens.appendSlice(tokens);

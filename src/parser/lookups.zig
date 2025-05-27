@@ -122,5 +122,5 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     stmt(token.TokenKind.IF, stmts.parseIfStmt);
     stmt(token.TokenKind.IMPORT, stmts.parseImportStmt);
     stmt(token.TokenKind.FOREACH, stmts.parseForEachStmt);
-    stmt(token.TokenKind.CLASS, stmts.parseClassDeclarationStmt);
+    stmt(token.TokenKind.CLASS, stmts.parseClassDeclStmt);
 }
