@@ -4,7 +4,7 @@ const tokenizer = @import("lexer/tokenizer.zig");
 
 pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
-    const example00 = try std.fs.cwd().openFile("examples/test.lang", .{});
+    const example00 = try std.fs.cwd().openFile("examples/01.lang", .{});
     defer example00.close();
 
     var buf_reader = std.io.bufferedReader(example00.reader());

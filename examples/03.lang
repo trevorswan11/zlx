@@ -1,5 +1,1 @@
-
-let foo = 45.5;
-let bar = foo * 10;
-
-const isGreater = foo > 10;
+42.5 * 5 + 4

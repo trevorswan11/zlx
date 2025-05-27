@@ -302,10 +302,10 @@ fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
         defer @constCast(&caps).deinit();
 
         const span = caps.boundsAt(0).?;
-        const matched = text[span.lower..span.upper];
+        const matched = text[(span.lower + 1)..(span.upper - 1)];
         const tok = Token.init(.STRING, matched);
         try lex.push(tok);
-        lex.advanceN(matched.len);
+        lex.advanceN(matched.len + 2);
     }
 }
 
