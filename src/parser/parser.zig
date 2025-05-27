@@ -2,6 +2,9 @@ const std = @import("std");
 
 const token = @import("../lexer/token.zig");
 const ast = @import("../ast/ast.zig");
+const lus = @import("lookups.zig");
+
+const stderr = std.io.getStdErr().writer();
 
 pub const Parser = struct {
     const Self = @This();
@@ -12,6 +15,7 @@ pub const Parser = struct {
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator) !Self {
+        try lus.createTokenLookups(allocator);
         return Self{
             .tokens = try std.ArrayList(token.Token).init(allocator),
             .pos = 0,
@@ -34,11 +38,34 @@ pub const Parser = struct {
     pub fn advance(self: *Self) token.Token {
         const tok = self.currentToken();
         self.pos += 1;
-        return tok; 
+        return tok;
     }
 
     pub fn hasTokens(self: *Self) bool {
         return self.pos < self.tokens.items.len and self.currentTokenKind() != token.TokenKind.EOF;
+    }
+
+    pub fn expect(self: *Self, expected_kind: token.TokenKind) !token.Token {
+        return try self.expectError(expected_kind, null);
+    }
+
+    pub fn expectError(self: *Self, expected_kind: token.TokenKind, err: ?anyerror) !token.Token {
+        const tok = self.currentToken();
+        const kind = tok.kind;
+
+        if (kind != expected_kind) {
+            if (err) |e| {
+                return e;
+            } else {
+                try stderr.print("Expected {s} but received {s} instead\n", .{
+                    token.tokenKindString(expected_kind),
+                    token.tokenKindString(kind),
+                });
+                return error.ParserExpectedKind;
+            }
+        }
+
+        return self.advance();
     }
 };
 

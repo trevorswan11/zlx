@@ -22,14 +22,14 @@ pub const BindingPower = enum(u32) {
 
 // === Function pointer types ===
 pub const StmtHandler = fn (p: *Parser) anyerror!ast.Stmt;
-pub const NudHandler  = fn (p: *Parser) anyerror!ast.Expr;
-pub const LedHandler  = fn (p: *Parser, left: ast.Expr, bp: BindingPower) anyerror!ast.Expr;
+pub const NudHandler = fn (p: *Parser) anyerror!ast.Expr;
+pub const LedHandler = fn (p: *Parser, left: ast.Expr, bp: BindingPower) anyerror!ast.Expr;
 
 // === Lookup Tables ===
-var bp_lu: std.AutoHashMap(token.TokenKind, BindingPower) = undefined;
-var nud_lu: std.AutoHashMap(token.TokenKind, NudHandler) = undefined;
-var led_lu: std.AutoHashMap(token.TokenKind, LedHandler) = undefined;
-var stmt_lu: std.AutoHashMap(token.TokenKind, StmtHandler) = undefined;
+pub var bp_lu: std.AutoHashMap(token.TokenKind, BindingPower) = undefined;
+pub var nud_lu: std.AutoHashMap(token.TokenKind, NudHandler) = undefined;
+pub var led_lu: std.AutoHashMap(token.TokenKind, LedHandler) = undefined;
+pub var stmt_lu: std.AutoHashMap(token.TokenKind, StmtHandler) = undefined;
 
 // === Registration functions ===
 pub fn led(kind: token.TokenKind, bp: BindingPower, led_fn: LedHandler) void {
@@ -63,7 +63,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     // Logical
     led(token.TokenKind.AND, .LOGICAL, exprs.parseBinaryExpr);
     led(token.TokenKind.OR, .LOGICAL, exprs.parseBinaryExpr);
-    led(token.TokenKind.DOT_DOT, .LOGICAL, exprs.parse_range_expr);
+    led(token.TokenKind.DOT_DOT, .LOGICAL, exprs.parseRangeExpr);
 
     // Relational
     led(token.TokenKind.LESS, .RELATIONAL, exprs.parseBinaryExpr);
@@ -102,10 +102,12 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     nud(token.TokenKind.NEW, .DEFAULT_BP, struct {
         pub fn afn(p: *Parser) anyerror!ast.Expr {
             _ = p.advance();
-            const inst = exprs.parseExpr(p, .DEFAULT_BP);
+            const inst = try exprs.parseExpr(p, .DEFAULT_BP);
             return switch (inst) {
                 .call => |call_expr| ast.Expr{
-                    .new_expr = .{ .instantiation = call_expr },
+                    .new_expr = .{
+                        .instantiation = call_expr,
+                    },
                 },
                 else => error.ExpectedCallExpr,
             };

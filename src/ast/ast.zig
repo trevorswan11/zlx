@@ -161,7 +161,6 @@ pub const ListType = struct {
     underlying: Type,
 };
 
-
 pub const Type = union(enum) {
     symbol: SymbolType,
     list: ListType,
