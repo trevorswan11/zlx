@@ -94,7 +94,7 @@ pub const Token = struct {
     pub fn debug(self: *Self) !void {
         const stdout = std.io.getStdOut().writer();
         if (self.isOneOfMany(@constCast(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING }))) {
-            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.kind), self.value });
+            try stdout.print("{s} ({s})\n", .{try tokenKindString(self.kind), self.value});
         } else {
             try stdout.print("{s} ()\n", .{try tokenKindString(self.kind)});
         }

@@ -16,49 +16,49 @@ pub const SymbolExpr = struct {
 };
 
 pub const BinaryExpr = struct {
-    left: Expr,
+    left: *Expr,
     operator: tokens.Token,
-    right: Expr,
+    right: *Expr,
 };
 
 pub const PrefixExpr = struct {
     operator: tokens.Token,
-    right: Expr,
+    right: *Expr,
 };
 
 pub const AssignmentExpr = struct {
-    assignee: Expr,
-    assigned_value: Expr,
+    assignee: *Expr,
+    assigned_value: *Expr,
 };
 
 pub const MemberExpr = struct {
-    member: Expr,
+    member: *Expr,
     property: []const u8,
 };
 
 pub const CallExpr = struct {
-    method: Expr,
-    arguments: std.ArrayList(Expr),
+    method: *Expr,
+    arguments: std.ArrayList(*Expr),
 };
 
 pub const ComputedExpr = struct {
-    member: Expr,
-    property: Expr,
+    member: *Expr,
+    property: *Expr,
 };
 
 pub const RangeExpr = struct {
-    lower: Expr,
-    upper: Expr,
+    lower: *Expr,
+    upper: *Expr,
 };
 
 pub const FunctionExpr = struct {
     parameters: std.ArrayList(Parameter),
-    body: std.ArrayList(Stmt),
+    body: std.ArrayList(*Stmt),
     return_type: Type,
 };
 
 pub const ArrayLiteral = struct {
-    contents: std.ArrayList(Expr),
+    contents: std.ArrayList(*Expr),
 };
 
 pub const NewExpr = struct {
@@ -92,7 +92,7 @@ pub const Expr = union(enum) {
 // === Statements ===
 
 pub const BlockStmt = struct {
-    body: std.ArrayList(Stmt),
+    body: std.ArrayList(*Stmt),
 };
 
 pub const VarDeclarationStmt = struct {
@@ -109,14 +109,14 @@ pub const ExpressionStmt = struct {
 pub const FunctionDeclarationStmt = struct {
     parameters: std.ArrayList(Parameter),
     name: []const u8,
-    body: std.ArrayList(Stmt),
+    body: std.ArrayList(*Stmt),
     return_type: Type,
 };
 
 pub const IfStmt = struct {
     condition: Expr,
-    consequent: Stmt,
-    alternate: ?Stmt,
+    consequent: *Stmt,
+    alternate: ?*Stmt,
 };
 
 pub const ImportStmt = struct {
@@ -128,12 +128,12 @@ pub const ForeachStmt = struct {
     value: []const u8,
     index: bool,
     iterable: Expr,
-    body: std.ArrayList(Stmt),
+    body: std.ArrayList(*Stmt),
 };
 
 pub const ClassDeclarationStmt = struct {
     name: []const u8,
-    body: std.ArrayList(Stmt),
+    body: std.ArrayList(*Stmt),
 };
 
 pub const Stmt = union(enum) {
@@ -158,7 +158,7 @@ pub const SymbolType = struct {
 };
 
 pub const ListType = struct {
-    underlying: Type,
+    underlying: *Type,
 };
 
 pub const Type = union(enum) {

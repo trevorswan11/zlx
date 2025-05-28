@@ -30,7 +30,7 @@ class DirectoryReader {
 
 fn main() {
   const directory: string = "/path/to/directory";
-  const reader = new DirectoryReader();
+  const reader: DirectoryReader = new DirectoryReader();
   reader.mount(directory);
   reader.readRecentFiles();
 }

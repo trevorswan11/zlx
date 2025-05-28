@@ -14,10 +14,10 @@ pub fn readFile(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
 pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
     const allocator = std.heap.page_allocator;
-    const contents = try readFile(allocator, "../examples/01.lang");
+    const contents = try readFile(allocator, "examples/test.lang");
     defer allocator.free(contents);
 
-    parser.parse(allocator, contents);
+    _ = try parser.parse(allocator, contents);
     const t1 = std.time.nanoTimestamp();
     std.debug.print("Parsing took: {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
 }

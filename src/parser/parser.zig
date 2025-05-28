@@ -6,7 +6,6 @@ const ast = @import("../ast/ast.zig");
 const lus = @import("lookups.zig");
 const types = @import("types.zig");
 
-const stderr = std.io.getStdErr().writer();
 
 pub const Parser = struct {
     const Self = @This();
@@ -57,6 +56,7 @@ pub const Parser = struct {
     }
 
     pub fn expectError(self: *Self, expected_kind: token.TokenKind, err: ?anyerror) !token.Token {
+        const stderr = std.io.getStdErr().writer();
         const tok = self.currentToken();
         const kind = tok.kind;
 
@@ -65,8 +65,8 @@ pub const Parser = struct {
                 return e;
             } else {
                 try stderr.print("Expected {s} but received {s} instead\n", .{
-                    token.tokenKindString(expected_kind),
-                    token.tokenKindString(kind),
+                    try token.tokenKindString(expected_kind),
+                    try token.tokenKindString(kind),
                 });
                 return error.ParserExpectedKind;
             }
@@ -78,14 +78,16 @@ pub const Parser = struct {
 
 pub fn parse(allocator: std.mem.Allocator, source: []const u8) !ast.Stmt {
     const parseStmt = @import("stmt.zig").parseStmt;
-    var body = try std.ArrayList(ast.Stmt).init(allocator);
+    var body = std.ArrayList(*ast.Stmt).init(allocator);
     const tokens = try tokenizer.tokenize(source);
     var parser = try Parser.init(allocator, tokens);
     defer parser.deinit();
-    try parser.tokens.appendSlice(tokens);
 
     while (parser.hasTokens()) {
-        try body.append(parseStmt(&parser));
+        const stmt = try parseStmt(&parser);
+        const stmt_box = try allocator.create(ast.Stmt);
+        stmt_box.* = stmt;
+        try body.append(stmt_box);
     }
 
     return ast.Stmt{
