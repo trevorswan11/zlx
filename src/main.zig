@@ -10,7 +10,8 @@ pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
     var t1: i128 = undefined;
 
-    const allocator = std.heap.page_allocator;
+    // const allocator = std.heap.page_allocator;
+    const allocator = std.testing.allocator;
     const input = getArgs(allocator) catch return;
 
     const stdout = std.io.getStdOut().writer();
