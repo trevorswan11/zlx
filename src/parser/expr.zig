@@ -6,6 +6,12 @@ const ast = @import("../ast/ast.zig");
 const lus = @import("lookups.zig");
 const stmts = @import("stmt.zig");
 
+fn boxExpr(p: *parser.Parser, e: ast.Expr) !*ast.Expr {
+    const ptr = try p.allocator.create(ast.Expr);
+    ptr.* = e;
+    return ptr;
+}
+
 pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
     const stderr = std.io.getStdErr().writer();
     var token_kind = p.currentTokenKind();
@@ -47,7 +53,7 @@ pub fn parsePrefixExpr(p: *parser.Parser) !ast.Expr {
     return ast.Expr{
         .prefix = ast.PrefixExpr{
             .operator = operator_token,
-            .right = @constCast(&expr),
+            .right = try boxExpr(p, expr),
         },
     };
 }
@@ -58,8 +64,8 @@ pub fn parseAssignmentExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPow
 
     return ast.Expr{
         .assignment = ast.AssignmentExpr{
-            .assignee = @constCast(&left),
-            .assigned_value = @constCast(&rhs),
+            .assignee = try boxExpr(p, left),
+            .assigned_value = try boxExpr(p, rhs),
         },
     };
 }
@@ -70,8 +76,8 @@ pub fn parseRangeExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !
 
     return ast.Expr{
         .range_expr = ast.RangeExpr{
-            .lower = @constCast(&left),
-            .upper = @constCast(&upper),
+            .lower = try boxExpr(p, left),
+            .upper = try boxExpr(p, upper),
         },
     };
 }
@@ -94,9 +100,9 @@ pub fn parseBinaryExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) 
 
     return ast.Expr{
         .binary = ast.BinaryExpr{
-            .left = @constCast(&left),
+            .left = try boxExpr(p, left),
             .operator = operator_token,
-            .right = @constCast(&right),
+            .right = try boxExpr(p, right),
         },
     };
 }
@@ -144,15 +150,15 @@ pub fn parseMemberExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) 
         _ = try p.expect(.CLOSE_BRACKET);
         return ast.Expr{
             .computed = ast.ComputedExpr{
-                .member = @constCast(&left),
-                .property = @constCast(&rhs),
+                .member = try boxExpr(p, left),
+                .property = try boxExpr(p, rhs),
             },
         };
     } else {
         const rhs = try p.expect(.IDENTIFIER);
         return ast.Expr{
             .member = ast.MemberExpr{
-                .member = @constCast(&left),
+                .member = try boxExpr(p, left),
                 .property = rhs.value,
             },
         };
@@ -164,7 +170,7 @@ pub fn parseArrayLiteralExpr(p: *parser.Parser) !ast.Expr {
     var array_contents = try std.ArrayList(*ast.Expr).initCapacity(p.allocator, p.numTokens());
 
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_BRACKET) {
-        try array_contents.append(@constCast(&(try parseExpr(p, .LOGICAL))));
+        try array_contents.append(try boxExpr(p, try parseExpr(p, .LOGICAL)));
 
         if (!@constCast(&p.currentToken()).isOneOfMany(@constCast(&[_]token.TokenKind{ .EOF, .CLOSE_BRACKET }))) {
             _ = try p.expect(.COMMA);
@@ -193,7 +199,7 @@ pub fn parseCallExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !a
     _ = bp;
 
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {
-        try arguments.append(@constCast(&(try parseExpr(p, .ASSIGNMENT))));
+        try arguments.append(try boxExpr(p, try parseExpr(p, .ASSIGNMENT)));
 
         if (!@constCast(&p.currentToken()).isOneOfMany(@constCast(&[_]token.TokenKind{ .EOF, .CLOSE_PAREN }))) {
             _ = try p.expect(.COMMA);
@@ -203,7 +209,7 @@ pub fn parseCallExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !a
     _ = try p.expect(.CLOSE_PAREN);
     return ast.Expr{
         .call = ast.CallExpr{
-            .method = @constCast(&left),
+            .method = try boxExpr(p, left),
             .arguments = arguments,
         },
     };
@@ -212,6 +218,7 @@ pub fn parseCallExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !a
 pub fn parseFnExpr(p: *parser.Parser) !ast.Expr {
     _ = try p.expect(.FN);
     const func_info = try stmts.parseFnParamsAndBody(p);
+
     return ast.Expr{
         .function_expr = ast.FunctionExpr{
             .parameters = func_info.parameters,

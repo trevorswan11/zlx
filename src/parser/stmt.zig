@@ -7,6 +7,12 @@ const lus = @import("lookups.zig");
 const expr = @import("expr.zig");
 const types = @import("types.zig");
 
+fn boxStmt(p: *parser.Parser, stmt: ast.Stmt) !*ast.Stmt {
+    const ptr = try p.allocator.create(ast.Stmt);
+    ptr.* = stmt;
+    return ptr;
+}
+
 pub fn parseStmt(p: *parser.Parser) !ast.Stmt {
     if (lus.stmt_lu.get(p.currentTokenKind())) |stmt_fn| {
         return try stmt_fn(p);
@@ -31,7 +37,9 @@ pub fn parseBlockStmt(p: *parser.Parser) !ast.Stmt {
     var body = try std.ArrayList(*ast.Stmt).initCapacity(p.allocator, p.numTokens());
 
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_CURLY) {
-        try body.append(@constCast(&(try parseStmt(p))));
+        const stmt = try parseStmt(p);
+        const stmt_ptr = try boxStmt(p, stmt);
+        try body.append(stmt_ptr);
     }
 
     _ = try p.expect(.CLOSE_CURLY);
@@ -89,13 +97,13 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
 }
 
 pub const FunctionInfo = struct {
-    parameters: std.ArrayList(ast.Parameter),
+    parameters: std.ArrayList(*ast.Parameter),
     return_type: ast.Type,
     body: std.ArrayList(*ast.Stmt),
 };
 
 pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
-    var function_params = std.ArrayList(ast.Parameter).init(p.allocator);
+    var function_params = std.ArrayList(*ast.Parameter).init(p.allocator);
     _ = try p.expect(.OPEN_PAREN);
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {
         const expected = try p.expect(.IDENTIFIER);
@@ -103,10 +111,13 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         _ = try p.expect(.COLON);
         const param_type = try types.parseType(p, .DEFAULT_BP);
 
-        try function_params.append(ast.Parameter{
+        const param_ptr = try p.allocator.create(ast.Parameter);
+        const param = ast.Parameter{
             .name = param_name,
             .type = param_type,
-        });
+        };
+        param_ptr.* = param;
+        try function_params.append(param_ptr);
 
         if (!@constCast(&p.currentToken()).isOneOfMany(@constCast(&[_]token.TokenKind{ .CLOSE_PAREN, .EOF }))) {
             _ = try p.expect(.COMMA);
@@ -150,7 +161,7 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
     const condition = try expr.parseExpr(p, .ASSIGNMENT);
     const consequent = try parseBlockStmt(p);
 
-    var alternate: ast.Stmt = undefined;
+    var alternate: ?ast.Stmt = null;
     if (p.currentTokenKind() == .ELSE) {
         _ = p.advance();
 
@@ -161,11 +172,17 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
         }
     }
 
+    const cons_ptr = try boxStmt(p, consequent);
+    var alt_ptr: ?*ast.Stmt = null;
+    if (alternate) |a| {
+        alt_ptr = try boxStmt(p, a);
+    }
+
     return ast.Stmt{
         .if_stmt = ast.IfStmt{
-            .alternate = @constCast(&alternate),
             .condition = condition,
-            .consequent = @constCast(&consequent),
+            .consequent = cons_ptr,
+            .alternate = alt_ptr,
         },
     };
 }

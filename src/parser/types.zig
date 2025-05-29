@@ -49,10 +49,13 @@ pub fn createTypeTokenLookups(allocator: std.mem.Allocator) !void {
         pub fn afn(p: *Parser) !ast.Type {
             _ = p.advance();
             _ = try p.expect(.CLOSE_BRACKET);
-            const inner = try parseType(p, .DEFAULT_BP);
+            const inner_val = try parseType(p, .DEFAULT_BP);
+            const inner_ptr = try p.allocator.create(ast.Type);
+            inner_ptr.* = inner_val;
+
             return ast.Type{
                 .list = ast.ListType{
-                    .underlying = @constCast(&inner),
+                    .underlying = inner_ptr,
                 },
             };
         }
@@ -64,7 +67,7 @@ pub fn parseType(p: *Parser, bp: BindingPower) !ast.Type {
     const token_kind = p.currentTokenKind();
 
     const nud_fn = type_nud_lu.get(token_kind) orelse
-        @panic(std.fmt.allocPrintZ(std.heap.page_allocator, "Type Parse Error: NUD Handler expected for token {s} ({d}/{d})\n", .{
+        @panic(std.fmt.allocPrintZ(p.allocator, "Type Parse Error: NUD Handler expected for token {s} ({d}/{d})\n", .{
             try token.tokenKindString(token_kind),
             p.pos,
             p.tokens.items.len,
@@ -76,7 +79,7 @@ pub fn parseType(p: *Parser, bp: BindingPower) !ast.Type {
         const next_kind = p.currentTokenKind();
 
         const led_fn = type_led_lu.get(next_kind) orelse
-            @panic(std.fmt.allocPrintZ(std.heap.page_allocator, "Type Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
+            @panic(std.fmt.allocPrintZ(p.allocator, "Type Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
                 try token.tokenKindString(next_kind),
                 p.pos,
                 p.tokens.items.len,
