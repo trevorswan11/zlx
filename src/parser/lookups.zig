@@ -106,14 +106,18 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
         pub fn afn(p: *Parser) anyerror!ast.Expr {
             _ = p.advance();
             const inst = try exprs.parseExpr(p, .DEFAULT_BP);
-            return switch (inst) {
-                .call => |call_expr| ast.Expr{
-                    .new_expr = .{
-                        .instantiation = call_expr,
-                    },
+            const call_expr_ptr = try p.allocator.create(ast.CallExpr);
+            switch (inst) {
+                .call => |call_expr| {
+                    call_expr_ptr.* = call_expr;
+                    return ast.Expr{
+                        .new_expr = .{
+                            .instantiation = call_expr_ptr,
+                        },
+                    };
                 },
-                else => error.ExpectedCallExpr,
-            };
+                else => return error.ExpectedCallExpr,
+            }
         }
     }.afn);
 

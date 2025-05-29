@@ -54,7 +54,7 @@ pub const RangeExpr = struct {
 pub const FunctionExpr = struct {
     parameters: std.ArrayList(*Parameter),
     body: std.ArrayList(*Stmt),
-    return_type: Type,
+    return_type: *Type,
 };
 
 pub const ArrayLiteral = struct {
@@ -62,7 +62,7 @@ pub const ArrayLiteral = struct {
 };
 
 pub const NewExpr = struct {
-    instantiation: CallExpr,
+    instantiation: *CallExpr,
 };
 
 pub const Expr = union(enum) {
@@ -152,23 +152,23 @@ pub const BlockStmt = struct {
 pub const VarDeclarationStmt = struct {
     identifier: []const u8,
     constant: bool,
-    assigned_value: ?Expr,
-    explicit_type: ?Type,
+    assigned_value: ?*Expr,
+    explicit_type: ?*Type,
 };
 
 pub const ExpressionStmt = struct {
-    expression: Expr,
+    expression: *Expr,
 };
 
 pub const FunctionDeclarationStmt = struct {
     parameters: std.ArrayList(*Parameter),
     name: []const u8,
     body: std.ArrayList(*Stmt),
-    return_type: Type,
+    return_type: *Type,
 };
 
 pub const IfStmt = struct {
-    condition: Expr,
+    condition: *Expr,
     consequent: *Stmt,
     alternate: ?*Stmt,
 };
@@ -181,7 +181,7 @@ pub const ImportStmt = struct {
 pub const ForeachStmt = struct {
     value: []const u8,
     index: bool,
-    iterable: Expr,
+    iterable: *Expr,
     body: std.ArrayList(*Stmt),
 };
 
@@ -290,7 +290,7 @@ pub const Type = union(enum) {
 
 pub const Parameter = struct {
     name: []const u8,
-    type: Type,
+    type: *Type,
 
     pub fn print(self: Parameter) anyerror!void {
         const stdout = std.io.getStdOut().writer();

@@ -46,5 +46,7 @@ pub fn main() !void {
     t1 = std.time.nanoTimestamp();
     if (input.time) {
         try stdout.print("Parsing took {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+    } else {
+        try stdout.print("Parsing completed without error", .{});
     }
 }

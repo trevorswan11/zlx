@@ -12,6 +12,12 @@ fn boxExpr(p: *parser.Parser, e: ast.Expr) !*ast.Expr {
     return ptr;
 }
 
+fn boxType(p: *parser.Parser, e: ast.Type) !*ast.Type {
+    const ptr = try p.allocator.create(ast.Type);
+    ptr.* = e;
+    return ptr;
+}
+
 pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
     const stderr = std.io.getStdErr().writer();
     var token_kind = p.currentTokenKind();

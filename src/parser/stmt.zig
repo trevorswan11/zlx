@@ -13,6 +13,18 @@ fn boxStmt(p: *parser.Parser, stmt: ast.Stmt) !*ast.Stmt {
     return ptr;
 }
 
+fn boxExpr(p: *parser.Parser, e: ast.Expr) !*ast.Expr {
+    const ptr = try p.allocator.create(ast.Expr);
+    ptr.* = e;
+    return ptr;
+}
+
+fn boxType(p: *parser.Parser, e: ast.Type) !*ast.Type {
+    const ptr = try p.allocator.create(ast.Type);
+    ptr.* = e;
+    return ptr;
+}
+
 pub fn parseStmt(p: *parser.Parser) !ast.Stmt {
     if (lus.stmt_lu.get(p.currentTokenKind())) |stmt_fn| {
         return try stmt_fn(p);
@@ -27,7 +39,7 @@ pub fn parseExpressionStmt(p: *parser.Parser) !ast.Stmt {
 
     return ast.Stmt{
         .expression = ast.ExpressionStmt{
-            .expression = expression,
+            .expression = try boxExpr(p, expression),
         },
     };
 }
@@ -62,7 +74,7 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
         explicit_type = try types.parseType(p, .DEFAULT_BP);
     }
 
-    var assignment_value: ?ast.Expr = undefined;
+    var assignment_value: ?ast.Expr = null;
     if (p.currentTokenKind() != .SEMI_COLON) {
         _ = try p.expect(.ASSIGNMENT);
         assignment_value = try expr.parseExpr(p, .ASSIGNMENT);
@@ -86,19 +98,29 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
         return error.VarDeclParse;
     }
 
+    var av_ptr: ?*ast.Expr = null;
+    if (assignment_value) |av| {
+        av_ptr = try boxExpr(p, av);
+    }
+
+    var et_ptr: ?*ast.Type = null;
+    if (explicit_type) |et| {
+        et_ptr = try boxType(p, et);
+    }
+
     return ast.Stmt{
         .var_decl = ast.VarDeclarationStmt{
             .constant = is_constant,
             .identifier = symbol_name.value,
-            .assigned_value = assignment_value,
-            .explicit_type = explicit_type,
+            .assigned_value = av_ptr,
+            .explicit_type = et_ptr,
         },
     };
 }
 
 pub const FunctionInfo = struct {
     parameters: std.ArrayList(*ast.Parameter),
-    return_type: ast.Type,
+    return_type: *ast.Type,
     body: std.ArrayList(*ast.Stmt),
 };
 
@@ -114,7 +136,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         const param_ptr = try p.allocator.create(ast.Parameter);
         const param = ast.Parameter{
             .name = param_name,
-            .type = param_type,
+            .type = try boxType(p, param_type),
         };
         param_ptr.* = param;
         try function_params.append(param_ptr);
@@ -130,6 +152,10 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
     if (p.currentTokenKind() == .COLON) {
         _ = p.advance();
         return_type = try types.parseType(p, .DEFAULT_BP);
+    } else {
+        return_type = ast.Type{ .symbol = ast.SymbolType{
+            .value = "void",
+        } };
     }
 
     const block_stmt = try parseBlockStmt(p);
@@ -137,7 +163,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
     return FunctionInfo{
         .body = function_body,
         .parameters = function_params,
-        .return_type = return_type,
+        .return_type = try boxType(p, return_type),
     };
 }
 
@@ -177,10 +203,11 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
     if (alternate) |a| {
         alt_ptr = try boxStmt(p, a);
     }
+    const cond_ptr = try boxExpr(p, condition);
 
     return ast.Stmt{
         .if_stmt = ast.IfStmt{
-            .condition = condition,
+            .condition = cond_ptr,
             .consequent = cons_ptr,
             .alternate = alt_ptr,
         },
@@ -228,7 +255,7 @@ pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
         .foreach_stmt = ast.ForeachStmt{
             .value = value_name,
             .index = index,
-            .iterable = iterable,
+            .iterable = try boxExpr(p, iterable),
             .body = body,
         },
     };
