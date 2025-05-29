@@ -6,7 +6,6 @@ const ast = @import("../ast/ast.zig");
 const lus = @import("lookups.zig");
 const types = @import("types.zig");
 
-
 pub const Parser = struct {
     const Self = @This();
 
@@ -64,10 +63,13 @@ pub const Parser = struct {
             if (err) |e| {
                 return e;
             } else {
-                try stderr.print("Expected {s} but received {s} instead\n", .{
+                try stderr.print("Expected {s} but received {s} instead at token {d}/{d}\n", .{
                     try token.tokenKindString(expected_kind),
                     try token.tokenKindString(kind),
+                    self.pos,
+                    self.tokens.items.len,
                 });
+                try self.currentToken().debugRuntime();
                 return error.ParserExpectedKind;
             }
         }

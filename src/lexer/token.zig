@@ -18,7 +18,7 @@ pub const TokenKind = enum(u32) {
     OPEN_PAREN,
     CLOSE_PAREN,
 
-    // Equivilance
+    // Equivalence
     ASSIGNMENT,
     EQUALS,
     NOT_EQUALS,
@@ -47,6 +47,9 @@ pub const TokenKind = enum(u32) {
     MINUS_MINUS,
     PLUS_EQUALS,
     MINUS_EQUALS,
+    SLASH_EQUALS,
+    STAR_EQUALS,
+    PERCENT_EQUALS,
     NULLISH_ASSIGNMENT, // ??=
 
     //Maths
@@ -94,13 +97,31 @@ pub const Token = struct {
     pub fn debug(self: *Self) !void {
         const stdout = std.io.getStdOut().writer();
         if (self.isOneOfMany(@constCast(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING }))) {
-            try stdout.print("{s} ({s})\n", .{try tokenKindString(self.kind), self.value});
+            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.kind), self.value });
+        } else {
+            try stdout.print("{s} ()\n", .{try tokenKindString(self.kind)});
+        }
+    }
+
+    pub fn debugRuntime(self: *const Self) !void {
+        const stdout = std.io.getStdOut().writer();
+        if (self.isOneOfManyRuntime(@constCast(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING }))) {
+            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.kind), self.value });
         } else {
             try stdout.print("{s} ()\n", .{try tokenKindString(self.kind)});
         }
     }
 
     pub fn isOneOfMany(self: *Self, expected_tokens: []TokenKind) bool {
+        for (expected_tokens) |expected| {
+            if (self.kind == expected) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    pub fn isOneOfManyRuntime(self: *const Self, expected_tokens: []TokenKind) bool {
         for (expected_tokens) |expected| {
             if (self.kind == expected) {
                 return true;

@@ -1,23 +1,50 @@
 const std = @import("std");
+
 const parser = @import("parser/parser.zig");
-
-pub fn readFile(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
-    const file = try std.fs.cwd().openFile(path, .{});
-    defer file.close();
-
-    const stat = try file.stat();
-    const buffer = try allocator.alloc(u8, stat.size);
-    _ = try file.readAll(buffer);
-    return buffer;
-}
+const helpers = @import("helpers.zig");
+const getArgs = helpers.getArgs;
+const readFile = helpers.readFile;
+const printStmt = helpers.printStmt;
 
 pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
-    const allocator = std.heap.page_allocator;
-    const contents = try readFile(allocator, "examples/test.lang");
-    defer allocator.free(contents);
+    var t1: i128 = undefined;
 
-    _ = try parser.parse(allocator, contents);
-    const t1 = std.time.nanoTimestamp();
-    std.debug.print("Parsing took: {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+    const allocator = std.heap.page_allocator;
+    const input = getArgs(allocator) catch return;
+
+    const stdout = std.io.getStdOut().writer();
+    const stderr = std.io.getStdErr().writer();
+
+    // Gather the file contents
+    const file_contents = readFile(allocator, input.path) catch |err| {
+        try stderr.print("Error reading file contents: {!}\n", .{err});
+        t1 = std.time.nanoTimestamp();
+        if (input.time) {
+            try stdout.print("Parsing failed in {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+        }
+        return;
+    };
+    defer allocator.free(file_contents);
+
+    // Parse the file
+    const block = parser.parse(allocator, file_contents) catch |err| switch (err) {
+        else => {
+            try stderr.print("Error parsing file: {!}\n", .{err});
+            t1 = std.time.nanoTimestamp();
+            if (input.time) {
+                try stdout.print("Parsing failed in {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+            }
+            return;
+        },
+    };
+    printStmt(block) catch |err| {
+        try stderr.print("Error parsing main block statement: {!}\n", .{err});
+    };
+
+    // Successful parsing
+    t1 = std.time.nanoTimestamp();
+    if (input.time) {
+        try stdout.print("Parsing took {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+    }
 }

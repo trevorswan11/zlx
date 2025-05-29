@@ -32,9 +32,14 @@ class DirectoryReader {
   }
 }
 
+fn are(you: sure): int {
+  let cecil: int = 1;
+  cecil;
+}
+
 fn main() {
   const directory: string = "/path/to/directory";
-  const reader: DirectoryReader = new DirectoryReader();
+  const reader = new DirectoryReader(); // It is not required to use explicit types
   reader.mount(directory);
   reader.readRecentFiles();
 }

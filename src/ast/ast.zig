@@ -80,11 +80,12 @@ pub const Expr = union(enum) {
     array_literal: ArrayLiteral,
     new_expr: NewExpr,
 
-    pub fn print(self: Expr) void {
+    pub fn print(self: Expr) !void {
+        const stdout = std.io.getStdOut().writer();
         switch (self) {
-            .number => |n| std.debug.print("Number: {d}\n", .{n.value}),
-            .symbol => |s| std.debug.print("Symbol: {s}\n", .{s.value}),
-            else => std.debug.print("Expr variant: {s}\n", .{@tagName(self)}),
+            .number => |n| try stdout.print("Number: {d}\n", .{n.value}),
+            .symbol => |s| try stdout.print("Symbol: {s}\n", .{s.value}),
+            else => try stdout.print("Expr variant: {s}\n", .{@tagName(self)}),
         }
     }
 };
@@ -99,7 +100,7 @@ pub const VarDeclarationStmt = struct {
     identifier: []const u8,
     constant: bool,
     assigned_value: ?Expr,
-    explicit_type: Type,
+    explicit_type: ?Type,
 };
 
 pub const ExpressionStmt = struct {
@@ -146,8 +147,9 @@ pub const Stmt = union(enum) {
     foreach_stmt: ForeachStmt,
     class_decl: ClassDeclarationStmt,
 
-    pub fn print(self: Stmt) void {
-        std.debug.print("Stmt: {s}\n", .{@tagName(self)});
+    pub fn print(self: Stmt) !void {
+        const stdout = std.io.getStdOut().writer();
+        try stdout.print("Stmt: {s}\n", .{@tagName(self)});
     }
 };
 
@@ -165,10 +167,11 @@ pub const Type = union(enum) {
     symbol: SymbolType,
     list: ListType,
 
-    pub fn print(self: Type) void {
+    pub fn print(self: Type) !void {
+        const stdout = std.io.getStdOut().writer();
         switch (self) {
-            .symbol => |s| std.debug.print("Type: symbol({s})\n", .{s.value}),
-            .list => |_| std.debug.print("Type: list\n", .{}),
+            .symbol => |s| try stdout.print("Type: symbol, value = {s}\n", .{s.value}),
+            .list => |_| try stdout.print("Type: list\n", .{}),
         }
     }
 };
@@ -178,4 +181,9 @@ pub const Type = union(enum) {
 pub const Parameter = struct {
     name: []const u8,
     type: Type,
+
+    pub fn print(self: Parameter) !void {
+        const stdout = std.io.getStdOut().writer();
+        try stdout.print("Parameter: name = {s}\n", .{self.name});
+    }
 };

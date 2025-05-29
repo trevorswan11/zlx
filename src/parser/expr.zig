@@ -6,8 +6,6 @@ const ast = @import("../ast/ast.zig");
 const lus = @import("lookups.zig");
 const stmts = @import("stmt.zig");
 
-
-
 pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
     const stderr = std.io.getStdErr().writer();
     var token_kind = p.currentTokenKind();
@@ -20,14 +18,24 @@ pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
             if (lus.led_lu.get(token_kind)) |led_fn| {
                 left = try led_fn(p, left, bp);
             } else {
-                try stderr.print("LED Handler expected for token {s}\n", .{try token.tokenKindString(token_kind)});
+                try stderr.print("Expr Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
+                    try token.tokenKindString(token_kind),
+                    p.pos,
+                    p.tokens.items.len,
+                });
+                try p.currentToken().debugRuntime();
                 return error.ExpectedLEDHandler;
             }
         }
 
         return left;
     } else {
-        try stderr.print("NUD Handler expected for token {s}\n", .{try token.tokenKindString(token_kind)});
+        try stderr.print("Expr Parse Error: NUD Handler expected for token {s} ({d}/{d})\n", .{
+            try token.tokenKindString(token_kind),
+            p.pos,
+            p.tokens.items.len,
+        });
+        try p.currentToken().debugRuntime();
         return error.ExpectedNUDHandler;
     }
 }
@@ -72,7 +80,13 @@ pub fn parseBinaryExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) 
     const stderr = std.io.getStdErr().writer();
     const operator_token = p.advance();
     const operator_bp = lus.bp_lu.get(operator_token.kind) orelse {
-        try stderr.print("No binding power associated with operator: {s}\n", .{try token.tokenKindString(operator_token.kind)});
+        try stderr.print("No binding power associated with operator: {s} at token {d}/{d}\n", .{
+            try token.tokenKindString(operator_token.kind),
+            p.pos,
+            p.tokens.items.len,
+        });
+        try p.currentToken().debugRuntime();
+        try operator_token.debugRuntime();
         return error.BinaryExprOperator;
     };
     const right = try parseExpr(p, operator_bp);
@@ -113,7 +127,12 @@ pub fn parsePrimaryExpr(p: *parser.Parser) !ast.Expr {
             };
         },
         else => {
-            try stderr.print("Cannot create primary_expr from {s}\n", .{try token.tokenKindString(p.currentTokenKind())});
+            try stderr.print("Cannot create Primary Expr from {s} at token {d}/{d}\n", .{
+                try token.tokenKindString(p.currentTokenKind()),
+                p.pos,
+                p.tokens.items.len,
+            });
+            try p.currentToken().debugRuntime();
             return error.PrimaryExprParse;
         },
     }

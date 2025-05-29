@@ -59,6 +59,9 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try led(token.TokenKind.ASSIGNMENT, .ASSIGNMENT, exprs.parseAssignmentExpr);
     try led(token.TokenKind.PLUS_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
     try led(token.TokenKind.MINUS_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(token.TokenKind.SLASH_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(token.TokenKind.STAR_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(token.TokenKind.PERCENT_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
 
     // Logical
     try led(token.TokenKind.AND, .LOGICAL, exprs.parseBinaryExpr);

@@ -58,17 +58,23 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
     if (p.currentTokenKind() != .SEMI_COLON) {
         _ = try p.expect(.ASSIGNMENT);
         assignment_value = try expr.parseExpr(p, .ASSIGNMENT);
-    } 
-    
-    if (explicit_type == null) {
-        try stderr.print("Missing explicit type for variable declaration.", .{});
-        return error.VarDeclParse;
+    } else if (explicit_type == null) {
+        try stderr.print("Missing explicit type for variable declaration at token {d}/{d}\n", .{
+            p.pos,
+            p.tokens.items.len,
+        });
+        try p.currentToken().debugRuntime();
+        return error.ExplicitVarDeclParse;
     }
 
     _ = try p.expect(.SEMI_COLON);
 
     if (is_constant and assignment_value == null) {
-        try stderr.print("Cannot define constant variable without providing default value.", .{});
+        try stderr.print("Cannot define constant variable without providing default value at token {d}/{d}\n", .{
+            p.pos,
+            p.tokens.items.len,
+        });
+        try p.currentToken().debugRuntime();
         return error.VarDeclParse;
     }
 
@@ -77,7 +83,7 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
             .constant = is_constant,
             .identifier = symbol_name.value,
             .assigned_value = assignment_value,
-            .explicit_type = explicit_type.?,
+            .explicit_type = explicit_type,
         },
     };
 }
@@ -177,10 +183,12 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     }
 
     _ = try p.expect(.SEMI_COLON);
-    return ast.Stmt{ .import_stmt = ast.ImportStmt{
-        .name = import_name,
-        .from = import_from,
-    } };
+    return ast.Stmt{
+        .import_stmt = ast.ImportStmt{
+            .name = import_name,
+            .from = import_from,
+        },
+    };
 }
 
 pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
@@ -214,8 +222,10 @@ pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
     const class_name = (try p.expect(.IDENTIFIER)).value;
     const class_body = try parseBlockStmt(p);
 
-    return ast.Stmt{ .class_decl = ast.ClassDeclarationStmt{
-        .name = class_name,
-        .body = class_body.block.body,
-    } };
+    return ast.Stmt{
+        .class_decl = ast.ClassDeclarationStmt{
+            .name = class_name,
+            .body = class_body.block.body,
+        },
+    };
 }

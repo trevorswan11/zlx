@@ -82,7 +82,7 @@ fn addFmtStep(b: *std.Build) void {
 
     // Format source directory
     const lint_source = b.addSystemCommand(&[_][]const u8{
-        "zig", "fmt", "src/",
+        "zig", "fmt", "src",
     });
 
     const step = b.step("lint", "Check formatting of Zig source files");

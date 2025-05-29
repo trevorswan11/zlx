@@ -176,6 +176,18 @@ pub const Lexer = struct {
             .handler = try defaultHandler(allocator, .MINUS_EQUALS, "-="),
         });
         try patterns.append(.{
+            .regex = try Regex.compile(allocator, "/="),
+            .handler = try defaultHandler(allocator, .SLASH_EQUALS, "/="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\*="),
+            .handler = try defaultHandler(allocator, .STAR_EQUALS, "*="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "%="),
+            .handler = try defaultHandler(allocator, .PERCENT_EQUALS, "%="),
+        });
+        try patterns.append(.{
             .regex = try Regex.compile(allocator, "\\+"),
             .handler = try defaultHandler(allocator, .PLUS, "+"),
         });
