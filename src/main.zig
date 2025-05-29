@@ -41,6 +41,7 @@ pub fn main() !void {
             return;
         },
     };
+    defer allocator.destroy(block);
 
     if (input.verbose) {
         printStmt(block) catch |err| {
