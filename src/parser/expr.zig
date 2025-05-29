@@ -31,7 +31,7 @@ pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
                 left = try led_fn(p, left, bp);
             } else {
                 try stderr.print("Expr Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
-                    try token.tokenKindString(token_kind),
+                    try token.tokenKindString(p.allocator, token_kind),
                     p.pos,
                     p.tokens.items.len,
                 });
@@ -43,7 +43,7 @@ pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
         return left;
     } else {
         try stderr.print("Expr Parse Error: NUD Handler expected for token {s} ({d}/{d})\n", .{
-            try token.tokenKindString(token_kind),
+            try token.tokenKindString(p.allocator, token_kind),
             p.pos,
             p.tokens.items.len,
         });
@@ -93,7 +93,7 @@ pub fn parseBinaryExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) 
     const operator_token = p.advance();
     const operator_bp = lus.bp_lu.get(operator_token.kind) orelse {
         try stderr.print("No binding power associated with operator: {s} at token {d}/{d}\n", .{
-            try token.tokenKindString(operator_token.kind),
+            try token.tokenKindString(p.allocator, operator_token.kind),
             p.pos,
             p.tokens.items.len,
         });
@@ -140,7 +140,7 @@ pub fn parsePrimaryExpr(p: *parser.Parser) !ast.Expr {
         },
         else => {
             try stderr.print("Cannot create Primary Expr from {s} at token {d}/{d}\n", .{
-                try token.tokenKindString(p.currentTokenKind()),
+                try token.tokenKindString(p.allocator, p.currentTokenKind()),
                 p.pos,
                 p.tokens.items.len,
             });

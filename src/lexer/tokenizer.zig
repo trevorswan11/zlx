@@ -237,8 +237,7 @@ pub const Lexer = struct {
     }
 };
 
-pub fn tokenize(source: []const u8) !std.ArrayList(Token) {
-    const allocator = std.heap.page_allocator;
+pub fn tokenize(allocator: std.mem.Allocator, source: []const u8) !std.ArrayList(Token) {
     var lex = try Lexer.init(allocator, source);
 
     while (!lex.atEOF()) {
@@ -256,7 +255,7 @@ pub fn tokenize(source: []const u8) !std.ArrayList(Token) {
         }
     }
 
-    const tok = Token.init(.EOF, "EOF");
+    const tok = Token.init(allocator, .EOF, "EOF");
     try lex.push(tok);
     return lex.tokens;
 }
@@ -267,7 +266,7 @@ const DefaultHandlerCtx = struct {
 
     pub fn call(ctx: *const anyopaque, lex: *Lexer, _: *Regex) LexerError!void {
         const self: *const DefaultHandlerCtx = @alignCast(@ptrCast(ctx));
-        try lex.push(Token.init(self.kind, self.value));
+        try lex.push(Token.init(lex.allocator, self.kind, self.value));
         lex.advanceN(self.value.len);
     }
 };
@@ -315,7 +314,7 @@ fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
         const span = caps.boundsAt(0).?;
         const matched = text[(span.lower + 1)..(span.upper - 1)];
-        const tok = Token.init(.STRING, matched);
+        const tok = Token.init(lex.allocator, .STRING, matched);
         try lex.push(tok);
         lex.advanceN(matched.len + 2);
     }
@@ -328,7 +327,7 @@ fn numberHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
         const span = caps.boundsAt(0).?;
         const matched = text[span.lower..span.upper];
-        const tok = Token.init(.NUMBER, matched);
+        const tok = Token.init(lex.allocator, .NUMBER, matched);
         try lex.push(tok);
         lex.advanceN(matched.len);
     }
@@ -342,9 +341,9 @@ fn symbolHandler(lex: *Lexer, regex: *Regex) LexerError!void {
         const span = caps.boundsAt(0).?;
         const word = text[span.lower..span.upper];
 
-        const reserved = try Token.getReservedMap(std.heap.page_allocator);
+        const reserved = try Token.getReservedMap(lex.allocator);
         const kind: TokenKind = reserved.get(word) orelse .IDENTIFIER;
-        const tok = Token.init(kind, word);
+        const tok = Token.init(lex.allocator, kind, word);
         try lex.push(tok);
         lex.advanceN(word.len);
     }

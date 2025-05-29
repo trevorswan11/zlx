@@ -87,11 +87,11 @@ pub const Expr = union(enum) {
             .string => |s| try stdout.print("String: \"{s}\"\n", .{s.value}),
             .symbol => |s| try stdout.print("Symbol: {s}\n", .{s.value}),
             .prefix => |p| {
-                try stdout.print("PrefixExpr: operator = {s}\n", .{try tokens.tokenKindString(p.operator.kind)});
+                try stdout.print("PrefixExpr: operator = {s}\n", .{try tokens.tokenKindString(p.operator.allocator, p.operator.kind)});
                 try p.right.print();
             },
             .binary => |b| {
-                try stdout.print("BinaryExpr: operator = {s}\n", .{try tokens.tokenKindString(b.operator.kind)});
+                try stdout.print("BinaryExpr: operator = {s}\n", .{try tokens.tokenKindString(b.operator.allocator, b.operator.kind)});
                 try b.left.print();
                 try b.right.print();
             },

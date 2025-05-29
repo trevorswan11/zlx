@@ -22,6 +22,7 @@ pub fn readFile(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
 const Args = struct {
     path: []const u8,
     time: bool,
+    verbose: bool = false,
 };
 
 /// Handles parsing the command line arguments for the process
@@ -31,12 +32,13 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     defer arguments.deinit();
 
     if (!arguments.skip()) {
-        try stderr.print("Usage: zlx <filepath> <time?>\n", .{});
+        try stderr.print("Usage: zlx <filepath> <time?> <-v?>\n", .{});
         return error.InvalidUsage;
     }
 
     var filepath: ?[]const u8 = null;
     var time: bool = false;
+    var verbose: bool = false;
 
     // Capture the mandatory filepath arg
     if (arguments.next()) |fp| {
@@ -55,16 +57,28 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     }
 
     // Capture the optional time/bench arg
-    if (arguments.next()) |time_flag| {
-        const lower_flag = try toLower(allocator, time_flag);
-        defer allocator.free(lower_flag);
-        time = std.mem.eql(u8, lower_flag, "time");
+    if (arguments.next()) |next| {
+        const t_flag = try toLower(allocator, next);
+        defer allocator.free(t_flag);
+        if (std.mem.eql(u8, t_flag, "time")) {
+            time = true;
+            if (arguments.next()) |v| {
+                const v_flag = try toLower(allocator, v);
+                defer allocator.free(v_flag);
+                verbose = std.mem.eql(u8, v_flag, "-v");
+            }
+        } else {
+            const v_flag = try toLower(allocator, next);
+            defer allocator.free(v_flag);
+            verbose = std.mem.eql(u8, v_flag, "-v");
+        }
     }
 
     if (filepath) |fp| {
         return Args{
             .path = try allocator.dupe(u8, fp),
             .time = time,
+            .verbose = verbose,
         };
     } else unreachable;
 }

@@ -38,9 +38,11 @@ pub fn main() !void {
             return;
         },
     };
-    printStmt(block) catch |err| {
-        try stderr.print("Error parsing main block statement: {!}\n", .{err});
-    };
+    if (input.verbose) {
+        printStmt(block) catch |err| {
+            try stderr.print("Error parsing main block statement: {!}\n", .{err});
+        };
+    }
 
     // Successful parsing
     t1 = std.time.nanoTimestamp();

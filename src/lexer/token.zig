@@ -86,29 +86,31 @@ pub const Token = struct {
 
     kind: TokenKind,
     value: []const u8,
+    allocator: std.mem.Allocator,
 
-    pub fn init(kind: TokenKind, value: []const u8) Self {
+    pub fn init(allocator: std.mem.Allocator, kind: TokenKind, value: []const u8) Self {
         return Self{
             .kind = kind,
             .value = value,
+            .allocator = allocator,
         };
     }
 
     pub fn debug(self: *Self) !void {
         const stdout = std.io.getStdOut().writer();
         if (self.isOneOfMany(@constCast(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING }))) {
-            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.kind), self.value });
+            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
         } else {
-            try stdout.print("{s} ()\n", .{try tokenKindString(self.kind)});
+            try stdout.print("{s} ()\n", .{try tokenKindString(self.allocator, self.kind)});
         }
     }
 
     pub fn debugRuntime(self: *const Self) !void {
         const stdout = std.io.getStdOut().writer();
         if (self.isOneOfManyRuntime(@constCast(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING }))) {
-            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.kind), self.value });
+            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
         } else {
-            try stdout.print("{s} ()\n", .{try tokenKindString(self.kind)});
+            try stdout.print("{s} ()\n", .{try tokenKindString(self.allocator, self.kind)});
         }
     }
 
@@ -153,9 +155,9 @@ pub const Token = struct {
     }
 };
 
-pub fn tokenKindString(kind: TokenKind) ![]const u8 {
+pub fn tokenKindString(allocator: std.mem.Allocator, kind: TokenKind) ![]const u8 {
     const tag = @tagName(kind);
-    var buffer = try std.heap.page_allocator.alloc(u8, tag.len);
+    var buffer = try allocator.alloc(u8, tag.len);
     for (tag, 0..) |c, i| {
         buffer[i] = std.ascii.toLower(c);
     }

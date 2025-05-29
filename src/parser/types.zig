@@ -68,7 +68,7 @@ pub fn parseType(p: *Parser, bp: BindingPower) !ast.Type {
 
     const nud_fn = type_nud_lu.get(token_kind) orelse
         @panic(std.fmt.allocPrintZ(p.allocator, "Type Parse Error: NUD Handler expected for token {s} ({d}/{d})\n", .{
-            try token.tokenKindString(token_kind),
+            try token.tokenKindString(p.allocator, token_kind),
             p.pos,
             p.tokens.items.len,
         }) catch unreachable);
@@ -80,7 +80,7 @@ pub fn parseType(p: *Parser, bp: BindingPower) !ast.Type {
 
         const led_fn = type_led_lu.get(next_kind) orelse
             @panic(std.fmt.allocPrintZ(p.allocator, "Type Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
-                try token.tokenKindString(next_kind),
+                try token.tokenKindString(p.allocator,next_kind),
                 p.pos,
                 p.tokens.items.len,
             }) catch unreachable);
