@@ -64,8 +64,8 @@ pub const Parser = struct {
                 return e;
             } else {
                 try stderr.print("Expected {s} but received {s} instead at token {d}/{d}\n", .{
-                    try token.tokenKindString(self.allocator,expected_kind),
-                    try token.tokenKindString(self.allocator,kind),
+                    try token.tokenKindString(self.allocator, expected_kind),
+                    try token.tokenKindString(self.allocator, kind),
                     self.pos,
                     self.tokens.items.len,
                 });
@@ -78,10 +78,10 @@ pub const Parser = struct {
     }
 };
 
-pub fn parse(allocator: std.mem.Allocator, source: []const u8) !ast.Stmt {
+pub fn parse(allocator: std.mem.Allocator, source: []const u8) !*ast.Stmt {
     const parseStmt = @import("stmt.zig").parseStmt;
     var body = std.ArrayList(*ast.Stmt).init(allocator);
-    const tokens = try tokenizer.tokenize(allocator,source);
+    const tokens = try tokenizer.tokenize(allocator, source);
     var parser = try Parser.init(allocator, tokens);
     defer parser.deinit();
 
@@ -92,9 +92,12 @@ pub fn parse(allocator: std.mem.Allocator, source: []const u8) !ast.Stmt {
         try body.append(stmt_box);
     }
 
-    return ast.Stmt{
+    const stmt_ptr = try allocator.create(ast.Stmt);
+    const block = ast.Stmt{
         .block = ast.BlockStmt{
             .body = body,
         },
     };
+    stmt_ptr.* = block;
+    return stmt_ptr;
 }

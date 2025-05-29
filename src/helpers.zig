@@ -83,7 +83,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     } else unreachable;
 }
 
-pub fn printStmt(stmt: ast.Stmt) !void {
+pub fn printStmt(stmt: *ast.Stmt) !void {
     const stdout = std.io.getStdOut().writer();
     for (stmt.block.body.items) |s| {
         switch (s.*) {

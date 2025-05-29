@@ -80,9 +80,9 @@ pub const Expr = union(enum) {
     array_literal: ArrayLiteral,
     new_expr: NewExpr,
 
-    pub fn print(self: Expr) anyerror!void {
+    pub fn print(self: *Expr) anyerror!void {
         const stdout = std.io.getStdOut().writer();
-        switch (self) {
+        switch (self.*) {
             .number => |n| try stdout.print("Number: {d}\n", .{n.value}),
             .string => |s| try stdout.print("String: \"{s}\"\n", .{s.value}),
             .symbol => |s| try stdout.print("Symbol: {s}\n", .{s.value}),
@@ -200,9 +200,9 @@ pub const Stmt = union(enum) {
     foreach_stmt: ForeachStmt,
     class_decl: ClassDeclarationStmt,
 
-    pub fn print(self: Stmt) anyerror!void {
+    pub fn print(self: *Stmt) anyerror!void {
         const stdout = std.io.getStdOut().writer();
-        switch (self) {
+        switch (self.*) {
             .block => |b| {
                 try stdout.print("BlockStmt:\n", .{});
                 for (b.body.items) |stmt| try stmt.print();
@@ -274,9 +274,9 @@ pub const Type = union(enum) {
     symbol: SymbolType,
     list: ListType,
 
-    pub fn print(self: Type) anyerror!void {
+    pub fn print(self: *Type) anyerror!void {
         const stdout = std.io.getStdOut().writer();
-        switch (self) {
+        switch (self.*) {
             .symbol => |s| try stdout.print("Type: symbol, value = {s}\n", .{s.value}),
             .list => |l| {
                 try stdout.print("Type: list of:\n", .{});

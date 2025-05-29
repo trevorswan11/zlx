@@ -10,8 +10,10 @@ pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
     var t1: i128 = undefined;
 
-    // const allocator = std.heap.page_allocator;
-    const allocator = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
     const input = getArgs(allocator) catch return;
 
     const stdout = std.io.getStdOut().writer();
@@ -39,6 +41,7 @@ pub fn main() !void {
             return;
         },
     };
+
     if (input.verbose) {
         printStmt(block) catch |err| {
             try stderr.print("Error parsing main block statement: {!}\n", .{err});
