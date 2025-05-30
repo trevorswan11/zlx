@@ -1,6 +1,8 @@
 const std = @import("std");
 
 const parser = @import("parser/parser.zig");
+const interpreter = @import("interpreter/environment.zig");
+
 const helpers = @import("helpers.zig");
 const getArgs = helpers.getArgs;
 const readFile = helpers.readFile;
@@ -42,6 +44,11 @@ pub fn main() !void {
         },
     };
     defer allocator.destroy(block);
+
+    var env = interpreter.Environment.init(allocator);
+    defer env.deinit();
+    const number = interpreter.evalStmt(block, &env) catch .nil;
+    try stdout.print("Statement Result: {s}\n", .{number.toString(allocator)});
 
     if (input.verbose) {
         printStmt(block) catch |err| {

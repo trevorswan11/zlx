@@ -1,0 +1,4 @@
+let nums = [1, 2, 3];
+foreach val in nums {
+    val;
+}
