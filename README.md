@@ -10,6 +10,6 @@ This project was made with the help of [tylerlaceby](https://www.youtube.com/@ty
 3. Build the binary with `zig build`. I used Zig 0.14.0, but other versions may work as well
 
 ### Running the Program
-- You can use the example language 'tests' using `zig build run -- examples`
+- You can use the example language 'tests' using `zig build run -- examples/<filename>`
 - You can parse your own input file by passing in the relative path as `zig build run -- <path>`
 - You can also run some tests that I wrote by using `zig build test`

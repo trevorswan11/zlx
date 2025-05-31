@@ -25,9 +25,33 @@ fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
                 else => error.TypeMismatch,
             };
         },
+        .MINUS => {
+            return switch (lhs) {
+                .number => |l| switch (rhs) {
+                    .number => Value{
+                        .number = l - rhs.number,
+                    },
+                    else => error.TypeMismatch,
+                },
+                else => error.TypeMismatch,
+            };
+        },
         .STAR => {
-            return Value{
-                .number = lhs.number * rhs.number,
+            return switch (lhs) {
+                .number => |l| switch (rhs) {
+                    .number => Value{ .number = l * rhs.number },
+                    else => error.TypeMismatch,
+                },
+                else => error.TypeMismatch,
+            };
+        },
+        .SLASH => {
+            return switch (lhs) {
+                .number => |l| switch (rhs) {
+                    .number => Value{ .number = l / rhs.number },
+                    else => error.TypeMismatch,
+                },
+                else => error.TypeMismatch,
             };
         },
         else => return error.UnknownOperator,
@@ -64,6 +88,40 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) !Value {
                 },
                 else => return error.InvalidAssignmentTarget,
             }
+        },
+        .range_expr => |r| {
+            const lower = try evalExpr(r.lower, env);
+            const upper = try evalExpr(r.upper, env);
+
+            if (lower != .number or upper != .number) {
+                return error.TypeMismatch;
+            }
+
+            var array = std.ArrayList(Value).init(env.allocator);
+            var i = lower.number;
+            while (i < upper.number) : (i += 1) {
+                try array.append(Value{ .number = i });
+            }
+
+            return Value{
+                .array = array,
+            };
+        },
+        .call => |c| {
+            const name_expr = c.method.*;
+            if (name_expr != .symbol) {
+                return error.InvalidCallTarget;
+            }
+
+            const fn_name = name_expr.symbol.value;
+            const builtins = @import("call_dispatch.zig").builtins;
+            inline for (builtins) |builtin| {
+                if (std.mem.eql(u8, fn_name, builtin.name)) {
+                    return try builtin.handler(env.allocator, c.arguments.items, env);
+                }
+            }
+
+            return error.UnknownFunction;
         },
         else => return error.UnimplementedExpr,
     }
@@ -103,14 +161,14 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) !Value {
             if (iterable != Value.array) return error.TypeMismatch;
 
             for (iterable.array.items, 0..) |item, i| {
-                try env.define(f.value, item);
+                var child_env = Environment.init(env.allocator, env);
+                try child_env.define(f.value, item);
                 if (f.index) {
-                    try env.define("index", Value{ .number = @floatFromInt(i) });
+                    try child_env.define("index", Value{ .number = @floatFromInt(i) });
                 }
 
                 for (f.body.items) |parsed| {
-                    const result = try evalStmt(parsed, env);
-                    std.debug.print("=> {s}\n", .{result.toString(env.allocator)});
+                    _ = try evalStmt(parsed, &child_env);
                 }
             }
 

@@ -52,9 +52,9 @@ pub const TokenKind = enum(u32) {
     PERCENT_EQUALS,
     NULLISH_ASSIGNMENT, // ??=
 
-    //Maths
+    //Math
     PLUS,
-    DASH,
+    MINUS,
     SLASH,
     STAR,
     PERCENT,

@@ -45,7 +45,7 @@ pub fn main() !void {
     };
     defer allocator.destroy(block);
 
-    var env = interpreter.Environment.init(allocator);
+    var env = interpreter.Environment.init(allocator, null);
     defer env.deinit();
     const number = interpreter.evalStmt(block, &env) catch .nil;
     try stdout.print("Statement Result: {s}\n", .{number.toString(allocator)});

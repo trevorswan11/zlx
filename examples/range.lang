@@ -1,0 +1,3 @@
+foreach val in 1..4 {
+    val;
+}

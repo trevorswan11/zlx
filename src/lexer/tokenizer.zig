@@ -193,7 +193,7 @@ pub const Lexer = struct {
         });
         try patterns.append(.{
             .regex = try Regex.compile(allocator, "-"),
-            .handler = try defaultHandler(allocator, .DASH, "-"),
+            .handler = try defaultHandler(allocator, .MINUS, "-"),
         });
         try patterns.append(.{
             .regex = try Regex.compile(allocator, "/"),

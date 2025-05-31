@@ -46,33 +46,43 @@ pub const EvalResult = union(enum) {
 pub const Environment = struct {
     const Self = @This();
 
-    table: std.StringHashMap(Value),
+    values: std.StringHashMap(Value),
     allocator: std.mem.Allocator,
+    parent: ?*Environment,
 
-    pub fn init(allocator: std.mem.Allocator) Self {
+    pub fn init(allocator: std.mem.Allocator, parent: ?*Environment) Self {
         return Environment{
-            .table = std.StringHashMap(Value).init(allocator),
+            .values = std.StringHashMap(Value).init(allocator),
             .allocator = allocator,
+            .parent = parent,
         };
     }
 
     pub fn deinit(self: *Self) void {
-        self.table.deinit();
+        self.values.deinit();
     }
 
     pub fn define(self: *Self, name: []const u8, value: Value) !void {
-        try self.table.put(name, value);
+        try self.values.put(name, value);
     }
 
     pub fn assign(self: *Self, name: []const u8, value: Value) !void {
-        if (self.table.contains(name)) {
-            try self.table.put(name, value);
+        if (self.values.contains(name)) {
+            try self.values.put(name, value);
+        } else if (self.parent) |p| {
+            try p.assign(name, value);
         } else {
             return error.UndefinedVariable;
         }
     }
 
     pub fn get(self: *Self, name: []const u8) !Value {
-        return self.table.get(name) orelse error.UndefinedValue;
+        if (self.values.get(name)) |val| {
+            return val;
+        } else if (self.parent) |p| {
+            return p.get(name);
+        } else {
+            return error.UndefinedValue;
+        }
     }
 };

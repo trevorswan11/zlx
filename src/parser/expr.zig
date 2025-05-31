@@ -25,10 +25,10 @@ pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
     if (lus.nud_lu.get(token_kind)) |nud_fn| {
         var left = try nud_fn(p);
 
-        while (lus.bp_lu.get(p.currentTokenKind()) != null and @intFromEnum(lus.bp_lu.get(p.currentTokenKind()).?) > @intFromEnum(bp)) {
+        while (lus.bp_lu.get(p.currentTokenKind()) != null and @intFromEnum(lus.bp_lu.get(p.currentTokenKind()).?) >= @intFromEnum(bp)) {
             token_kind = p.currentTokenKind();
             if (lus.led_lu.get(token_kind)) |led_fn| {
-                left = try led_fn(p, left, bp);
+                left = try led_fn(p, left, lus.bp_lu.get(p.currentTokenKind()).?);
             } else {
                 try stderr.print("Expr Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
                     try token.tokenKindString(p.allocator, token_kind),

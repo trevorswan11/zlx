@@ -1,0 +1,4 @@
+foreach val in 1..4 {
+    print(val);
+}
+print("Call Expressions!");

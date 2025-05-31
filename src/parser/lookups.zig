@@ -78,7 +78,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
 
     // Additive & Multiplicative
     try led(token.TokenKind.PLUS, .ADDITIVE, exprs.parseBinaryExpr);
-    try led(token.TokenKind.DASH, .ADDITIVE, exprs.parseBinaryExpr);
+    try led(token.TokenKind.MINUS, .ADDITIVE, exprs.parseBinaryExpr);
     try led(token.TokenKind.SLASH, .MULTIPLICATIVE, exprs.parseBinaryExpr);
     try led(token.TokenKind.STAR, .MULTIPLICATIVE, exprs.parseBinaryExpr);
     try led(token.TokenKind.PERCENT, .MULTIPLICATIVE, exprs.parseBinaryExpr);
@@ -90,7 +90,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
 
     // Unary/Prefix
     try nud(token.TokenKind.TYPEOF, .UNARY, exprs.parsePrefixExpr);
-    try nud(token.TokenKind.DASH, .UNARY, exprs.parsePrefixExpr);
+    try nud(token.TokenKind.MINUS, .UNARY, exprs.parsePrefixExpr);
     try nud(token.TokenKind.NOT, .UNARY, exprs.parsePrefixExpr);
     try nud(token.TokenKind.OPEN_BRACKET, .PRIMARY, exprs.parseArrayLiteralExpr);
 
@@ -130,4 +130,8 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try stmt(token.TokenKind.IMPORT, stmts.parseImportStmt);
     try stmt(token.TokenKind.FOREACH, stmts.parseForEachStmt);
     try stmt(token.TokenKind.CLASS, stmts.parseClassDeclStmt);
+}
+
+pub fn rightBindingPower(bp: BindingPower) BindingPower {
+    return @enumFromInt(@intFromEnum(bp) - 1);
 }
