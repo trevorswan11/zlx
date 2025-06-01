@@ -32,8 +32,9 @@ class DirectoryReader {
   }
 }
 
-fn are(you: sure): int {
+fn are(you: sure, pretty: sure): int {
   let cecil: int = 1;
+  let omni: sure = you - pretty;
   cecil;
 }
 

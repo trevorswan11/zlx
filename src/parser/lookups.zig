@@ -77,6 +77,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try led(.NOT_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
 
     // Additive & Multiplicative
+    try led(.PLUS, .ADDITIVE, exprs.parseBinaryExpr);
     try led(.MINUS, .ADDITIVE, exprs.parseBinaryExpr);
     try nud(.MINUS_MINUS, .UNARY, exprs.parsePrefixExpr);
     try nud(.PLUS_PLUS, .UNARY, exprs.parsePrefixExpr);

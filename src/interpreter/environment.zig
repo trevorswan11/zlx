@@ -1,5 +1,6 @@
 const std = @import("std");
 
+const ast = @import("../ast/ast.zig");
 pub const eval = @import("eval.zig");
 pub const evalExpr = eval.evalExpr;
 pub const evalStmt = eval.evalStmt;
@@ -9,6 +10,11 @@ pub const Value = union(enum) {
     string: []const u8,
     boolean: bool,
     array: std.ArrayList(Value),
+    function: struct {
+        parameters: []const []const u8,
+        body: std.ArrayList(*ast.Stmt),
+        closure: *Environment,
+    },
     nil,
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
@@ -27,12 +33,31 @@ pub const Value = union(enum) {
         return try str_builder.toOwnedSlice();
     }
 
+    fn stringFunction(parameters: []const []const u8, body: std.ArrayList(*ast.Stmt), allocator: std.mem.Allocator) ![]const u8 {
+        var str_builder = std.ArrayList(u8).init(allocator);
+        defer str_builder.deinit();
+
+        try str_builder.appendSlice("FN Parameters:\n");
+        for (parameters) |param| {
+            const formatted = try std.fmt.allocPrint(allocator, "  {s}\n", .{param});
+            defer allocator.free(formatted);
+            try str_builder.appendSlice(formatted);
+        }
+        try str_builder.appendSlice("\nFN Body Len: ");
+        const len_str = try std.fmt.allocPrint(allocator, "{d}\n", .{body.items.len});
+        defer allocator.free(len_str);
+        try str_builder.appendSlice(len_str);
+
+        return try str_builder.toOwnedSlice();
+    }
+
     pub fn toString(self: Value, allocator: std.mem.Allocator) []const u8 {
         return switch (self) {
             .number => |n| std.fmt.allocPrint(allocator, "{d}", .{n}) catch "NaN",
             .string => |s| s,
             .boolean => |b| if (b) "true" else "false",
             .array => |a| stringArray(a, allocator) catch "[]",
+            .function => |f| stringFunction(f.parameters, f.body, allocator) catch "INVALID_FN",
             .nil => "nil",
         };
     }

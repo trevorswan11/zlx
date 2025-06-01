@@ -19,7 +19,9 @@ fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
                     else => error.TypeMismatch,
                 },
                 .string => |l| switch (rhs) {
-                    .string => Value{ .string = try std.fmt.allocPrint(op.allocator, "{s}{s}", .{ l, rhs.string }) },
+                    .string => Value{
+                        .string = try std.fmt.allocPrint(op.allocator, "{s}{s}", .{ l, rhs.string }),
+                    },
                     else => error.TypeMismatch,
                 },
                 else => error.TypeMismatch,
@@ -39,7 +41,9 @@ fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
         .STAR => {
             return switch (lhs) {
                 .number => |l| switch (rhs) {
-                    .number => Value{ .number = l * rhs.number },
+                    .number => Value{
+                        .number = l * rhs.number,
+                    },
                     else => error.TypeMismatch,
                 },
                 else => error.TypeMismatch,
@@ -48,7 +52,9 @@ fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
         .SLASH => {
             return switch (lhs) {
                 .number => |l| switch (rhs) {
-                    .number => Value{ .number = l / rhs.number },
+                    .number => Value{
+                        .number = l / rhs.number,
+                    },
                     else => error.TypeMismatch,
                 },
                 else => error.TypeMismatch,
@@ -58,11 +64,11 @@ fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
     }
 }
 
-pub fn evalExpr(expr: *ast.Expr, env: *Environment) !Value {
+pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
     switch (expr.*) {
-        .number => |n| return Value{ .number = n.value },
-        .string => |s| return Value{ .string = s.value },
-        .symbol => |s| return try env.get(s.value),
+        .number => |*n| return Value{ .number = n.value },
+        .string => |*s| return Value{ .string = s.value },
+        .symbol => |*s| return try env.get(s.value),
         .array_literal => |a| {
             var array = std.ArrayList(Value).init(env.allocator);
             for (a.contents.items) |item_expr| {
@@ -73,12 +79,12 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) !Value {
                 .array = array,
             };
         },
-        .binary => |b| {
+        .binary => |*b| {
             const left = try evalExpr(b.left, env);
             const right = try evalExpr(b.right, env);
             return evalBinary(b.operator, left, right);
         },
-        .assignment => |a| {
+        .assignment => |*a| {
             const value = try evalExpr(a.assigned_value, env);
 
             switch (a.assignee.*) {
@@ -89,7 +95,7 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) !Value {
                 else => return error.InvalidAssignmentTarget,
             }
         },
-        .range_expr => |r| {
+        .range_expr => |*r| {
             const lower = try evalExpr(r.lower, env);
             const upper = try evalExpr(r.upper, env);
 
@@ -100,39 +106,66 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) !Value {
             var array = std.ArrayList(Value).init(env.allocator);
             var i = lower.number;
             while (i < upper.number) : (i += 1) {
-                try array.append(Value{ .number = i });
+                try array.append(Value{
+                    .number = i,
+                });
             }
 
             return Value{
                 .array = array,
             };
         },
-        .call => |c| {
-            const name_expr = c.method.*;
-            if (name_expr != .symbol) {
-                return error.InvalidCallTarget;
-            }
+        .call => |*c| {
+            if (c.method.* == .symbol) {
+                const fn_name = c.method.symbol.value;
 
-            const fn_name = name_expr.symbol.value;
-            const builtins = @import("call_dispatch.zig").builtins;
-            inline for (builtins) |builtin| {
-                if (std.mem.eql(u8, fn_name, builtin.name)) {
-                    return try builtin.handler(env.allocator, c.arguments.items, env);
+                inline for (@import("call_dispatch.zig").builtins) |builtin| {
+                    if (std.mem.eql(u8, fn_name, builtin.name)) {
+                        return try builtin.handler(env.allocator, c.arguments.items, env);
+                    }
                 }
             }
 
-            return error.UnknownFunction;
+            const stderr = std.io.getStdErr().writer();
+            const callee = evalExpr(c.method, env) catch |err| {
+                try stderr.print("Error evaluating call target: {any}\n", .{err});
+                return err;
+            };
+
+            switch (callee) {
+                .function => |func| {
+                    if (func.parameters.len != c.arguments.items.len) {
+                        return error.ArityMismatch;
+                    }
+
+                    var call_env = Environment.init(env.allocator, func.closure);
+                    for (func.parameters, 0..) |param, i| {
+                        const arg_val = try evalExpr(c.arguments.items[i], env);
+                        try call_env.define(param, arg_val);
+                    }
+
+                    var result: Value = .nil;
+                    for (func.body.items) |stmt| {
+                        result = evalStmt(stmt, &call_env) catch return Value.nil;
+                    }
+
+                    return result;
+                },
+                else => return error.InvalidCallTarget,
+            }
         },
-        .prefix => |p| {
+        .prefix => |*p| {
             if (p.operator.kind == .PLUS_PLUS or p.operator.kind == .MINUS_MINUS) {
-                if (p.right.* != .symbol)
+                if (p.right.* != .symbol) {
                     return error.InvalidPrefixTarget;
+                }
 
                 const name = p.right.symbol.value;
                 var val = try env.get(name);
 
-                if (val != .number)
+                if (val != .number) {
                     return error.UnsupportedPrefixOperand;
+                }
 
                 if (p.operator.kind == .PLUS_PLUS) {
                     val.number += 1;
@@ -146,16 +179,45 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) !Value {
 
             const right = try evalExpr(p.right, env);
             return switch (p.operator.kind) {
-                .MINUS => Value{ .number = -right.number },
-                .NOT => Value{ .boolean = !right.boolean },
+                .MINUS => Value{
+                    .number = -right.number,
+                },
+                .NOT => Value{
+                    .boolean = !right.boolean,
+                },
                 else => error.UnsupportedPrefixOperator,
             };
         },
-        else => return error.UnimplementedExpr,
+        .member => |*m| {
+            _ = m;
+            return error.UnimplementedExpr;
+        },
+        .computed => |*c| {
+            _ = c;
+            return error.UnimplementedExpr;
+        },
+        .function_expr => |*f| {
+            const param_names = try env.allocator.alloc([]const u8, f.parameters.items.len);
+            for (f.parameters.items, 0..) |p, i| {
+                param_names[i] = p.name;
+            }
+
+            return Value{
+                .function = .{
+                    .body = f.body,
+                    .parameters = param_names,
+                    .closure = env,
+                },
+            };
+        },
+        .new_expr => |*e| {
+            _ = e;
+            return error.UnimplementedExpr;
+        },
     }
 }
 
-pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) !Value {
+pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
     switch (stmt.*) {
         .var_decl => |*v| {
             const val = if (v.assigned_value) |a| try evalExpr(a, env) else Value.nil;
@@ -202,6 +264,48 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) !Value {
 
             return Value.nil;
         },
-        else => return error.UnimplementedStmt,
+        .class_decl => |*c| {
+            _ = c;
+            return error.UnimplementedStmt;
+        },
+        .function_decl => |*f| {
+            const param_names = try env.allocator.alloc([]const u8, f.parameters.items.len);
+            for (f.parameters.items, 0..) |p, i| {
+                param_names[i] = p.name;
+            }
+
+            const func_val = Value{
+                .function = .{
+                    .parameters = param_names,
+                    .body = f.body,
+                    .closure = env,
+                },
+            };
+
+            try env.define(f.name, func_val);
+            return Value.nil;
+        },
+        .import_stmt => |*i| {
+            const allocator = env.allocator;
+            const path = i.from;
+            const stderr = std.io.getStdErr().writer();
+
+            const file = std.fs.cwd().openFile(path, .{}) catch |err| {
+                try stderr.print("Error Opening Import: {s} from {s}\n", .{i.name, i.from});
+                try stderr.print("{!}\n", .{err});
+                return err;
+            };
+            defer file.close();
+
+            // Parse the file using our parser, 10 MB max file size
+            const contents = try file.readToEndAlloc(allocator, 10 * 1024 * 1024);
+
+            const parser = @import("../parser/parser.zig");
+            const parse = parser.parse;
+
+            const ast_block = try parse(allocator, contents);
+
+            return try evalStmt(ast_block, env);
+        },
     }
 }

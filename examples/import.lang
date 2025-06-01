@@ -1,0 +1,3 @@
+print("importing and immediately invoking add...");
+import add from "examples/fn.lang";
+print(add(2, 3));

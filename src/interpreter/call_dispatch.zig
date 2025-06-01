@@ -24,9 +24,10 @@ pub const builtins = [_]Builtin{
 };
 
 fn builtinPrint(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const stdout = std.io.getStdOut().writer();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
-        std.debug.print("{s}\n", .{val.toString(allocator)});
+        try stdout.print("{s}\n", .{val.toString(allocator)});
     }
     return Value.nil;
 }
@@ -36,8 +37,8 @@ fn builtinLen(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
     if (args.len != 1) return error.ArgumentCountMismatch;
     const val = try eval.evalExpr(args[0], env);
     return switch (val) {
-        .array => |a| Value{ .number = @floatFromInt(a.items.len) },
-        .string => |s| Value{ .number = @floatFromInt(s.len) },
+        .array => |a| Value{ .number = @floatFromInt(a.items.len), },
+        .string => |s| Value{ .number = @floatFromInt(s.len), },
         else => error.TypeMismatch,
     };
 }

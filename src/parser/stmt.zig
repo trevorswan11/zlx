@@ -217,12 +217,16 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
 pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     _ = p.advance();
     var import_from: []const u8 = undefined;
-    const import_name = (try p.expect(.IDENTIFIER)).value;
+    const import_type: ?token.Token = p.expect(.IDENTIFIER) catch null;
+    const import_name = if (import_type) |tok| tok.value else "*"; // TODO: either identifier or star is allowed
 
     if (p.currentTokenKind() == .FROM) {
         _ = p.advance();
         import_from = (try p.expect(.STRING)).value;
     } else {
+        if (std.mem.eql(u8, import_name, "*")) {
+            return error.MissingWildcardFile;
+        }
         import_from = import_name;
     }
 
