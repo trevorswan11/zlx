@@ -123,6 +123,34 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) !Value {
 
             return error.UnknownFunction;
         },
+        .prefix => |p| {
+            if (p.operator.kind == .PLUS_PLUS or p.operator.kind == .MINUS_MINUS) {
+                if (p.right.* != .symbol)
+                    return error.InvalidPrefixTarget;
+
+                const name = p.right.symbol.value;
+                var val = try env.get(name);
+
+                if (val != .number)
+                    return error.UnsupportedPrefixOperand;
+
+                if (p.operator.kind == .PLUS_PLUS) {
+                    val.number += 1;
+                } else if (p.operator.kind == .MINUS_MINUS) {
+                    val.number -= 1;
+                }
+
+                try env.assign(name, val);
+                return val;
+            }
+
+            const right = try evalExpr(p.right, env);
+            return switch (p.operator.kind) {
+                .MINUS => Value{ .number = -right.number },
+                .NOT => Value{ .boolean = !right.boolean },
+                else => error.UnsupportedPrefixOperator,
+            };
+        },
         else => return error.UnimplementedExpr,
     }
 }

@@ -56,53 +56,54 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     stmt_lu = std.AutoHashMap(token.TokenKind, StmtHandler).init(allocator);
 
     // Assignment
-    try led(token.TokenKind.ASSIGNMENT, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(token.TokenKind.PLUS_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(token.TokenKind.MINUS_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(token.TokenKind.SLASH_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(token.TokenKind.STAR_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(token.TokenKind.PERCENT_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.ASSIGNMENT, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.PLUS_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.MINUS_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.SLASH_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.STAR_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.PERCENT_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
 
     // Logical
-    try led(token.TokenKind.AND, .LOGICAL, exprs.parseBinaryExpr);
-    try led(token.TokenKind.OR, .LOGICAL, exprs.parseBinaryExpr);
-    try led(token.TokenKind.DOT_DOT, .LOGICAL, exprs.parseRangeExpr);
+    try led(.AND, .LOGICAL, exprs.parseBinaryExpr);
+    try led(.OR, .LOGICAL, exprs.parseBinaryExpr);
+    try led(.DOT_DOT, .LOGICAL, exprs.parseRangeExpr);
 
     // Relational
-    try led(token.TokenKind.LESS, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(token.TokenKind.LESS_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(token.TokenKind.GREATER, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(token.TokenKind.GREATER_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(token.TokenKind.EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(token.TokenKind.NOT_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
+    try led(.LESS, .RELATIONAL, exprs.parseBinaryExpr);
+    try led(.LESS_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
+    try led(.GREATER, .RELATIONAL, exprs.parseBinaryExpr);
+    try led(.GREATER_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
+    try led(.EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
+    try led(.NOT_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
 
     // Additive & Multiplicative
-    try led(token.TokenKind.PLUS, .ADDITIVE, exprs.parseBinaryExpr);
-    try led(token.TokenKind.MINUS, .ADDITIVE, exprs.parseBinaryExpr);
-    try led(token.TokenKind.SLASH, .MULTIPLICATIVE, exprs.parseBinaryExpr);
-    try led(token.TokenKind.STAR, .MULTIPLICATIVE, exprs.parseBinaryExpr);
-    try led(token.TokenKind.PERCENT, .MULTIPLICATIVE, exprs.parseBinaryExpr);
+    try led(.MINUS, .ADDITIVE, exprs.parseBinaryExpr);
+    try nud(.MINUS_MINUS, .UNARY, exprs.parsePrefixExpr);
+    try nud(.PLUS_PLUS, .UNARY, exprs.parsePrefixExpr);
+    try led(.SLASH, .MULTIPLICATIVE, exprs.parseBinaryExpr);
+    try led(.STAR, .MULTIPLICATIVE, exprs.parseBinaryExpr);
+    try led(.PERCENT, .MULTIPLICATIVE, exprs.parseBinaryExpr);
 
     // Literals & Symbols
-    try nud(token.TokenKind.NUMBER, .PRIMARY, exprs.parsePrimaryExpr);
-    try nud(token.TokenKind.STRING, .PRIMARY, exprs.parsePrimaryExpr);
-    try nud(token.TokenKind.IDENTIFIER, .PRIMARY, exprs.parsePrimaryExpr);
+    try nud(.NUMBER, .PRIMARY, exprs.parsePrimaryExpr);
+    try nud(.STRING, .PRIMARY, exprs.parsePrimaryExpr);
+    try nud(.IDENTIFIER, .PRIMARY, exprs.parsePrimaryExpr);
 
     // Unary/Prefix
-    try nud(token.TokenKind.TYPEOF, .UNARY, exprs.parsePrefixExpr);
-    try nud(token.TokenKind.MINUS, .UNARY, exprs.parsePrefixExpr);
-    try nud(token.TokenKind.NOT, .UNARY, exprs.parsePrefixExpr);
-    try nud(token.TokenKind.OPEN_BRACKET, .PRIMARY, exprs.parseArrayLiteralExpr);
+    try nud(.TYPEOF, .UNARY, exprs.parsePrefixExpr);
+    try nud(.MINUS, .UNARY, exprs.parsePrefixExpr);
+    try nud(.NOT, .UNARY, exprs.parsePrefixExpr);
+    try nud(.OPEN_BRACKET, .PRIMARY, exprs.parseArrayLiteralExpr);
 
     // Member / Call
-    try led(token.TokenKind.DOT, .MEMBER, exprs.parseMemberExpr);
-    try led(token.TokenKind.OPEN_BRACKET, .MEMBER, exprs.parseMemberExpr);
-    try led(token.TokenKind.OPEN_PAREN, .CALL, exprs.parseCallExpr);
+    try led(.DOT, .MEMBER, exprs.parseMemberExpr);
+    try led(.OPEN_BRACKET, .MEMBER, exprs.parseMemberExpr);
+    try led(.OPEN_PAREN, .CALL, exprs.parseCallExpr);
 
     // Grouping / Functions
-    try nud(token.TokenKind.OPEN_PAREN, .DEFAULT_BP, exprs.parseGroupingExpr);
-    try nud(token.TokenKind.FN, .DEFAULT_BP, exprs.parseFnExpr);
-    try nud(token.TokenKind.NEW, .DEFAULT_BP, struct {
+    try nud(.OPEN_PAREN, .DEFAULT_BP, exprs.parseGroupingExpr);
+    try nud(.FN, .DEFAULT_BP, exprs.parseFnExpr);
+    try nud(.NEW, .DEFAULT_BP, struct {
         pub fn afn(p: *Parser) anyerror!ast.Expr {
             _ = p.advance();
             const inst = try exprs.parseExpr(p, .DEFAULT_BP);
@@ -122,14 +123,14 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     }.afn);
 
     // Statements
-    try stmt(token.TokenKind.OPEN_CURLY, stmts.parseBlockStmt);
-    try stmt(token.TokenKind.LET, stmts.parseVarDeclStmt);
-    try stmt(token.TokenKind.CONST, stmts.parseVarDeclStmt);
-    try stmt(token.TokenKind.FN, stmts.parseFnDeclaration);
-    try stmt(token.TokenKind.IF, stmts.parseIfStmt);
-    try stmt(token.TokenKind.IMPORT, stmts.parseImportStmt);
-    try stmt(token.TokenKind.FOREACH, stmts.parseForEachStmt);
-    try stmt(token.TokenKind.CLASS, stmts.parseClassDeclStmt);
+    try stmt(.OPEN_CURLY, stmts.parseBlockStmt);
+    try stmt(.LET, stmts.parseVarDeclStmt);
+    try stmt(.CONST, stmts.parseVarDeclStmt);
+    try stmt(.FN, stmts.parseFnDeclaration);
+    try stmt(.IF, stmts.parseIfStmt);
+    try stmt(.IMPORT, stmts.parseImportStmt);
+    try stmt(.FOREACH, stmts.parseForEachStmt);
+    try stmt(.CLASS, stmts.parseClassDeclStmt);
 }
 
 pub fn rightBindingPower(bp: BindingPower) BindingPower {

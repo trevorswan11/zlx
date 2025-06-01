@@ -1,0 +1,12 @@
+let a = 5;
+let b = --a;
+print("minus minus:");
+print(b);
+let c = ++a;
+print("plus plus:");
+print(c);
+print("a");
+print(a);
+
+print("nested:");
+print(++a);
