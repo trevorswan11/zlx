@@ -30,10 +30,11 @@ pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
             if (lus.led_lu.get(token_kind)) |led_fn| {
                 left = try led_fn(p, left, bp);
             } else {
-                try stderr.print("Expr Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
+                try stderr.print("Expr Parse Error: LED Handler expected for token {s} ({d}/{d}) @ Line {d}\n", .{
                     try token.tokenKindString(p.allocator, token_kind),
                     p.pos,
                     p.tokens.items.len,
+                    p.tokens.items[p.pos].line,
                 });
                 try p.currentToken().debugRuntime();
                 return error.ExpectedLEDHandler;
@@ -42,10 +43,11 @@ pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
 
         return left;
     } else {
-        try stderr.print("Expr Parse Error: NUD Handler expected for token {s} ({d}/{d})\n", .{
+        try stderr.print("Expr Parse Error: NUD Handler expected for token {s} ({d}/{d}) @ Line {d}\n", .{
             try token.tokenKindString(p.allocator, token_kind),
             p.pos,
             p.tokens.items.len,
+            p.tokens.items[p.pos].line,
         });
         try p.currentToken().debugRuntime();
         return error.ExpectedNUDHandler;
@@ -92,10 +94,11 @@ pub fn parseBinaryExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) 
     const stderr = std.io.getStdErr().writer();
     const operator_token = p.advance();
     const operator_bp = lus.bp_lu.get(operator_token.kind) orelse {
-        try stderr.print("No binding power associated with operator: {s} at token {d}/{d}\n", .{
+        try stderr.print("No binding power associated with operator: {s} at token {d}/{d} @ Line {d}\n", .{
             try token.tokenKindString(p.allocator, operator_token.kind),
             p.pos,
             p.tokens.items.len,
+            p.tokens.items[p.pos].line,
         });
         try p.currentToken().debugRuntime();
         try operator_token.debugRuntime();
@@ -139,10 +142,11 @@ pub fn parsePrimaryExpr(p: *parser.Parser) !ast.Expr {
             };
         },
         else => {
-            try stderr.print("Cannot create Primary Expr from {s} at token {d}/{d}\n", .{
+            try stderr.print("Cannot create Primary Expr from {s} at token {d}/{d} @ Line {d}\n", .{
                 try token.tokenKindString(p.allocator, p.currentTokenKind()),
                 p.pos,
                 p.tokens.items.len,
+                p.tokens.items[p.pos].line,
             });
             try p.currentToken().debugRuntime();
             return error.PrimaryExprParse;
@@ -230,6 +234,38 @@ pub fn parseFnExpr(p: *parser.Parser) !ast.Expr {
             .parameters = func_info.parameters,
             .return_type = func_info.return_type,
             .body = func_info.body,
+        },
+    };
+}
+
+pub fn parseObjectLiteral(p: *parser.Parser) !ast.Expr {
+    _ = p.advance();
+    var entries = std.ArrayList(*ast.ObjectEntry).init(p.allocator);
+
+    while (p.currentTokenKind() != .CLOSE_CURLY) {
+        const key_token = try p.expect(.IDENTIFIER);
+        _ = try p.expect(.COLON);
+        const value_expr = try parseExpr(p, .DEFAULT_BP);
+
+        const obj_ptr = try p.allocator.create(ast.ObjectEntry);
+        obj_ptr.* = ast.ObjectEntry{
+            .key = key_token.value,
+            .value = try boxExpr(p, value_expr),
+        };
+
+        try entries.append(obj_ptr);
+
+        if (p.match(.COMMA) or p.match(.SEMI_COLON)) {
+            _ = p.advance();
+        } else if (p.currentTokenKind() != .CLOSE_CURLY) {
+            return error.ExpectedCommaOrCloseCurly;
+        }
+    }
+
+    _ = try p.expect(.CLOSE_CURLY);
+    return ast.Expr{
+        .object = ast.ObjectExpr{
+            .entries = entries,
         },
     };
 }

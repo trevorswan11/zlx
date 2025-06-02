@@ -1,0 +1,3 @@
+let obj = { foo: 123 };
+print(obj.foo);
+print(obj["foo"]);

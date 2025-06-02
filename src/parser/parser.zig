@@ -40,6 +40,10 @@ pub const Parser = struct {
         return self.currentToken().kind;
     }
 
+    pub fn match(self: *Parser, kind: token.TokenKind) bool {
+        return self.currentTokenKind() == kind;
+    }
+
     pub fn advance(self: *Self) token.Token {
         const tok = self.currentToken();
         self.pos += 1;
@@ -60,11 +64,12 @@ pub const Parser = struct {
         const kind = tok.kind;
 
         if (kind != expected_kind) {
-            try stderr.print("Expected {s} but received {s} instead at token {d}/{d}\n", .{
+            try stderr.print("Expected {s} but received {s} instead at token {d}/{d} @ Line {d}\n", .{
                 try token.tokenKindString(self.allocator, expected_kind),
                 try token.tokenKindString(self.allocator, kind),
                 self.pos,
                 self.tokens.items.len,
+                self.tokens.items[self.pos].line,
             });
             try self.currentToken().debugRuntime();
             if (err) |e| {

@@ -87,17 +87,20 @@ pub const Token = struct {
     kind: TokenKind,
     value: []const u8,
     allocator: std.mem.Allocator,
+    line: usize,
 
-    pub fn init(allocator: std.mem.Allocator, kind: TokenKind, value: []const u8) Self {
+    pub fn init(allocator: std.mem.Allocator, kind: TokenKind, value: []const u8, line: usize) Self {
         return Self{
             .kind = kind,
             .value = value,
             .allocator = allocator,
+            .line = line,
         };
     }
 
     pub fn debug(self: *Self) !void {
         const stdout = std.io.getStdOut().writer();
+        try stdout.print("Token Line  #: {d}\n", .{self.line});
         if (self.isOneOfMany(@constCast(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING }))) {
             try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
         } else {
@@ -107,6 +110,7 @@ pub const Token = struct {
 
     pub fn debugRuntime(self: *const Self) !void {
         const stdout = std.io.getStdOut().writer();
+        try stdout.print("Tokenization Error Near Line: {d}\n", .{self.line});
         if (self.isOneOfManyRuntime(@constCast(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING }))) {
             try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
         } else {

@@ -47,8 +47,11 @@ pub fn main() !void {
 
     var env = interpreter.Environment.init(allocator, null);
     defer env.deinit();
-    const number = interpreter.evalStmt(block, &env) catch .nil;
-    try stdout.print("Statement Result: {s}\n", .{number.toString(allocator)});
+    const number = interpreter.evalStmt(block, &env) catch |err| blk: {
+        try stderr.print("Statement Evaluation Error: {!}\n", .{err});
+        break :blk .nil;
+    };
+    try stdout.print("Statement Evaluation Result: {s}\n", .{number.toString(allocator)});
 
     if (input.verbose) {
         printStmt(block) catch |err| {

@@ -7,18 +7,18 @@ const ast = @import("../ast/ast.zig");
 const Environment = environment.Environment;
 const Value = environment.Value;
 
-const BuiltinHandler = *const fn (
+const BuiltinFnHandler = *const fn (
     allocator: std.mem.Allocator,
     args: []const *ast.Expr,
     env: *Environment,
 ) anyerror!Value;
 
-const Builtin = struct {
+const BuiltinFn = struct {
     name: []const u8,
-    handler: BuiltinHandler,
+    handler: BuiltinFnHandler,
 };
 
-pub const builtins = [_]Builtin{
+pub const builtin_fns = [_]BuiltinFn{
     .{ .name = "print", .handler = builtinPrint },
     .{ .name = "len", .handler = builtinLen },
 };
@@ -37,8 +37,42 @@ fn builtinLen(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
     if (args.len != 1) return error.ArgumentCountMismatch;
     const val = try eval.evalExpr(args[0], env);
     return switch (val) {
-        .array => |a| Value{ .number = @floatFromInt(a.items.len), },
-        .string => |s| Value{ .number = @floatFromInt(s.len), },
+        .array => |a| Value{
+            .number = @floatFromInt(a.items.len),
+        },
+        .string => |s| Value{
+            .number = @floatFromInt(s.len),
+        },
         else => error.TypeMismatch,
     };
+}
+
+const BuiltinModuleHandler = *const fn (
+    allocator: std.mem.Allocator,
+) anyerror!Value;
+
+const BuiltinModule = struct {
+    name: []const u8,
+    loader: BuiltinModuleHandler,
+};
+
+pub const builtin_modules = [_]BuiltinModule{
+    .{ .name = "fs", .loader = builtinFsMod },
+    .{ .name = "time", .loader = builtinTimeMod },
+    .{ .name = "path", .loader = builtinPathMod },
+};
+
+fn builtinFsMod(allocator: std.mem.Allocator) !Value {
+    _ = allocator;
+    return Value.nil;
+}
+
+fn builtinTimeMod(allocator: std.mem.Allocator) !Value {
+    _ = allocator;
+    return Value.nil;
+}
+
+fn builtinPathMod(allocator: std.mem.Allocator) !Value {
+    _ = allocator;
+    return Value.nil;
 }

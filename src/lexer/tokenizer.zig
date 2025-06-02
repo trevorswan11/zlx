@@ -255,7 +255,7 @@ pub fn tokenize(allocator: std.mem.Allocator, source: []const u8) !std.ArrayList
         }
     }
 
-    const tok = Token.init(allocator, .EOF, "EOF");
+    const tok = Token.init(allocator, .EOF, "EOF", lex.line);
     try lex.push(tok);
     return lex.tokens;
 }
@@ -266,7 +266,7 @@ const DefaultHandlerCtx = struct {
 
     pub fn call(ctx: *const anyopaque, lex: *Lexer, _: *Regex) LexerError!void {
         const self: *const DefaultHandlerCtx = @alignCast(@ptrCast(ctx));
-        try lex.push(Token.init(lex.allocator, self.kind, self.value));
+        try lex.push(Token.init(lex.allocator, self.kind, self.value, lex.line));
         lex.advanceN(self.value.len);
     }
 };
@@ -314,7 +314,7 @@ fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
         const span = caps.boundsAt(0).?;
         const matched = text[(span.lower + 1)..(span.upper - 1)];
-        const tok = Token.init(lex.allocator, .STRING, matched);
+        const tok = Token.init(lex.allocator, .STRING, matched, lex.line);
         try lex.push(tok);
         lex.advanceN(matched.len + 2);
     }
@@ -327,7 +327,7 @@ fn numberHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
         const span = caps.boundsAt(0).?;
         const matched = text[span.lower..span.upper];
-        const tok = Token.init(lex.allocator, .NUMBER, matched);
+        const tok = Token.init(lex.allocator, .NUMBER, matched, lex.line);
         try lex.push(tok);
         lex.advanceN(matched.len);
     }
@@ -343,7 +343,7 @@ fn symbolHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
         const reserved = try Token.getReservedMap(lex.allocator);
         const kind: TokenKind = reserved.get(word) orelse .IDENTIFIER;
-        const tok = Token.init(lex.allocator, kind, word);
+        const tok = Token.init(lex.allocator, kind, word, lex.line);
         try lex.push(tok);
         lex.advanceN(word.len);
     }
@@ -355,6 +355,7 @@ fn skipHandler(lex: *Lexer, regex: *Regex) LexerError!void {
         defer @constCast(&caps).deinit();
         const span = caps.boundsAt(0).?;
         lex.advanceN(span.upper);
+        lex.line += countNewlines(text[span.lower..span.upper]);
     }
 }
 
@@ -364,6 +365,16 @@ fn commentHandler(lex: *Lexer, regex: *Regex) LexerError!void {
         defer @constCast(&caps).deinit();
         const span = caps.boundsAt(0).?;
         lex.advanceN(span.upper);
-        lex.line += 1;
+        if (text[span.upper - 1] == '\n') {
+            lex.line += 1;
+        }
     }
+}
+
+fn countNewlines(slice: []const u8) usize {
+    var count: usize = 0;
+    for (slice) |c| {
+        if (c == '\n') count += 1;
+    }
+    return count;
 }

@@ -96,6 +96,9 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try nud(.NOT, .UNARY, exprs.parsePrefixExpr);
     try nud(.OPEN_BRACKET, .PRIMARY, exprs.parseArrayLiteralExpr);
 
+    // Object Literal
+    try nud(.OPEN_CURLY, .PRIMARY, exprs.parseObjectLiteral);
+
     // Member / Call
     try led(.DOT, .MEMBER, exprs.parseMemberExpr);
     try led(.OPEN_BRACKET, .MEMBER, exprs.parseMemberExpr);

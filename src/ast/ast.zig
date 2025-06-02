@@ -65,6 +65,15 @@ pub const NewExpr = struct {
     instantiation: *CallExpr,
 };
 
+pub const ObjectExpr = struct {
+    entries: std.ArrayList(*ObjectEntry),
+};
+
+pub const ObjectEntry = struct {
+    key: []const u8,
+    value: *Expr,
+};
+
 pub const Expr = union(enum) {
     number: NumberExpr,
     string: StringExpr,
@@ -79,6 +88,7 @@ pub const Expr = union(enum) {
     function_expr: FunctionExpr,
     array_literal: ArrayLiteral,
     new_expr: NewExpr,
+    object: ObjectExpr,
 
     pub fn print(self: *Expr) anyerror!void {
         const stdout = std.io.getStdOut().writer();
@@ -138,6 +148,13 @@ pub const Expr = union(enum) {
                 try stdout.print("NewExpr:\n", .{});
                 try n.instantiation.method.print();
                 for (n.instantiation.arguments.items) |arg| try arg.print();
+            },
+            .object => |obj| {
+                try stdout.print("ObjectExpr:\n", .{});
+                for (obj.entries.items) |entry| {
+                    try stdout.print("  Key: {s}\n", .{entry.key});
+                    try entry.value.print();
+                }
             },
         }
     }

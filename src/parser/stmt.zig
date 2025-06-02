@@ -79,9 +79,10 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
         _ = try p.expect(.ASSIGNMENT);
         assignment_value = try expr.parseExpr(p, .ASSIGNMENT);
     } else if (explicit_type == null) {
-        try stderr.print("Missing explicit type for variable declaration at token {d}/{d}\n", .{
+        try stderr.print("Missing explicit type for variable declaration at token {d}/{d} @ Line {d}\n", .{
             p.pos,
             p.tokens.items.len,
+            p.tokens.items[p.pos].line,
         });
         try p.currentToken().debugRuntime();
         return error.ExplicitVarDeclParse;
@@ -90,9 +91,10 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.SEMI_COLON);
 
     if (is_constant and assignment_value == null) {
-        try stderr.print("Cannot define constant variable without providing default value at token {d}/{d}\n", .{
+        try stderr.print("Cannot define constant variable without providing default value at token {d}/{d} @ Line {d}\n", .{
             p.pos,
             p.tokens.items.len,
+            p.tokens.items[p.pos].line,
         });
         try p.currentToken().debugRuntime();
         return error.VarDeclParse;
