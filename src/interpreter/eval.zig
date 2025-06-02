@@ -3,7 +3,7 @@ const std = @import("std");
 const ast = @import("../ast/ast.zig");
 const environment = @import("environment.zig");
 const tokens = @import("../lexer/token.zig");
-const builtins = @import("builtins.zig");
+const builtins = @import("../builtins/builtins.zig");
 
 const Token = tokens.Token;
 const Environment = environment.Environment;
@@ -155,10 +155,63 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
             }
 
             const stderr = std.io.getStdErr().writer();
-            const callee = evalExpr(c.method, env) catch |err| {
-                try stderr.print("Error evaluating call target: {any}\n", .{err});
+            const callee_expr = c.method;
+            const callee = evalExpr(callee_expr, env) catch |err| {
+                try stderr.print("Error evaluating call target: {!}\n", .{err});
                 return err;
             };
+
+            switch (callee_expr.*) {
+                .member => |m| {
+                    const method_name = m.property;
+                    var instance_val = try evalExpr(m.member, env);
+                    instance_val = instance_val.deref();
+
+                    if (instance_val != .object) {
+                        return error.TypeMismatch;
+                    }
+                    const class_name_val = instance_val.object.get("__class_name") orelse {
+                        return error.MissingClassName;
+                    };
+                    if (class_name_val != .string) {
+                        return error.InvalidClassRef;
+                    }
+
+                    const class_val = try env.get(class_name_val.string);
+                    if (class_val != .class) {
+                        return error.InvalidClassRef;
+                    }
+
+                    const method_stmt = class_val.class.methods.get(method_name) orelse {
+                        return error.MethodNotFound;
+                    };
+
+                    // Bind parameters and this
+                    const fn_decl = method_stmt.function_decl;
+                    if (fn_decl.parameters.items.len != c.arguments.items.len) {
+                        return error.ArityMismatch;
+                    }
+
+                    var method_env = Environment.init(env.allocator, null);
+                    try method_env.define("this", Value{
+                        .reference = try env.allocator.create(Value),
+                    });
+                    try method_env.assign("this", instance_val);
+
+                    for (fn_decl.parameters.items, 0..) |param, i| {
+                        const arg_val = try evalExpr(c.arguments.items[i], env);
+                        try method_env.define(param.name, arg_val);
+                    }
+
+                    var result: Value = .nil;
+                    for (fn_decl.body.items) |stmt| {
+                        result = try evalStmt(stmt, &method_env);
+                    }
+
+                    return result;
+                },
+                else => {},
+            }
 
             switch (callee) {
                 .function => |func| {
@@ -175,6 +228,31 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
                     var result: Value = .nil;
                     for (func.body.items) |stmt| {
                         result = evalStmt(stmt, &call_env) catch return Value.nil;
+                    }
+
+                    return result;
+                },
+                .bound_method => |bm| {
+                    const fn_decl = bm.method.function_decl;
+
+                    if (fn_decl.parameters.items.len != c.arguments.items.len) {
+                        return error.ArityMismatch;
+                    }
+
+                    var method_env = Environment.init(env.allocator, null);
+                    try method_env.define("this", Value{
+                        .reference = try env.allocator.create(Value),
+                    });
+                    try method_env.assign("this", bm.instance.*);
+
+                    for (fn_decl.parameters.items, 0..) |param, i| {
+                        const arg_val = try evalExpr(c.arguments.items[i], env);
+                        try method_env.define(param.name, arg_val);
+                    }
+
+                    var result: Value = .nil;
+                    for (fn_decl.body.items) |stmt| {
+                        result = try evalStmt(stmt, &method_env);
                     }
 
                     return result;
@@ -228,9 +306,24 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
 
             if (map.get(m.property)) |val| {
                 return val;
-            } else {
-                return error.PropertyNotFound;
+            } else if (map.get("__class_name")) |cls_name_val| {
+                if (cls_name_val != .string) {return error.InvalidClassRef;}
+
+                const class_val = try env.get(cls_name_val.string);
+                if (class_val != .class) {return error.InvalidClassRef;}
+
+                if (class_val.class.methods.get(m.property)) |method_stmt| {
+                    const val = try env.allocator.create(Value);
+                    val.* = target;
+                    return Value{
+                        .bound_method = .{
+                            .instance = val,
+                            .method = method_stmt,
+                        },
+                    };
+                }
             }
+            return error.PropertyNotFound;
         },
         .computed => |*c| {
             var target = try evalExpr(c.member, env);
@@ -285,6 +378,9 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
             instance_ptr.* = Value{
                 .object = std.StringHashMap(Value).init(env.allocator),
             };
+            try instance_ptr.*.object.put("__class_name", Value{
+                .string = cls.name,
+            });
 
             if (cls.constructor) |ctor_stmt| {
                 const args = n.instantiation.arguments.items;
@@ -378,14 +474,16 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
             return Value.nil;
         },
         .class_decl => |*c| {
+            var methods = std.StringHashMap(*ast.Stmt).init(env.allocator);
             var constructor: ?*ast.Stmt = null;
 
             for (c.body.items) |statement| {
                 if (statement.* == .function_decl) {
                     const fn_decl = statement.function_decl;
-                    if (std.mem.eql(u8, fn_decl.name, "constructor")) {
+                    if (std.mem.eql(u8, fn_decl.name, "ctor")) {
                         constructor = statement;
-                        break;
+                    } else {
+                        try methods.put(fn_decl.name, statement);
                     }
                 }
             }
@@ -395,6 +493,7 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
                     .name = c.name,
                     .body = c.body,
                     .constructor = constructor,
+                    .methods = methods,
                 },
             };
             try env.define(c.name, cls_val);

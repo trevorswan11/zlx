@@ -1,0 +1,20 @@
+class Greeter {
+    let name: string;
+
+    fn ctor(name: string) {
+        this.name = name;
+    }
+
+    fn greet() {
+        println("Hello, " + this.name);
+    }
+}
+
+fn repeat(func: function, times: number) {
+    foreach _ in 0..times {
+        func();
+    }
+}
+
+let g = new Greeter("Ziggy");
+repeat(g.greet, 3);

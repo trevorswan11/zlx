@@ -2,7 +2,7 @@ class Person {
     let name: string;
     let age: number;
 
-    fn constructor(n: string, a: number) {
+    fn ctor(n: string, a: number) {
         this.name = n;
         this.age = a;
     }

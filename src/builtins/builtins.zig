@@ -1,11 +1,13 @@
 const std = @import("std");
 
-const environment = @import("environment.zig");
-const eval = @import("eval.zig");
 const ast = @import("../ast/ast.zig");
+const environment = @import("../interpreter/environment.zig");
+const eval = @import("../interpreter/eval.zig");
 
 const Environment = environment.Environment;
 const Value = environment.Value;
+
+// === Builtin Functions ===
 
 const BuiltinFnHandler = *const fn (
     allocator: std.mem.Allocator,
@@ -20,10 +22,20 @@ const BuiltinFn = struct {
 
 pub const builtin_fns = [_]BuiltinFn{
     .{ .name = "print", .handler = builtinPrint },
+    .{ .name = "println", .handler = builtinPrintLn },
     .{ .name = "len", .handler = builtinLen },
 };
 
 fn builtinPrint(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const stdout = std.io.getStdOut().writer();
+    for (args) |arg_expr| {
+        const val = try eval.evalExpr(arg_expr, env);
+        try stdout.print("{s}", .{val.toString(allocator)});
+    }
+    return Value.nil;
+}
+
+fn builtinPrintLn(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const stdout = std.io.getStdOut().writer();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
@@ -47,6 +59,11 @@ fn builtinLen(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
     };
 }
 
+// === Builtin Modules ===
+const fs_mod = @import("fs.zig");
+const time_mod = @import("time.zig");
+const math_mod = @import("math.zig");
+
 const BuiltinModuleHandler = *const fn (
     allocator: std.mem.Allocator,
 ) anyerror!Value;
@@ -57,22 +74,7 @@ const BuiltinModule = struct {
 };
 
 pub const builtin_modules = [_]BuiltinModule{
-    .{ .name = "fs", .loader = builtinFsMod },
-    .{ .name = "time", .loader = builtinTimeMod },
-    .{ .name = "path", .loader = builtinPathMod },
+    .{ .name = "fs", .loader = fs_mod.load },
+    .{ .name = "time", .loader = time_mod.load },
+    .{ .name = "math", .loader = math_mod.load },
 };
-
-fn builtinFsMod(allocator: std.mem.Allocator) !Value {
-    _ = allocator;
-    return Value.nil;
-}
-
-fn builtinTimeMod(allocator: std.mem.Allocator) !Value {
-    _ = allocator;
-    return Value.nil;
-}
-
-fn builtinPathMod(allocator: std.mem.Allocator) !Value {
-    _ = allocator;
-    return Value.nil;
-}

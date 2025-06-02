@@ -1,0 +1,16 @@
+class Greeter {
+    let name: string;
+
+    fn ctor(name: string) {
+        this.name = name;
+    }
+
+    fn greet() {
+        print("Hello, " + this.name);
+    }
+}
+
+let g = new Greeter("Ziggy");
+print(g.name);
+print(g["__class_name"]);
+g.greet();

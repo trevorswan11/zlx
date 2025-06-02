@@ -20,8 +20,13 @@ pub const Value = union(enum) {
         name: []const u8,
         body: std.ArrayList(*ast.Stmt),
         constructor: ?*ast.Stmt,
+        methods: std.StringHashMap(*ast.Stmt),
     },
     reference: *Value,
+    bound_method: struct {
+        instance: *Value,
+        method: *ast.Stmt,
+    },
     nil,
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
@@ -107,6 +112,7 @@ pub const Value = union(enum) {
             .object => |o| stringObject(o, allocator) catch "INVALID_OBJ",
             .class => |c| stringClass(c.name, c.body, c.constructor, allocator) catch "INVALID_CLASS",
             .reference => |r| std.fmt.allocPrint(allocator, "References Val: {s}", .{r.toString(allocator)}) catch "INVALID_REF",
+            .bound_method => |bm| std.fmt.allocPrint(allocator, "Bound to Instance: {s}", .{bm.instance.toString(allocator)}) catch "INVALID_METHOD",
             .nil => "nil",
         };
     }
