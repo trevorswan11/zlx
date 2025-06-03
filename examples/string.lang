@@ -1,0 +1,26 @@
+import string;
+
+// Test slice
+println(string.slice("Hello, world!", 0, 5)); // "Hello"
+println(string.slice("ZigLang", 3, 7));       // "Lang"
+
+// Test find
+println(string.find("Hello, world!", "world")); // 7
+println(string.find("abcdef", "x"));            // nil
+
+// Test replace
+println(string.replace("a-b-c", "-", ":"));     // "a:b:c"
+println(string.replace("123123", "12", "X"));   // "X3X3"
+
+// Test split
+let parts = string.split("one,two,three", ",");
+println(parts); // ["one", "two", "three"]
+
+// Test trim
+println(string.trim("   zig   ")); // "zig"
+
+// Test lower
+println(string.lower("HeLLo")); // "hello"
+
+// Test upper
+println(string.upper("ZigLang")); // "ZIGLANG"

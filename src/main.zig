@@ -47,10 +47,6 @@ pub fn main() !void {
 
     var env = interpreter.Environment.init(allocator, null);
     defer env.deinit();
-    const number = interpreter.evalStmt(block, &env) catch |err| blk: {
-        try stderr.print("Statement Evaluation Error: {!}\n", .{err});
-        break :blk .nil;
-    };
 
     if (input.verbose) {
         printStmt(block) catch |err| {
@@ -64,9 +60,13 @@ pub fn main() !void {
         try stdout.print("Parsing took {d} ms\n", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
     }
 
-    if (number != .nil) {
-        try stdout.print("Statement Evaluation Result: {s}\n", .{try number.toString(allocator)});
+    if (input.run) {
+        const number = interpreter.evalStmt(block, &env) catch |err| blk: {
+            try stderr.print("Statement Evaluation Error: {!}\n", .{err});
+            break :blk .nil;
+        };
+        try stdout.print("Statement Evaluation Result: {s}", .{try number.toString(allocator)});
     } else {
-        try stdout.print("Parsing completed without error\n", .{});
+        try stdout.print("Parsing completed without error", .{});
     }
 }

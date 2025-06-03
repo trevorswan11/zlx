@@ -48,8 +48,7 @@ fn builtinPrintLn(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
     return Value.nil;
 }
 
-fn builtinLen(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    _ = allocator;
+fn builtinLen(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     if (args.len != 1) return error.ArgumentCountMismatch;
     const val = try eval.evalExpr(args[0], env);
     return switch (val) {
@@ -64,9 +63,6 @@ fn builtinLen(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
 }
 
 // === Builtin Modules ===
-const fs_mod = @import("fs.zig");
-const time_mod = @import("time.zig");
-const math_mod = @import("math.zig");
 
 const BuiltinModuleLoader = *const fn (
     allocator: std.mem.Allocator,
@@ -84,7 +80,10 @@ const BuiltinModule = struct {
 };
 
 pub const builtin_modules = [_]BuiltinModule{
-    .{ .name = "fs", .loader = fs_mod.load },
-    .{ .name = "time", .loader = time_mod.load },
-    .{ .name = "math", .loader = math_mod.load },
+    .{ .name = "fs", .loader = @import("fs.zig").load },
+    .{ .name = "time", .loader = @import("time.zig").load },
+    .{ .name = "math", .loader = @import("math.zig").load },
+    .{ .name = "random", .loader = @import("random.zig").load },
+    .{ .name = "string", .loader = @import("string.zig").load },
+    .{ .name = "sys", .loader = @import("sys.zig").load },
 };

@@ -47,9 +47,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn nowHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    _ = allocator;
-    _ = env;
+fn nowHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
     if (args.len != 0) {
         return error.ArgumentCountMismatch;
     }
@@ -60,9 +58,7 @@ fn nowHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
     };
 }
 
-fn millisHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    _ = allocator;
-    _ = env;
+fn millisHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
     if (args.len != 0) {
         return error.ArgumentCountMismatch;
     }
@@ -74,9 +70,7 @@ fn millisHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *En
     };
 }
 
-fn sleepHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    _ = allocator;
-
+fn sleepHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const seconds = try expectNumberArg(args, env);
     const nanos: u64 = @intFromFloat(seconds * 1_000_000_000.0);
 
@@ -85,9 +79,7 @@ fn sleepHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     return Value{ .nil = {} };
 }
 
-fn sleepMsHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    _ = allocator;
-
+fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const ms = try expectNumberArg(args, env);
     const nanos: u64 = @intFromFloat(ms * 1_000_000.0);
 
@@ -95,9 +87,7 @@ fn sleepMsHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
     return Value{ .nil = {} };
 }
 
-fn startHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    _ = allocator;
-    _ = env;
+fn startHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
     if (args.len != 0) {
         return error.ArgumentCountMismatch;
     }
@@ -108,9 +98,7 @@ fn startHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     };
 }
 
-fn stopHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    _ = allocator;
-
+fn stopHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const start = try expectNumberArg(args, env);
     const t0: u64 = @intFromFloat(start);
     const t1 = std.time.nanoTimestamp();
@@ -121,8 +109,7 @@ fn stopHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     };
 }
 
-fn deltaHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    _ = allocator;
+fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     if (args.len != 2) return error.ArgumentCountMismatch;
 
     const t0 = try eval.evalExpr(args[0], env);
@@ -133,10 +120,7 @@ fn deltaHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     return Value{ .number = diff };
 }
 
-fn timestampHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    _ = allocator;
-    _ = env;
-
+fn timestampHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
     if (args.len != 0) {
         return error.ArgumentCountMismatch;
     }

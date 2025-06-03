@@ -1,0 +1,10 @@
+import random;
+
+let r = random.rand();
+println(r); // something like 0.73218
+
+let i = random.randint(1, 10);
+println(i); // 1 to 10
+
+let val = random.choice([1, 2, 3, 4]);
+println(val); // any of 1, 2, 3, 4

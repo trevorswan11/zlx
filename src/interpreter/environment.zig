@@ -40,7 +40,9 @@ pub const Value = union(enum) {
 
         try str_builder.append('[');
         for (list.items, 0..) |item, i| {
-            if (i != 0 and i != list.items.len) try str_builder.append(' ');
+            if (i != 0 and i != list.items.len) {
+                try str_builder.appendSlice(", ");
+            }
             const item_str = try item.toString(allocator);
             defer allocator.free(item_str);
             try str_builder.appendSlice(item_str);
@@ -138,6 +140,43 @@ pub const Value = union(enum) {
 
     pub fn deref(self: Value) Value {
         return if (self == .reference) self.reference.* else self;
+    }
+
+    pub fn eql(self: Value, other: Value) bool {
+        return switch (self) {
+            .number => |n| other == .number and n == other.number,
+            .string => |s| other == .string and std.mem.eql(u8, s, other.string),
+            .boolean => |b| other == .boolean and b == other.boolean,
+            .nil => other == .nil,
+            .array => |arr_self| if (other == .array) blk: {
+                const arr_other = other.array;
+                if (arr_self.items.len != arr_other.items.len) break :blk false;
+                for (arr_self.items, arr_other.items) |a, b| {
+                    if (!a.eql(b)) break :blk false;
+                }
+                break :blk true;
+            } else false,
+            .object => |obj_self| if (other == .object) blk: {
+                const obj_other = other.object;
+                if (obj_self.count() != obj_other.count()) break :blk false;
+
+                var iter = obj_self.iterator();
+                while (iter.next()) |entry| {
+                    const key = entry.key_ptr.*;
+                    const val = entry.value_ptr.*;
+
+                    if (obj_other.get(key)) |other_val| {
+                        if (!val.eql(other_val)) break :blk false;
+                    } else break :blk false;
+                }
+                break :blk true;
+            } else false,
+            .reference => |ref_self| other == .reference and ref_self.eql(other.reference.*),
+            .bound_method => |_| false,
+            .function => |_| false,
+            .class => |_| false,
+            .builtin => |_| false,
+        };
     }
 };
 

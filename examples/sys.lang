@@ -1,0 +1,18 @@
+import sys;
+
+let before = sys.getenv("ZLX_TEST_ENV");
+println("Before set: " + before);
+
+sys.setenv("ZLX_TEST_ENV", "active");
+let after = sys.getenv("ZLX_TEST_ENV");
+println("After set: " + after);
+
+sys.unsetenv("ZLX_TEST_ENV");
+let removed = sys.getenv("ZLX_TEST_ENV");
+println("After unset: " + removed);
+
+let arguments = sys.args();
+println("Args:");
+foreach i in 0..len(arguments) {
+    println(arguments[i]);
+}

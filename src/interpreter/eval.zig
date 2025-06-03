@@ -26,6 +26,9 @@ fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
                     .number => Value{
                         .string = try std.fmt.allocPrint(op.allocator, "{s}{d}", .{ l, rhs.number }),
                     },
+                    .nil => Value{
+                        .string = try std.fmt.allocPrint(op.allocator, "{s}nil", .{ l }),
+                    },
                     else => error.TypeMismatch,
                 },
                 else => error.TypeMismatch,

@@ -23,6 +23,7 @@ const Args = struct {
     path: []const u8,
     time: bool,
     verbose: bool = false,
+    run: bool,
 };
 
 /// Handles parsing the command line arguments for the process
@@ -32,13 +33,29 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     defer arguments.deinit();
 
     if (!arguments.skip()) {
-        try stderr.print("Usage: zlx <filepath> <time?> <-v?>\n", .{});
+        try stderr.print("Usage: zlx <run|ast> <filepath> <time?> <-v?>\n", .{});
         return error.InvalidUsage;
     }
 
     var filepath: ?[]const u8 = null;
     var time: bool = false;
     var verbose: bool = false;
+    var run: bool = true;
+
+    // The first arg can specify either run or ast, defaulting to run
+    const raw_args = try std.process.argsAlloc(allocator);
+    defer allocator.free(raw_args);
+    if (raw_args.len == 3) {
+        if (arguments.next()) |r| {
+            if (std.mem.eql(u8, r, "ast")) {
+                run = false;
+            } else if (std.mem.eql(u8, r, "run")) {
+                run = true;
+            } else {
+                return error.InvalidRunTarget;
+            }
+        }
+    }
 
     // Capture the mandatory filepath arg
     if (arguments.next()) |fp| {
@@ -79,6 +96,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .path = try allocator.dupe(u8, fp),
             .time = time,
             .verbose = verbose,
+            .run = run,
         };
     } else unreachable;
 }
