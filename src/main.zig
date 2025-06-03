@@ -61,12 +61,12 @@ pub fn main() !void {
     // Successful parsing
     t1 = std.time.nanoTimestamp();
     if (input.time) {
-        try stdout.print("Parsing took {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+        try stdout.print("Parsing took {d} ms\n", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
     }
 
     if (number != .nil) {
         try stdout.print("Statement Evaluation Result: {s}\n", .{try number.toString(allocator)});
     } else {
-        try stdout.print("Parsing completed without error", .{});
+        try stdout.print("Parsing completed without error\n", .{});
     }
 }
