@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const ast = @import("../ast/ast.zig");
+const ast = @import("../parser/ast.zig");
 pub const eval = @import("eval.zig");
 pub const evalExpr = eval.evalExpr;
 pub const evalStmt = eval.evalStmt;

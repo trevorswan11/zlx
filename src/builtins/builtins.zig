@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const ast = @import("../ast/ast.zig");
+const ast = @import("../parser/ast.zig");
 const environment = @import("../interpreter/environment.zig");
 const eval = @import("../interpreter/eval.zig");
 

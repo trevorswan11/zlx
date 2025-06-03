@@ -1,6 +1,6 @@
 const std = @import("std");
 const token = @import("../lexer/token.zig");
-const ast = @import("../ast/ast.zig");
+const ast = @import("ast.zig");
 const BindingPower = @import("lookups.zig").BindingPower;
 
 const TokenKind = token.TokenKind;

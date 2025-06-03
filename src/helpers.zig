@@ -1,5 +1,5 @@
 const std = @import("std");
-const ast = @import("ast/ast.zig");
+const ast = @import("parser/ast.zig");
 
 fn toLower(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     const lower = try allocator.alloc(u8, input.len);

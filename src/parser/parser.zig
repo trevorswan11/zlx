@@ -2,7 +2,7 @@ const std = @import("std");
 
 const token = @import("../lexer/token.zig");
 const tokenizer = @import("../lexer/tokenizer.zig");
-const ast = @import("../ast/ast.zig");
+const ast = @import("ast.zig");
 const lus = @import("lookups.zig");
 const types = @import("types.zig");
 
