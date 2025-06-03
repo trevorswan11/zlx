@@ -135,7 +135,9 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
         });
     }
 
-    return Value{ .array = list };
+    return Value{
+        .array = list,
+    };
 }
 
 fn trimHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {

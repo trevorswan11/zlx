@@ -12,21 +12,27 @@ pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
     var t1: i128 = undefined;
 
+    const stdout = std.io.getStdOut().writer();
+    const stderr = std.io.getStdErr().writer();
+
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
     defer arena.deinit();
 
-    const input = getArgs(allocator) catch return;
-
-    const stdout = std.io.getStdOut().writer();
-    const stderr = std.io.getStdErr().writer();
+    const input = getArgs(allocator) catch |err| switch (err) {
+        error.MalformedArgs => {
+            try stderr.print("Usage: zlx <run|ast> <filepath> <time?> <-v?>\n", .{});
+            return;
+        },
+        else => return,
+    };
 
     // Gather the file contents
     const file_contents = readFile(allocator, input.path) catch |err| {
         try stderr.print("Error reading file contents: {!}\n", .{err});
         t1 = std.time.nanoTimestamp();
         if (input.time) {
-            try stdout.print("Parsing failed in {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+            try stdout.print("Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
         }
         return;
     };
@@ -38,7 +44,7 @@ pub fn main() !void {
             try stderr.print("Error parsing file: {!}\n", .{err});
             t1 = std.time.nanoTimestamp();
             if (input.time) {
-                try stdout.print("Parsing failed in {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+                try stdout.print("Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
             }
             return;
         },
@@ -65,8 +71,8 @@ pub fn main() !void {
             try stderr.print("Statement Evaluation Error: {!}\n", .{err});
             break :blk .nil;
         };
-        try stdout.print("Statement Evaluation Result: {s}", .{try number.toString(allocator)});
+        try stdout.print("Statement Evaluation Result: {s}\n", .{try number.toString(allocator)});
     } else {
-        try stdout.print("Parsing completed without error", .{});
+        try stdout.print("Parsing completed without error\n", .{});
     }
 }

@@ -34,7 +34,7 @@ fn builtinPrint(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
         defer allocator.free(str);
         try stdout.print("{s}", .{str});
     }
-    return Value.nil;
+    return .nil;
 }
 
 fn builtinPrintLn(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
@@ -45,7 +45,7 @@ fn builtinPrintLn(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
         defer allocator.free(str);
         try stdout.print("{s}\n", .{str});
     }
-    return Value.nil;
+    return .nil;
 }
 
 fn builtinLen(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {

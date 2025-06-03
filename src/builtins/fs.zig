@@ -175,11 +175,15 @@ fn copyHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     defer src_dir.close();
 
     src_dir.access(src_basename, .{}) catch {
-        return Value{ .string = "Source file not found!" };
+        return Value{
+            .string = "Source file not found!",
+        };
     };
 
     cwd.makePath(dst_dir_path) catch {
-        return Value{ .string = "Failed to create destination directory!" };
+        return Value{
+            .string = "Failed to create destination directory!",
+        };
     };
 
     var dst_dir = try cwd.openDir(dst_dir_path, .{});
@@ -219,15 +223,21 @@ fn readLinesHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: 
     var lines = std.ArrayList(Value).init(allocator);
 
     while (try buf.readUntilDelimiterOrEofAlloc(allocator, '\n', 4096)) |line| {
-        try lines.append(Value{ .string = line });
+        try lines.append(Value{
+            .string = line,
+        });
     }
 
-    return Value{ .array = lines };
+    return Value{
+        .array = lines,
+    };
 }
 
 fn touchHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = try expectStringArg(args, env);
-    const file = try std.fs.cwd().createFile(path, .{ .truncate = false });
+    const file = try std.fs.cwd().createFile(path, .{
+        .truncate = false,
+    });
     defer file.close();
     return .nil;
 }

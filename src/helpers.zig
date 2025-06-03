@@ -98,7 +98,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .verbose = verbose,
             .run = run,
         };
-    } else unreachable;
+    } else return error.MalformedArgs;
 }
 
 pub fn printStmt(stmt: *ast.Stmt) !void {
@@ -132,6 +132,15 @@ pub fn printStmt(stmt: *ast.Stmt) !void {
                 try stdout.print("Value: {s}\n", .{s.foreach_stmt.value});
                 try stdout.print("Index: {s}\n", .{if (s.foreach_stmt.index) "true" else "false"});
                 try s.foreach_stmt.iterable.print();
+                try stdout.print("\n", .{});
+            },
+            .while_stmt => {
+                try stdout.print("While Statement\n", .{});
+                for (s.while_stmt.body.items) |it| {
+                    try it.print();
+                }
+                try stdout.print("Condition:\n", .{});
+                try s.while_stmt.condition.print();
                 try stdout.print("\n", .{});
             },
             .function_decl => {

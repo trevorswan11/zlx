@@ -34,7 +34,9 @@ fn argsHandler(allocator: std.mem.Allocator, _: []const *ast.Expr, _: *Environme
     const args = try std.process.argsAlloc(allocator);
     var array = std.ArrayList(Value).init(allocator);
     for (args) |arg| {
-        try array.append(Value{ .string = arg, });
+        try array.append(Value{
+            .string = arg,
+        });
     }
     return Value{
         .array = array,

@@ -267,6 +267,19 @@ pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
     };
 }
 
+pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
+    _ = try p.expect(.WHILE);
+    const condition = try expr.parseExpr(p, .DEFAULT_BP);
+    const block_stmt = try parseBlockStmt(p);
+
+    return ast.Stmt{
+        .while_stmt = ast.WhileStmt{
+            .condition = try boxExpr(p, condition),
+            .body = block_stmt.block.body,
+        },
+    };
+}
+
 pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
     _ = p.advance();
     const class_name = (try p.expect(.IDENTIFIER)).value;

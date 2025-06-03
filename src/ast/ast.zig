@@ -202,6 +202,11 @@ pub const ForeachStmt = struct {
     body: std.ArrayList(*Stmt),
 };
 
+pub const WhileStmt = struct {
+    condition: *Expr,
+    body: std.ArrayList(*Stmt),
+};
+
 pub const ClassDeclarationStmt = struct {
     name: []const u8,
     body: std.ArrayList(*Stmt),
@@ -215,6 +220,7 @@ pub const Stmt = union(enum) {
     if_stmt: IfStmt,
     import_stmt: ImportStmt,
     foreach_stmt: ForeachStmt,
+    while_stmt: WhileStmt,
     class_decl: ClassDeclarationStmt,
 
     pub fn print(self: *Stmt) anyerror!void {
@@ -268,6 +274,13 @@ pub const Stmt = union(enum) {
                 try f.iterable.print();
                 try stdout.print("Body:\n", .{});
                 for (f.body.items) |stmt| try stmt.print();
+            },
+            .while_stmt => |w| {
+                try stdout.print("While:\n", .{});
+                try stdout.print("Condition:\n", .{});
+                try w.condition.print();
+                try stdout.print("Body:\n", .{});
+                for (w.body.items) |stmt| try stmt.print();
             },
             .class_decl => |c| {
                 try stdout.print("ClassDecl: {s}\n", .{c.name});
