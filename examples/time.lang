@@ -1,0 +1,9 @@
+import time;
+
+println("Now: " + time.now());
+println("Millis: " + time.millis());
+
+println("Sleeping for 1 second...");
+time.sleep(1);
+
+println("Done.");

@@ -23,6 +23,9 @@ fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
                     .string => Value{
                         .string = try std.fmt.allocPrint(op.allocator, "{s}{s}", .{ l, rhs.string }),
                     },
+                    .number => Value{
+                        .string = try std.fmt.allocPrint(op.allocator, "{s}{d}", .{ l, rhs.number }),
+                    },
                     else => error.TypeMismatch,
                 },
                 else => error.TypeMismatch,
@@ -154,66 +157,11 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
                 }
             }
 
-            const stderr = std.io.getStdErr().writer();
-            const callee_expr = c.method;
-            const callee = evalExpr(callee_expr, env) catch |err| {
-                try stderr.print("Error evaluating call target: {!}\n", .{err});
-                return err;
-            };
-
-            switch (callee_expr.*) {
-                .member => |m| {
-                    const method_name = m.property;
-                    var instance_val = try evalExpr(m.member, env);
-                    instance_val = instance_val.deref();
-
-                    if (instance_val != .object) {
-                        return error.TypeMismatch;
-                    }
-                    const class_name_val = instance_val.object.get("__class_name") orelse {
-                        return error.MissingClassName;
-                    };
-                    if (class_name_val != .string) {
-                        return error.InvalidClassRef;
-                    }
-
-                    const class_val = try env.get(class_name_val.string);
-                    if (class_val != .class) {
-                        return error.InvalidClassRef;
-                    }
-
-                    const method_stmt = class_val.class.methods.get(method_name) orelse {
-                        return error.MethodNotFound;
-                    };
-
-                    // Bind parameters and this
-                    const fn_decl = method_stmt.function_decl;
-                    if (fn_decl.parameters.items.len != c.arguments.items.len) {
-                        return error.ArityMismatch;
-                    }
-
-                    var method_env = Environment.init(env.allocator, null);
-                    try method_env.define("this", Value{
-                        .reference = try env.allocator.create(Value),
-                    });
-                    try method_env.assign("this", instance_val);
-
-                    for (fn_decl.parameters.items, 0..) |param, i| {
-                        const arg_val = try evalExpr(c.arguments.items[i], env);
-                        try method_env.define(param.name, arg_val);
-                    }
-
-                    var result: Value = .nil;
-                    for (fn_decl.body.items) |stmt| {
-                        result = try evalStmt(stmt, &method_env);
-                    }
-
-                    return result;
+            const callee_val = try evalExpr(c.method, env);
+            switch (callee_val) {
+                .builtin => |handler| {
+                    return try handler(env.allocator, c.arguments.items, env);
                 },
-                else => {},
-            }
-
-            switch (callee) {
                 .function => |func| {
                     if (func.parameters.len != c.arguments.items.len) {
                         return error.ArityMismatch;
@@ -307,10 +255,14 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
             if (map.get(m.property)) |val| {
                 return val;
             } else if (map.get("__class_name")) |cls_name_val| {
-                if (cls_name_val != .string) {return error.InvalidClassRef;}
+                if (cls_name_val != .string) {
+                    return error.InvalidClassRef;
+                }
 
                 const class_val = try env.get(cls_name_val.string);
-                if (class_val != .class) {return error.InvalidClassRef;}
+                if (class_val != .class) {
+                    return error.InvalidClassRef;
+                }
 
                 if (class_val.class.methods.get(m.property)) |method_stmt| {
                     const val = try env.allocator.create(Value);
@@ -521,7 +473,7 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
             for (builtins.builtin_modules) |builtin| {
                 if (std.mem.eql(u8, builtin.name, i.from)) {
                     const module_value = try builtin.loader(allocator);
-                    try env.assign(i.name, module_value);
+                    try env.define(i.name, module_value);
                     return Value.nil;
                 }
             }

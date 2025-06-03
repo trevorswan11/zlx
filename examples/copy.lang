@@ -1,0 +1,8 @@
+import fs;
+
+fs.write("src.txt", "Hello World!");
+fs.copy("src.txt", "copied/output.txt");
+
+println(fs.read("copied/output.txt"));
+fs.delete("src.txt");
+fs.rm("copied");

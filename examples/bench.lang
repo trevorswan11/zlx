@@ -1,0 +1,12 @@
+import time;
+
+const start = time.start();
+
+// do some expensive work
+let x = 0;
+foreach i in 0..1000000 {
+    x = x + 1;
+}
+
+const elapsed = time.stop(start);
+println("Took " + elapsed + " ms");

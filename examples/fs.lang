@@ -1,0 +1,30 @@
+import fs;
+
+// Test file write
+fs.write("example.txt", "hello world");
+println(fs.exists("example.txt"));        // true
+println(fs.read("example.txt"));          // hello world
+
+// Copy and rename
+fs.copy("example.txt", "example_copy.txt");
+println(fs.exists("example_copy.txt"));   // true
+
+fs.rename("example_copy.txt", "example_renamed.txt");
+println(fs.exists("example_copy.txt"));   // false
+println(fs.exists("example_renamed.txt")); // true
+
+// Make directory and list contents
+fs.mkdir("test_dir");
+fs.write("test_dir/file.txt", "hi");
+let items = fs.list("test_dir");
+println(items);
+
+// Is directory
+println(fs.is_dir("test_dir"));           // true
+println(fs.is_dir("example.txt"));        // false
+
+// Delete
+fs.delete("example.txt");
+fs.delete("example_renamed.txt");
+fs.delete("test_dir/file.txt");
+println(fs.exists("example.txt"));        // false

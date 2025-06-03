@@ -1,0 +1,29 @@
+import time;
+
+println("Printing time constants...");
+
+println("ns_per_us = " + time.ns_per_us);
+println("ns_per_ms = " + time.ns_per_ms);
+println("ns_per_s = " + time.ns_per_s);
+println("ns_per_min = " + time.ns_per_min);
+println("ns_per_hour = " + time.ns_per_hour);
+println("ns_per_day = " + time.ns_per_day);
+println("ns_per_week = " + time.ns_per_week);
+
+println("us_per_ms = " + time.us_per_ms);
+println("us_per_s = " + time.us_per_s);
+println("us_per_min = " + time.us_per_min);
+println("us_per_hour = " + time.us_per_hour);
+println("us_per_day = " + time.us_per_day);
+println("us_per_week = " + time.us_per_week);
+
+println("ms_per_s = " + time.ms_per_s);
+println("ms_per_min = " + time.ms_per_min);
+println("ms_per_hour = " + time.ms_per_hour);
+println("ms_per_day = " + time.ms_per_day);
+println("ms_per_week = " + time.ms_per_week);
+
+println("s_per_min = " + time.s_per_min);
+println("s_per_hour = " + time.s_per_hour);
+println("s_per_day = " + time.s_per_day);
+println("s_per_week = " + time.s_per_week);

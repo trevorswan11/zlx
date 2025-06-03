@@ -30,7 +30,9 @@ fn builtinPrint(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     const stdout = std.io.getStdOut().writer();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
-        try stdout.print("{s}", .{val.toString(allocator)});
+        const str = try val.toString(allocator);
+        defer allocator.free(str);
+        try stdout.print("{s}", .{str});
     }
     return Value.nil;
 }
@@ -39,7 +41,9 @@ fn builtinPrintLn(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
     const stdout = std.io.getStdOut().writer();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
-        try stdout.print("{s}\n", .{val.toString(allocator)});
+        const str = try val.toString(allocator);
+        defer allocator.free(str);
+        try stdout.print("{s}\n", .{str});
     }
     return Value.nil;
 }
@@ -64,13 +68,19 @@ const fs_mod = @import("fs.zig");
 const time_mod = @import("time.zig");
 const math_mod = @import("math.zig");
 
-const BuiltinModuleHandler = *const fn (
+const BuiltinModuleLoader = *const fn (
     allocator: std.mem.Allocator,
+) anyerror!Value;
+
+pub const BuiltinModuleHandler = *const fn (
+    allocator: std.mem.Allocator,
+    args: []const *ast.Expr,
+    env: *Environment,
 ) anyerror!Value;
 
 const BuiltinModule = struct {
     name: []const u8,
-    loader: BuiltinModuleHandler,
+    loader: BuiltinModuleLoader,
 };
 
 pub const builtin_modules = [_]BuiltinModule{

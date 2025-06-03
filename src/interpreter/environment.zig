@@ -27,6 +27,11 @@ pub const Value = union(enum) {
         instance: *Value,
         method: *ast.Stmt,
     },
+    builtin: *const fn (
+        allocator: std.mem.Allocator,
+        args: []const *ast.Expr,
+        env: *Environment,
+    ) anyerror!Value,
     nil,
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
@@ -36,7 +41,7 @@ pub const Value = union(enum) {
         try str_builder.append('[');
         for (list.items, 0..) |item, i| {
             if (i != 0 and i != list.items.len) try str_builder.append(' ');
-            const item_str = item.toString(allocator);
+            const item_str = try item.toString(allocator);
             defer allocator.free(item_str);
             try str_builder.appendSlice(item_str);
         }
@@ -45,7 +50,7 @@ pub const Value = union(enum) {
         return try str_builder.toOwnedSlice();
     }
 
-    fn stringFunction(parameters: []const []const u8, body: std.ArrayList(*ast.Stmt), allocator: std.mem.Allocator) ![]const u8 {
+    fn stringFunction(parameters: []const []const u8, body: std.ArrayList(*ast.Stmt), allocator: std.mem.Allocator) ![]u8 {
         var str_builder = std.ArrayList(u8).init(allocator);
         defer str_builder.deinit();
 
@@ -67,17 +72,18 @@ pub const Value = union(enum) {
         var str_builder = std.ArrayList(u8).init(allocator);
         defer str_builder.deinit();
 
-        try str_builder.appendSlice("[obj]:\n");
+        try str_builder.appendSlice("[obj]: {\n");
         var itr = object.iterator();
         while (itr.next()) |e| {
+            try str_builder.append(' ');
             try str_builder.appendSlice(e.key_ptr.*);
             try str_builder.appendSlice(": ");
-            const value_str = e.value_ptr.toString(allocator);
+            const value_str = try e.value_ptr.toString(allocator);
             defer allocator.free(value_str);
             try str_builder.appendSlice(value_str);
-            try str_builder.append('\n');
+            try str_builder.appendSlice("\n");
         }
-        _ = str_builder.pop();
+        try str_builder.append('}');
 
         return try str_builder.toOwnedSlice();
     }
@@ -102,18 +108,31 @@ pub const Value = union(enum) {
         return try str_builder.toOwnedSlice();
     }
 
-    pub fn toString(self: Value, allocator: std.mem.Allocator) []const u8 {
+    fn stringReference(ref: *Value, allocator: std.mem.Allocator) ![]u8 {
+        const inner = try ref.toString(allocator);
+        defer allocator.free(inner);
+        return try std.fmt.allocPrint(allocator, "References Val: {s}", .{inner});
+    }
+
+    fn stringBoundMethod(bval: *Value, allocator: std.mem.Allocator) ![]u8 {
+        const inner = try bval.toString(allocator);
+        defer allocator.free(inner);
+        return try std.fmt.allocPrint(allocator, "Bound to Instance: {s}", .{inner});
+    }
+
+    pub fn toString(self: Value, allocator: std.mem.Allocator) anyerror![]u8 {
         return switch (self) {
-            .number => |n| std.fmt.allocPrint(allocator, "{d}", .{n}) catch "NaN",
-            .string => |s| s,
-            .boolean => |b| if (b) "true" else "false",
-            .array => |a| stringArray(a, allocator) catch "[]",
-            .function => |f| stringFunction(f.parameters, f.body, allocator) catch "INVALID_FN",
-            .object => |o| stringObject(o, allocator) catch "INVALID_OBJ",
-            .class => |c| stringClass(c.name, c.body, c.constructor, allocator) catch "INVALID_CLASS",
-            .reference => |r| std.fmt.allocPrint(allocator, "References Val: {s}", .{r.toString(allocator)}) catch "INVALID_REF",
-            .bound_method => |bm| std.fmt.allocPrint(allocator, "Bound to Instance: {s}", .{bm.instance.toString(allocator)}) catch "INVALID_METHOD",
-            .nil => "nil",
+            .number => |n| try std.fmt.allocPrint(allocator, "{d}", .{n}),
+            .string => |s| try std.fmt.allocPrint(allocator, "{s}", .{s}),
+            .boolean => |b| try std.fmt.allocPrint(allocator, "{s}", .{if (b) "true" else "false"}),
+            .array => |a| try stringArray(a, allocator),
+            .function => |f| try stringFunction(f.parameters, f.body, allocator),
+            .object => |o| try stringObject(o, allocator),
+            .class => |c| try stringClass(c.name, c.body, c.constructor, allocator),
+            .reference => |r| try stringReference(r, allocator),
+            .bound_method => |bm| try stringBoundMethod(bm.instance, allocator),
+            .builtin => |_| try std.fmt.allocPrint(allocator, "<Builtin Module>", .{}),
+            .nil => try std.fmt.allocPrint(allocator, "nil", .{}),
         };
     }
 
@@ -152,7 +171,9 @@ pub const Environment = struct {
         } else if (self.parent) |p| {
             try p.assign(name, value);
         } else {
-            try stderr.print("Undefined Value Error: {s}", .{value.toString(self.allocator)});
+            const str = try value.toString(self.allocator);
+            defer self.allocator.free(str);
+            try stderr.print("Undefined Value Error: {s}", .{str});
             return error.UndefinedVariable;
         }
     }

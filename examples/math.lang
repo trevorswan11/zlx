@@ -1,0 +1,33 @@
+import math;
+
+// Constants
+println("PI: " + math.PI);
+println("E: " + math.E);
+
+// Unary functions
+println("abs(-5) = " + math.abs(-5));
+println("sqrt(49) = " + math.sqrt(49));
+println("sin(PI / 2) = " + math.sin(math.PI / 2));
+println("cos(PI) = " + math.cos(math.PI));
+println("tan(0) = " + math.tan(0));
+
+println("asin(1) = " + math.asin(1));
+println("acos(1) = " + math.acos(1));
+println("atan(1) = " + math.atan(1));
+
+println("log(E) = " + math.log(math.E));
+println("log10(1000) = " + math.log10(1000));
+println("exp(1) = " + math.exp(1));
+
+println("floor(3.7) = " + math.floor(3.7));
+println("ceil(3.2) = " + math.ceil(3.2));
+println("round(3.6) = " + math.round(3.6));
+
+// Binary functions
+println("pow(2, 8) = " + math.pow(2, 8));
+println("min(3, 7) = " + math.min(3, 7));
+println("max(3, 7) = " + math.max(3, 7));
+println("atan2(1, 1) = " + math.atan2(1, 1));
+
+// Edge case: negative sqrt
+println("sqrt(-1) = " + math.sqrt(-1));
