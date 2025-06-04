@@ -23,6 +23,12 @@ pub fn string(s: *ast.StringExpr, _: *Environment) !Value {
     };
 }
 
+pub fn boolean(b: bool, _: *Environment) !Value {
+    return Value{
+        .boolean = b,
+    };
+}
+
 pub fn symbol(s: *ast.SymbolExpr, env: *Environment) !Value {
     return try env.get(s.value);
 }
@@ -249,7 +255,9 @@ pub fn computed(c: *ast.ComputedExpr, env: *Environment) !Value {
                 return error.TypeMismatch;
             }
             const index: usize = @intFromFloat(key.number);
-            if (index >= arr.items.len) return error.IndexOutOfBounds;
+            if (index >= arr.items.len) {
+                return error.IndexOutOfBounds;
+            }
             return arr.items[index];
         },
         .object => |map| {

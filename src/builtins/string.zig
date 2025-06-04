@@ -80,12 +80,16 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 }
 
 fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+    if (args.len != 2) {
+        return error.ArgumentCountMismatch;
+    }
 
     const haystack = try eval.evalExpr(args[0], env);
     const needle = try eval.evalExpr(args[1], env);
 
-    if (haystack != .string or needle != .string) return error.TypeMismatch;
+    if (haystack != .string or needle != .string) {
+        return error.TypeMismatch;
+    }
 
     if (std.mem.indexOf(u8, haystack.string, needle.string)) |idx| {
         return Value{
@@ -116,7 +120,9 @@ fn replaceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
 }
 
 fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+    if (args.len != 2) {
+        return error.ArgumentCountMismatch;
+    }
 
     const input = try eval.evalExpr(args[0], env);
     const delim = try eval.evalExpr(args[1], env);

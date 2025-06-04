@@ -1,0 +1,5 @@
+import debug;
+
+debug.assert(true);                // passes
+debug.assert(1 < 2);               // passes
+debug.assert(1 > 2, "bad math");   // fails with "bad math"

@@ -31,7 +31,9 @@ pub fn block(b: *ast.BlockStmt, env: *Environment) !Value {
 
 pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
     const cond = try evalExpr(i.condition, env);
-    if (cond != Value.boolean) return error.TypeMismatch;
+    if (cond != Value.boolean) {
+        return error.TypeMismatch;
+    }
 
     if (cond.boolean) {
         return try evalStmt(i.consequent, env);
@@ -44,7 +46,9 @@ pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
 
 pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
     const iterable = try evalExpr(f.iterable, env);
-    if (iterable != Value.array) return error.TypeMismatch;
+    if (iterable != Value.array) {
+        return error.TypeMismatch;
+    }
 
     for (iterable.array.items, 0..) |item, i| {
         var child_env = Environment.init(env.allocator, env);

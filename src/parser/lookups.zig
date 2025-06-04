@@ -126,6 +126,10 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
         }
     }.afn);
 
+    // Booleans
+    try nud(.TRUE, .PRIMARY, exprs.parseBooleanLiteral);
+    try nud(.FALSE, .PRIMARY, exprs.parseBooleanLiteral);
+
     // Statements
     try stmt(.OPEN_CURLY, stmts.parseBlockStmt);
     try stmt(.LET, stmts.parseVarDeclStmt);

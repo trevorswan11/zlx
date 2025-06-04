@@ -269,3 +269,10 @@ pub fn parseObjectLiteral(p: *parser.Parser) !ast.Expr {
         },
     };
 }
+
+pub fn parseBooleanLiteral(p: *parser.Parser) anyerror!ast.Expr {
+    const tok = p.advance();
+    return ast.Expr{
+        .boolean = tok.kind == .TRUE,
+    };
+}

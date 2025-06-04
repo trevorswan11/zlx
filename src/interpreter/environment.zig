@@ -168,15 +168,21 @@ pub const Value = union(enum) {
             .nil => other == .nil,
             .array => |arr_self| if (other == .array) blk: {
                 const arr_other = other.array;
-                if (arr_self.items.len != arr_other.items.len) break :blk false;
+                if (arr_self.items.len != arr_other.items.len) {
+                    break :blk false;
+                }
                 for (arr_self.items, arr_other.items) |a, b| {
-                    if (!a.eql(b)) break :blk false;
+                    if (!a.eql(b)) {
+                        break :blk false;
+                    }
                 }
                 break :blk true;
             } else false,
             .object => |obj_self| if (other == .object) blk: {
                 const obj_other = other.object;
-                if (obj_self.count() != obj_other.count()) break :blk false;
+                if (obj_self.count() != obj_other.count()) {
+                    break :blk false;
+                }
 
                 var iter = obj_self.iterator();
                 while (iter.next()) |entry| {
@@ -184,7 +190,9 @@ pub const Value = union(enum) {
                     const val = entry.value_ptr.*;
 
                     if (obj_other.get(key)) |other_val| {
-                        if (!val.eql(other_val)) break :blk false;
+                        if (!val.eql(other_val)) {
+                            break :blk false;
+                        }
                     } else break :blk false;
                 }
                 break :blk true;

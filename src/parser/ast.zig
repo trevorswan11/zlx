@@ -77,6 +77,7 @@ pub const ObjectEntry = struct {
 pub const Expr = union(enum) {
     number: NumberExpr,
     string: StringExpr,
+    boolean: bool,
     symbol: SymbolExpr,
     binary: BinaryExpr,
     prefix: PrefixExpr,
@@ -104,6 +105,9 @@ pub const Expr = union(enum) {
             },
             .string => |s| {
                 try writer.print("String: \"{s}\"\n", .{s.value});
+            },
+            .boolean => |b| {
+                try writer.print("Boolean: {}\n", .{b});
             },
             .symbol => |s| {
                 try writer.print("Symbol: {s}\n", .{s.value});

@@ -35,6 +35,7 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
     switch (expr.*) {
         .number => |*n| return try expr_handlers.number(n, env),
         .string => |*s| return try expr_handlers.string(s, env),
+        .boolean => |b| return expr_handlers.boolean(b, env),
         .symbol => |*s| return try expr_handlers.symbol(s, env),
         .array_literal => |*a| return try expr_handlers.array(a, env),
         .binary => |*b| return try expr_handlers.binary(b, env),

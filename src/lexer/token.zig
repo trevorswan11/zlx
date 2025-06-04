@@ -158,6 +158,8 @@ pub const Token = struct {
         try reserved.put("export", .EXPORT);
         try reserved.put("typeof", .TYPEOF);
         try reserved.put("in", .IN);
+        try reserved.put("true", .TRUE);
+        try reserved.put("false", .FALSE);
 
         return reserved;
     }

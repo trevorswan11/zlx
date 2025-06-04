@@ -110,11 +110,15 @@ fn stopHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 }
 
 fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+    if (args.len != 2) {
+        return error.ArgumentCountMismatch;
+    }
 
     const t0 = try eval.evalExpr(args[0], env);
     const t1 = try eval.evalExpr(args[1], env);
-    if (t0 != .number or t1 != .number) return error.TypeMismatch;
+    if (t0 != .number or t1 != .number) {
+        return error.TypeMismatch;
+    }
 
     const diff = @as(f64, @floatFromInt(@as(i64, @intFromFloat(t1.number)) - @as(i64, @intFromFloat(t0.number)))) / 1_000_000.0;
     return Value{ .number = diff };

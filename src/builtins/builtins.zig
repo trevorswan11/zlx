@@ -49,7 +49,9 @@ fn builtinPrintLn(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
 }
 
 fn builtinLen(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    if (args.len != 1) {
+        return error.ArgumentCountMismatch;
+    }
     const val = try eval.evalExpr(args[0], env);
     return switch (val) {
         .array => |a| Value{
@@ -86,4 +88,5 @@ pub const builtin_modules = [_]BuiltinModule{
     .{ .name = "random", .loader = @import("random.zig").load },
     .{ .name = "string", .loader = @import("string.zig").load },
     .{ .name = "sys", .loader = @import("sys.zig").load },
+    .{ .name = "debug", .loader = @import("debug.zig").load },
 };
