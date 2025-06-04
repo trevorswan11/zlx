@@ -58,6 +58,10 @@ pub const Lexer = struct {
             .handler = SimpleHandlerWrapper.wrap(commentHandler),
         });
         try patterns.append(.{
+            .regex = try Regex.compile(allocator, "//[^\n]*"),
+            .handler = SimpleHandlerWrapper.wrap(commentHandler),
+        });
+        try patterns.append(.{
             .regex = try Regex.compile(allocator, "\"[^\"]*\""),
             .handler = SimpleHandlerWrapper.wrap(stringHandler),
         });

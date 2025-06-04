@@ -5,7 +5,7 @@ const TokenKind = @import("../lexer/token.zig").TokenKind;
 const colors = struct {
     pub const reset = "\x1b[0m";
 
-    pub const keyword = "\x1b[95m"; // bright magenta
+    pub const keyword = "\x1b[38;2;153;102;204m"; // light magenta
     pub const string = "\x1b[38;2;255;191;0m"; // orange-yellow
     pub const number = "\x1b[38;2;200;255;200m"; // very light green
     pub const boolean = "\x1b[34m"; // solid blue
