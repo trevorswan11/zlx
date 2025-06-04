@@ -1,5 +1,5 @@
 const std = @import("std");
-const ast = @import("parser/ast.zig");
+const ast = @import("../parser/ast.zig");
 
 fn toLower(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     const lower = try allocator.alloc(u8, input.len);
@@ -24,6 +24,7 @@ const Args = struct {
     time: bool,
     verbose: bool = false,
     run: bool,
+    dump: bool,
 };
 
 /// Handles parsing the command line arguments for the process
@@ -41,12 +42,13 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     var time: bool = false;
     var verbose: bool = false;
     var run: bool = true;
+    var dump: bool = false;
 
     // The first arg can specify either run or ast, defaulting to run
     const raw_args = try std.process.argsAlloc(allocator);
     defer allocator.free(raw_args);
     if (raw_args.len >= 3) optional_arg: {
-        if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run")) {
+        if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run") and !std.mem.eql(u8, raw_args[1], "dump")) {
             break :optional_arg;
         }
 
@@ -55,6 +57,9 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
                 run = false;
             } else if (std.mem.eql(u8, r, "run")) {
                 run = true;
+            } else if (std.mem.eql(u8, r, "dump")) {
+                dump = true;
+                run = false;
             } else {
                 return error.InvalidRunTarget;
             }
@@ -99,8 +104,9 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
         return Args{
             .path = try allocator.dupe(u8, fp),
             .time = time,
-            .verbose = verbose,
+            .verbose = if (!dump) verbose else false,
             .run = run,
+            .dump = dump,
         };
     } else return error.MalformedArgs;
 }

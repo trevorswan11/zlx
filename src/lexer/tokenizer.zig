@@ -6,6 +6,8 @@ const Token = tokens.Token;
 const TokenKind = tokens.TokenKind;
 const Regex = regxp.Regex;
 
+var reserved_map: std.StringHashMap(TokenKind) = undefined;
+
 const LexerError = error{
     Regex,
     IndexOutOfBounds,
@@ -34,6 +36,7 @@ pub const Lexer = struct {
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, source: []const u8) !Self {
+        reserved_map = try Token.getReservedMap(allocator);
         return Self{
             .pos = 0,
             .line = 1,
@@ -256,7 +259,7 @@ pub fn tokenize(allocator: std.mem.Allocator, source: []const u8) !std.ArrayList
         }
     }
 
-    const tok = Token.init(allocator, .EOF, "EOF", lex.line);
+    const tok = Token.init(allocator, .EOF, "EOF", lex.line, source.len, source.len);
     try lex.push(tok);
     return lex.tokens;
 }
@@ -267,7 +270,9 @@ const DefaultHandlerCtx = struct {
 
     pub fn call(ctx: *const anyopaque, lex: *Lexer, _: *Regex) LexerError!void {
         const self: *const DefaultHandlerCtx = @alignCast(@ptrCast(ctx));
-        try lex.push(Token.init(lex.allocator, self.kind, self.value, lex.line));
+        const start = lex.pos;
+        const end = start + self.value.len;
+        try lex.push(Token.init(lex.allocator, self.kind, self.value, lex.line, start, end));
         lex.advanceN(self.value.len);
     }
 };
@@ -316,7 +321,11 @@ fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
         const span = caps.boundsAt(0).?;
         const matched = text[(span.lower + 1)..(span.upper - 1)];
-        const tok = Token.init(lex.allocator, .STRING, matched, lex.line);
+
+        const start = lex.pos + span.lower;
+        const end = lex.pos + span.upper;
+
+        const tok = Token.init(lex.allocator, .STRING, matched, lex.line, start, end);
         try lex.push(tok);
         lex.advanceN(matched.len + 2);
     }
@@ -330,7 +339,11 @@ fn numberHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
         const span = caps.boundsAt(0).?;
         const matched = text[span.lower..span.upper];
-        const tok = Token.init(lex.allocator, .NUMBER, matched, lex.line);
+
+        const start = lex.pos + span.lower;
+        const end = lex.pos + span.upper;
+
+        const tok = Token.init(lex.allocator, .NUMBER, matched, lex.line, start, end);
         try lex.push(tok);
         lex.advanceN(matched.len);
     }
@@ -345,9 +358,11 @@ fn symbolHandler(lex: *Lexer, regex: *Regex) LexerError!void {
         const span = caps.boundsAt(0).?;
         const word = text[span.lower..span.upper];
 
-        const reserved = try Token.getReservedMap(lex.allocator);
-        const kind: TokenKind = reserved.get(word) orelse .IDENTIFIER;
-        const tok = Token.init(lex.allocator, kind, word, lex.line);
+        const start = lex.pos + span.lower;
+        const end = lex.pos + span.upper;
+
+        const kind: TokenKind = reserved_map.get(word) orelse .IDENTIFIER;
+        const tok = Token.init(lex.allocator, kind, word, lex.line, start, end);
         try lex.push(tok);
         lex.advanceN(word.len);
     }

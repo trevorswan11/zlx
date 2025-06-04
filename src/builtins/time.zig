@@ -75,8 +75,7 @@ fn sleepHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
     const nanos: u64 = @intFromFloat(seconds * 1_000_000_000.0);
 
     std.time.sleep(nanos);
-
-    return Value{ .nil = {} };
+    return .nil;
 }
 
 fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
@@ -84,7 +83,7 @@ fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
     const nanos: u64 = @intFromFloat(ms * 1_000_000.0);
 
     std.time.sleep(nanos);
-    return Value{ .nil = {} };
+    return .nil;
 }
 
 fn startHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
@@ -121,7 +120,9 @@ fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
     }
 
     const diff = @as(f64, @floatFromInt(@as(i64, @intFromFloat(t1.number)) - @as(i64, @intFromFloat(t0.number)))) / 1_000_000.0;
-    return Value{ .number = diff };
+    return Value{
+        .number = diff,
+    };
 }
 
 fn timestampHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {

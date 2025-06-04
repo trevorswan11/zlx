@@ -1,5 +1,7 @@
 import debug;
 
-debug.assert(true);                // passes
-debug.assert(1 < 2);               // passes
-debug.assert(1 > 2, "bad math");   // fails with "bad math"
+debug.assert(true);
+debug.assertEqual(1 + 1, 2);
+debug.assert(1 < 2);
+debug.assertNotEqual(2 * 2, 5);
+debug.assert(1 > 2, "bad math");

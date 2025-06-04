@@ -90,13 +90,24 @@ pub const Token = struct {
     value: []const u8,
     allocator: std.mem.Allocator,
     line: usize,
+    start: usize,
+    end: usize,
 
-    pub fn init(allocator: std.mem.Allocator, kind: TokenKind, value: []const u8, line: usize) Self {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        kind: TokenKind,
+        value: []const u8,
+        line: usize,
+        start: usize,
+        end: usize,
+    ) Self {
         return Self{
             .kind = kind,
             .value = value,
             .allocator = allocator,
             .line = line,
+            .start = start,
+            .end = end,
         };
     }
 

@@ -2,8 +2,9 @@ const std = @import("std");
 
 const parser = @import("parser/parser.zig");
 const interpreter = @import("interpreter/environment.zig");
+const syntax = @import("utils/syntax.zig");
 
-const helpers = @import("helpers.zig");
+const helpers = @import("utils/driver.zig");
 const getArgs = helpers.getArgs;
 const readFile = helpers.readFile;
 const printStmt = helpers.printStmt;
@@ -21,7 +22,7 @@ pub fn main() !void {
 
     const input = getArgs(allocator) catch |err| switch (err) {
         error.MalformedArgs => {
-            try stderr.print("Usage: zlx <run|ast> <filepath> <time?> <-v?>\n", .{});
+            try stderr.print("Usage: zlx <run|ast|dump> <filepath> <time?> <-v?>\n", .{});
             return;
         },
         else => return,
@@ -73,6 +74,9 @@ pub fn main() !void {
             break :blk .nil;
         };
         try stdout.print("Statement Evaluation Result: {s}\n", .{try number.toString(allocator)});
+    } else if (input.dump) {
+        try stdout.print("Dumping file contents:\n", .{});
+        try syntax.highlightSource(allocator, file_contents);
     } else {
         try stdout.print("Parsing completed without error\n", .{});
     }
