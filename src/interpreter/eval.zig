@@ -61,5 +61,7 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
         .class_decl => |*c| return try stmt_handlers.class(c, env),
         .function_decl => |*f| return try stmt_handlers.function(f, env),
         .import_stmt => |*i| return try stmt_handlers.import(i, env),
+        .break_stmt => |_| return .break_signal,
+        .continue_stmt => |_| return .continue_signal,
     }
 }

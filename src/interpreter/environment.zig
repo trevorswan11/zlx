@@ -32,6 +32,8 @@ pub const Value = union(enum) {
         args: []const *ast.Expr,
         env: *Environment,
     ) anyerror!Value,
+    break_signal,
+    continue_signal,
     nil,
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
@@ -134,6 +136,8 @@ pub const Value = union(enum) {
             .reference => |r| try stringReference(r, allocator),
             .bound_method => |bm| try stringBoundMethod(bm.instance, allocator),
             .builtin => |_| try std.fmt.allocPrint(allocator, "<Builtin Module>", .{}),
+            .break_signal => |_| try std.fmt.allocPrint(allocator, "break", .{}),
+            .continue_signal => |_| try std.fmt.allocPrint(allocator, "continue", .{}),
             .nil => try std.fmt.allocPrint(allocator, "nil", .{}),
         };
     }
@@ -176,6 +180,8 @@ pub const Value = union(enum) {
             .function => |_| false,
             .class => |_| false,
             .builtin => |_| false,
+            .break_signal => |_| false,
+            .continue_signal => |_| false,
         };
     }
 };

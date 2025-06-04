@@ -292,3 +292,21 @@ pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
         },
     };
 }
+
+pub fn parseBreakStmt(p: *parser.Parser) !ast.Stmt {
+    _ = try p.expect(.BREAK);
+    _ = try p.expect(.SEMI_COLON);
+
+    return ast.Stmt{
+        .break_stmt = ast.BreakStmt{},
+    };
+}
+
+pub fn parseContinueStmt(p: *parser.Parser) !ast.Stmt {
+    _ = try p.expect(.CONTINUE);
+    _ = try p.expect(.SEMI_COLON);
+
+    return ast.Stmt{
+        .continue_stmt = ast.ContinueStmt{},
+    };
+}

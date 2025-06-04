@@ -212,6 +212,9 @@ pub const ClassDeclarationStmt = struct {
     body: std.ArrayList(*Stmt),
 };
 
+pub const BreakStmt = struct {};
+pub const ContinueStmt = struct {};
+
 pub const Stmt = union(enum) {
     block: BlockStmt,
     var_decl: VarDeclarationStmt,
@@ -222,6 +225,8 @@ pub const Stmt = union(enum) {
     foreach_stmt: ForeachStmt,
     while_stmt: WhileStmt,
     class_decl: ClassDeclarationStmt,
+    break_stmt: BreakStmt,
+    continue_stmt: ContinueStmt,
 
     pub fn print(self: *Stmt) anyerror!void {
         const stdout = std.io.getStdOut().writer();
@@ -285,6 +290,12 @@ pub const Stmt = union(enum) {
             .class_decl => |c| {
                 try stdout.print("ClassDecl: {s}\n", .{c.name});
                 for (c.body.items) |stmt| try stmt.print();
+            },
+            .break_stmt => |_| {
+                try stdout.print("break\n", .{});
+            },
+            .continue_stmt => |_| {
+                try stdout.print("continue\n", .{});
             },
         }
     }

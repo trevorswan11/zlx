@@ -74,7 +74,12 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
         }
 
         for (w.body.items) |stmt| {
-            _ = try evalStmt(stmt, env);
+            const val = try evalStmt(stmt, env);
+            switch (val) {
+                .break_signal => return .nil,
+                .continue_signal => break,
+                else => {},
+            }
         }
     }
 

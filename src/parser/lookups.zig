@@ -136,8 +136,6 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try stmt(.FOREACH, stmts.parseForEachStmt);
     try stmt(.WHILE, stmts.parseWhileStmt);
     try stmt(.CLASS, stmts.parseClassDeclStmt);
-}
-
-pub fn rightBindingPower(bp: BindingPower) BindingPower {
-    return @enumFromInt(@intFromEnum(bp) - 1);
+    try stmt(.BREAK, stmts.parseBreakStmt);
+    try stmt(.CONTINUE, stmts.parseContinueStmt);
 }

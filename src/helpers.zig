@@ -186,6 +186,12 @@ pub fn printStmt(stmt: *ast.Stmt) !void {
                 }
                 try stdout.print("\n", .{});
             },
+            .break_stmt => {
+                try stdout.print("break\n", .{});
+            },
+            .continue_stmt => {
+                try stdout.print("continue\n", .{});
+            },
         }
     }
 }
