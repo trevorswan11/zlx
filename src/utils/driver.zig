@@ -84,19 +84,22 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
 
     // Capture the optional time/bench arg
     if (arguments.next()) |next| {
-        const t_flag = try toLower(allocator, next);
-        defer allocator.free(t_flag);
-        if (std.mem.eql(u8, t_flag, "time")) {
+        const flag = try toLower(allocator, next);
+        defer allocator.free(flag);
+        if (std.mem.eql(u8, flag, "time")) {
             time = true;
             if (arguments.next()) |v| {
                 const v_flag = try toLower(allocator, v);
                 defer allocator.free(v_flag);
                 verbose = std.mem.eql(u8, v_flag, "-v");
             }
-        } else {
-            const v_flag = try toLower(allocator, next);
-            defer allocator.free(v_flag);
-            verbose = std.mem.eql(u8, v_flag, "-v");
+        } else if (std.mem.eql(u8, flag, "-v")) {
+            verbose = true;
+            if (arguments.next()) |t| {
+                const t_flag = try toLower(allocator, t);
+                defer allocator.free(t_flag);
+                time = std.mem.eql(u8, t_flag, "time");
+            }
         }
     }
 

@@ -76,7 +76,7 @@ pub fn main() !void {
         try stdout.print("Statement Evaluation Result: {s}\n", .{try number.toString(allocator)});
     } else if (input.dump) {
         try stdout.print("Dumping file contents:\n", .{});
-        try syntax.highlightSource(allocator, file_contents);
+        try syntax.highlight(allocator, file_contents);
     } else {
         try stdout.print("Parsing completed without error\n", .{});
     }

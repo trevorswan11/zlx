@@ -35,17 +35,52 @@ fn colorForKind(kind: TokenKind) []const u8 {
         .IDENTIFIER => colors.identifier,
 
         // Operators
-        .ASSIGNMENT, .EQUALS, .NOT_EQUALS, .NOT, .LESS, .LESS_EQUALS, .GREATER, .GREATER_EQUALS, .AND, .OR, .PLUS, .MINUS, .STAR, .SLASH, .PERCENT, .PLUS_EQUALS, .MINUS_EQUALS, .STAR_EQUALS, .SLASH_EQUALS, .PERCENT_EQUALS, .NULLISH_ASSIGNMENT, .PLUS_PLUS, .MINUS_MINUS => colors.operator,
+        .ASSIGNMENT,
+        .EQUALS,
+        .NOT_EQUALS,
+        .NOT,
+        .LESS,
+        .LESS_EQUALS,
+        .GREATER,
+        .GREATER_EQUALS,
+        .AND,
+        .OR,
+        .PLUS,
+        .MINUS,
+        .STAR,
+        .SLASH,
+        .PERCENT,
+        .PLUS_EQUALS,
+        .MINUS_EQUALS,
+        .STAR_EQUALS,
+        .SLASH_EQUALS,
+        .PERCENT_EQUALS,
+        .NULLISH_ASSIGNMENT,
+        .PLUS_PLUS,
+        .MINUS_MINUS,
+        => colors.operator,
 
         // Punctuation
-        .DOT, .DOT_DOT, .SEMI_COLON, .COLON, .QUESTION, .COMMA, .OPEN_PAREN, .CLOSE_PAREN, .OPEN_BRACKET, .CLOSE_BRACKET, .OPEN_CURLY, .CLOSE_CURLY => colors.punctuation,
+        .DOT,
+        .DOT_DOT,
+        .SEMI_COLON,
+        .COLON,
+        .QUESTION,
+        .COMMA,
+        .OPEN_PAREN,
+        .CLOSE_PAREN,
+        .OPEN_BRACKET,
+        .CLOSE_BRACKET,
+        .OPEN_CURLY,
+        .CLOSE_CURLY,
+        => colors.punctuation,
 
         // Default
         else => colors.identifier,
     };
 }
 
-pub fn highlightSource(allocator: std.mem.Allocator, source: []const u8) !void {
+pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
     const tokenize = @import("../lexer/tokenizer.zig").tokenize;
     const tokens = try tokenize(allocator, source);
     const stdout = std.io.getStdOut().writer();
@@ -66,10 +101,7 @@ pub fn highlightSource(allocator: std.mem.Allocator, source: []const u8) !void {
         const is_function_call = tok.kind == .IDENTIFIER and
             (i + 1 < tokens.items.len and tokens.items[i + 1].kind == .OPEN_PAREN);
 
-        const color = if (is_function_call)
-            colors.function
-        else
-            colorForKind(tok.kind);
+        const color = if (is_function_call) colors.function else colorForKind(tok.kind);
 
         try stdout.print("{s}{s}{s}", .{
             color,
