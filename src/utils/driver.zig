@@ -59,7 +59,6 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
                 run = true;
             } else if (std.mem.eql(u8, r, "dump")) {
                 dump = true;
-                run = false;
             } else {
                 return error.InvalidRunTarget;
             }
@@ -107,8 +106,8 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
         return Args{
             .path = try allocator.dupe(u8, fp),
             .time = time,
-            .verbose = if (!dump) verbose else false,
-            .run = run,
+            .verbose = verbose,
+            .run = if (!dump) run else false,
             .dump = dump,
         };
     } else return error.MalformedArgs;

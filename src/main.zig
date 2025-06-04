@@ -56,6 +56,7 @@ pub fn main() !void {
     defer env.deinit();
 
     if (input.verbose) {
+        try stdout.print("Dumping AST...\n", .{});
         printStmt(block, allocator) catch |err| {
             try stderr.print("Error parsing main block statement: {!}\n", .{err});
         };

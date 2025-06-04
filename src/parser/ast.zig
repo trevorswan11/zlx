@@ -94,90 +94,113 @@ pub const Expr = union(enum) {
     pub fn toString(self: *Expr, allocator: std.mem.Allocator) ![]const u8 {
         var buffer = std.ArrayList(u8).init(allocator);
         const writer = buffer.writer();
-        try self.writeTo(writer);
+        try self.writeTo(writer, 0);
         return buffer.toOwnedSlice();
     }
 
-    pub fn writeTo(self: *Expr, writer: anytype) anyerror!void {
+    pub fn writeTo(self: *Expr, writer: anytype, indent_level: usize) anyerror!void {
         switch (self.*) {
             .number => |n| {
+                try indent(writer, indent_level);
                 try writer.print("Number: {d}\n", .{n.value});
             },
             .string => |s| {
+                try indent(writer, indent_level);
                 try writer.print("String: \"{s}\"\n", .{s.value});
             },
             .boolean => |b| {
+                try indent(writer, indent_level);
                 try writer.print("Boolean: {}\n", .{b});
             },
             .symbol => |s| {
+                try indent(writer, indent_level);
                 try writer.print("Symbol: {s}\n", .{s.value});
             },
             .prefix => |p| {
-                try writer.print("PrefixExpr: operator = {s}\n", .{try tokens.tokenKindString(p.operator.allocator, p.operator.kind)});
-                try p.right.writeTo(writer);
+                try indent(writer, indent_level);
+                try writer.print("PrefixExpr: operator = {s}\n", .{
+                    try tokens.tokenKindString(p.operator.allocator, p.operator.kind),
+                });
+                try p.right.writeTo(writer, indent_level + 1);
             },
             .binary => |b| {
-                try writer.print("BinaryExpr: operator = {s}\n", .{try tokens.tokenKindString(b.operator.allocator, b.operator.kind)});
-                try b.left.writeTo(writer);
-                try b.right.writeTo(writer);
+                try indent(writer, indent_level);
+                try writer.print("BinaryExpr: operator = {s}\n", .{
+                    try tokens.tokenKindString(b.operator.allocator, b.operator.kind),
+                });
+                try b.left.writeTo(writer, indent_level + 1);
+                try b.right.writeTo(writer, indent_level + 1);
             },
             .assignment => |a| {
+                try indent(writer, indent_level);
                 try writer.print("AssignmentExpr:\n", .{});
-                try a.assignee.writeTo(writer);
-                try a.assigned_value.writeTo(writer);
+                try a.assignee.writeTo(writer, indent_level + 1);
+                try a.assigned_value.writeTo(writer, indent_level + 1);
             },
             .member => |m| {
+                try indent(writer, indent_level);
                 try writer.print("MemberExpr: property = {s}\n", .{m.property});
-                try m.member.writeTo(writer);
+                try m.member.writeTo(writer, indent_level + 1);
             },
             .computed => |c| {
+                try indent(writer, indent_level);
                 try writer.print("ComputedExpr:\n", .{});
-                try c.member.writeTo(writer);
-                try c.property.writeTo(writer);
+                try c.member.writeTo(writer, indent_level + 1);
+                try c.property.writeTo(writer, indent_level + 1);
             },
             .call => |c| {
+                try indent(writer, indent_level);
                 try writer.print("CallExpr:\n", .{});
-                try c.method.writeTo(writer);
+                try c.method.writeTo(writer, indent_level + 1);
                 for (c.arguments.items) |arg| {
-                    try arg.writeTo(writer);
+                    try arg.writeTo(writer, indent_level + 1);
                 }
             },
             .range_expr => |r| {
+                try indent(writer, indent_level);
                 try writer.print("RangeExpr:\n", .{});
-                try r.lower.writeTo(writer);
-                try r.upper.writeTo(writer);
+                try r.lower.writeTo(writer, indent_level + 1);
+                try r.upper.writeTo(writer, indent_level + 1);
             },
             .function_expr => |f| {
+                try indent(writer, indent_level);
                 try writer.print("FunctionExpr:\n", .{});
+                try indent(writer, indent_level + 1);
                 try writer.print("Params:\n", .{});
                 for (f.parameters.items) |param| {
-                    try param.writeTo(writer);
+                    try param.writeTo(writer, indent_level + 2);
                 }
+                try indent(writer, indent_level + 1);
                 try writer.print("Return Type:\n", .{});
-                try f.return_type.writeTo(writer);
+                try f.return_type.writeTo(writer, indent_level + 2);
+                try indent(writer, indent_level + 1);
                 try writer.print("Body:\n", .{});
                 for (f.body.items) |stmt| {
-                    try stmt.writeTo(writer);
+                    try stmt.writeTo(writer, indent_level + 2);
                 }
             },
             .array_literal => |a| {
+                try indent(writer, indent_level);
                 try writer.print("ArrayLiteral:\n", .{});
                 for (a.contents.items) |item| {
-                    try item.writeTo(writer);
+                    try item.writeTo(writer, indent_level + 1);
                 }
             },
             .new_expr => |n| {
+                try indent(writer, indent_level);
                 try writer.print("NewExpr:\n", .{});
-                try n.instantiation.method.writeTo(writer);
+                try n.instantiation.method.writeTo(writer, indent_level + 1);
                 for (n.instantiation.arguments.items) |arg| {
-                    try arg.writeTo(writer);
+                    try arg.writeTo(writer, indent_level + 1);
                 }
             },
             .object => |obj| {
+                try indent(writer, indent_level);
                 try writer.print("ObjectExpr:\n", .{});
                 for (obj.entries.items) |entry| {
-                    try writer.print("  Key: {s}\n", .{entry.key});
-                    try entry.value.writeTo(writer);
+                    try indent(writer, indent_level + 1);
+                    try writer.print("Key: {s}\n", .{entry.key});
+                    try entry.value.writeTo(writer, indent_level + 2);
                 }
             },
         }
@@ -256,88 +279,111 @@ pub const Stmt = union(enum) {
         var buffer = std.ArrayList(u8).init(allocator);
         const writer = buffer.writer();
 
-        try self.writeTo(writer);
+        try self.writeTo(writer, 0);
         return buffer.toOwnedSlice();
     }
 
-    pub fn writeTo(self: *Stmt, writer: anytype) anyerror!void {
+    pub fn writeTo(self: *Stmt, writer: anytype, indent_level: usize) anyerror!void {
         switch (self.*) {
             .block => |b| {
+                try indent(writer, indent_level);
                 try writer.print("BlockStmt:\n", .{});
                 for (b.body.items) |stmt| {
-                    try stmt.writeTo(writer);
+                    try stmt.writeTo(writer, indent_level + 1);
                 }
             },
             .var_decl => |v| {
+                try indent(writer, indent_level);
                 try writer.print("VarDeclStmt: {s} (const: {})\n", .{ v.identifier, v.constant });
                 if (v.explicit_type) |ty| {
+                    try indent(writer, indent_level + 1);
                     try writer.print("Explicit Type:\n", .{});
-                    try ty.writeTo(writer);
+                    try ty.writeTo(writer, indent_level + 2);
                 }
                 if (v.assigned_value) |val| {
+                    try indent(writer, indent_level + 1);
                     try writer.print("Assigned Value:\n", .{});
-                    try val.writeTo(writer);
+                    try val.writeTo(writer, indent_level + 2);
                 }
             },
             .expression => |e| {
+                try indent(writer, indent_level);
                 try writer.print("ExpressionStmt:\n", .{});
-                try e.expression.writeTo(writer);
+                try e.expression.writeTo(writer, indent_level + 1);
             },
             .function_decl => |f| {
+                try indent(writer, indent_level);
                 try writer.print("FunctionDecl: {s}\n", .{f.name});
+                try indent(writer, indent_level + 1);
                 try writer.print("Params:\n", .{});
                 for (f.parameters.items) |param| {
-                    try param.writeTo(writer);
+                    try param.writeTo(writer, indent_level + 2);
                 }
+                try indent(writer, indent_level + 1);
                 try writer.print("Return Type:\n", .{});
-                try f.return_type.writeTo(writer);
+                try f.return_type.writeTo(writer, indent_level + 2);
+                try indent(writer, indent_level + 1);
                 try writer.print("Body:\n", .{});
                 for (f.body.items) |stmt| {
-                    try stmt.writeTo(writer);
+                    try stmt.writeTo(writer, indent_level + 2);
                 }
             },
             .if_stmt => |i| {
+                try indent(writer, indent_level);
                 try writer.print("IfStmt:\n", .{});
+                try indent(writer, indent_level + 1);
                 try writer.print("Condition:\n", .{});
-                try i.condition.writeTo(writer);
+                try i.condition.writeTo(writer, indent_level + 2);
+                try indent(writer, indent_level + 1);
                 try writer.print("Consequent:\n", .{});
-                try i.consequent.writeTo(writer);
+                try i.consequent.writeTo(writer, indent_level + 2);
                 if (i.alternate) |alt| {
+                    try indent(writer, indent_level + 1);
                     try writer.print("Alternate:\n", .{});
-                    try alt.writeTo(writer);
+                    try alt.writeTo(writer, indent_level + 2);
                 }
             },
             .import_stmt => |i| {
+                try indent(writer, indent_level);
                 try writer.print("ImportStmt: name = {s}, from = {s}\n", .{ i.name, i.from });
             },
             .foreach_stmt => |f| {
+                try indent(writer, indent_level);
                 try writer.print("ForeachStmt: value = {s}, index = {}\n", .{ f.value, f.index });
+                try indent(writer, indent_level + 1);
                 try writer.print("Iterable:\n", .{});
-                try f.iterable.writeTo(writer);
+                try f.iterable.writeTo(writer, indent_level + 2);
+                try indent(writer, indent_level + 1);
                 try writer.print("Body:\n", .{});
                 for (f.body.items) |stmt| {
-                    try stmt.writeTo(writer);
+                    try stmt.writeTo(writer, indent_level + 2);
                 }
             },
             .while_stmt => |w| {
-                try writer.print("While:\n", .{});
+                try indent(writer, indent_level);
+                try writer.print("WhileStmt:\n", .{});
+                try indent(writer, indent_level + 1);
                 try writer.print("Condition:\n", .{});
-                try w.condition.writeTo(writer);
+                try w.condition.writeTo(writer, indent_level + 2);
+                try indent(writer, indent_level + 1);
                 try writer.print("Body:\n", .{});
                 for (w.body.items) |stmt| {
-                    try stmt.writeTo(writer);
+                    try stmt.writeTo(writer, indent_level + 2);
                 }
             },
             .class_decl => |c| {
+                try indent(writer, indent_level);
                 try writer.print("ClassDecl: {s}\n", .{c.name});
                 for (c.body.items) |stmt| {
-                    try stmt.writeTo(writer);
+                    try stmt.writeTo(writer, indent_level + 1);
                 }
             },
             .break_stmt => |_| {
+                try indent(writer, indent_level);
                 try writer.print("break\n", .{});
             },
             .continue_stmt => |_| {
+                try indent(writer, indent_level);
                 try writer.print("continue\n", .{});
             },
         }
@@ -362,18 +408,20 @@ pub const Type = union(enum) {
         var buffer = std.ArrayList(u8).init(allocator);
         const writer = buffer.writer();
 
-        try self.writeTo(writer);
+        try self.writeTo(writer, 0);
         return buffer.toOwnedSlice();
     }
 
-    pub fn writeTo(self: *Type, writer: anytype) anyerror!void {
+    pub fn writeTo(self: *Type, writer: anytype, indent_level: usize) anyerror!void {
         switch (self.*) {
             .symbol => |s| {
+                try indent(writer, indent_level);
                 try writer.print("Type: symbol, value = {s}\n", .{s.value});
             },
             .list => |l| {
+                try indent(writer, indent_level);
                 try writer.print("Type: list of:\n", .{});
-                try l.underlying.writeTo(writer);
+                try l.underlying.writeTo(writer, indent_level + 1);
             },
         }
     }
@@ -389,12 +437,19 @@ pub const Parameter = struct {
         var buffer = std.ArrayList(u8).init(allocator);
         const writer = buffer.writer();
 
-        try self.writeTo(writer);
+        try self.writeTo(writer, 0);
         return buffer.toOwnedSlice();
     }
 
-    pub fn writeTo(self: Parameter, writer: anytype) anyerror!void {
+    pub fn writeTo(self: Parameter, writer: anytype, indent_level: usize) anyerror!void {
+        try indent(writer, indent_level);
         try writer.print("Parameter: name = {s}\n", .{self.name});
-        try self.type.writeTo(writer);
+        try self.type.writeTo(writer, indent_level + 1);
     }
 };
+
+fn indent(writer: anytype, level: usize) !void {
+    for (0..level) |_| {
+        try writer.writeAll("  ");
+    }
+}

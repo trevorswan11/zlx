@@ -37,8 +37,7 @@ pub fn led(kind: token.TokenKind, bp: BindingPower, led_fn: LedHandler) !void {
     _ = try led_lu.put(kind, led_fn);
 }
 
-pub fn nud(kind: token.TokenKind, bp: BindingPower, nud_fn: NudHandler) !void {
-    _ = bp;
+pub fn nud(kind: token.TokenKind, _: BindingPower, nud_fn: NudHandler) !void {
     _ = try bp_lu.put(kind, BindingPower.PRIMARY);
     _ = try nud_lu.put(kind, nud_fn);
 }

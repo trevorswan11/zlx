@@ -21,8 +21,7 @@ pub fn typeLed(kind: TokenKind, bp: BindingPower, led_fn: TypeLedHandler) !void 
     _ = try type_led_lu.put(kind, led_fn);
 }
 
-pub fn typeNud(kind: TokenKind, bp: BindingPower, nud_fn: TypeNudHandler) !void {
-    _ = bp;
+pub fn typeNud(kind: TokenKind, _: BindingPower, nud_fn: TypeNudHandler) !void {
     _ = try type_bp_lu.put(kind, .PRIMARY);
     _ = try type_nud_lu.put(kind, nud_fn);
 }
