@@ -2,4 +2,4 @@ fn add(a: int, b: int): int {
     const res = a + b;
     res;
 }
-print(add(5, 10));
+println(add(5, 10));

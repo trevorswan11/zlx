@@ -55,7 +55,7 @@ pub fn main() !void {
     defer env.deinit();
 
     if (input.verbose) {
-        printStmt(block) catch |err| {
+        printStmt(block, allocator) catch |err| {
             try stderr.print("Error parsing main block statement: {!}\n", .{err});
         };
     }
@@ -67,6 +67,7 @@ pub fn main() !void {
     }
 
     if (input.run) {
+        try stdout.print("Evaluating Target...\n", .{});
         const number = interpreter.evalStmt(block, &env) catch |err| blk: {
             try stderr.print("Statement Evaluation Error: {!}\n", .{err});
             break :blk .nil;

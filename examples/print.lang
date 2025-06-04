@@ -1,4 +1,4 @@
 foreach val in 1..4 {
-    print(val);
+    println(val);
 }
-print("Call Expressions!");
+println("Call Expressions!");

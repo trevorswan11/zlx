@@ -6,11 +6,11 @@ class Greeter {
     }
 
     fn greet() {
-        print("Hello, " + this.name);
+        println("Hello, " + this.name);
     }
 }
 
 let g = new Greeter("Ziggy");
-print(g.name);
-print(g["__class_name"]);
+println(g.name);
+println(g["__class_name"]);
 g.greet();

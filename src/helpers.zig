@@ -45,7 +45,11 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     // The first arg can specify either run or ast, defaulting to run
     const raw_args = try std.process.argsAlloc(allocator);
     defer allocator.free(raw_args);
-    if (raw_args.len == 3) {
+    if (raw_args.len == 3) optional_arg: {
+        if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run")) {
+            break :optional_arg;
+        }
+
         if (arguments.next()) |r| {
             if (std.mem.eql(u8, r, "ast")) {
                 run = false;
@@ -101,90 +105,111 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     } else return error.MalformedArgs;
 }
 
-pub fn printStmt(stmt: *ast.Stmt) !void {
+pub fn printStmt(stmt: *ast.Stmt, allocator: std.mem.Allocator) !void {
     const stdout = std.io.getStdOut().writer();
     for (stmt.block.body.items) |s| {
         switch (s.*) {
             .block => {
                 try stdout.print("Block Statement\n", .{});
                 for (s.block.body.items) |it| {
-                    try it.print();
+                    const str = try it.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
-                try stdout.print("\n", .{});
             },
             .class_decl => {
                 try stdout.print("Class Declaration Statement: Name = {s}\n", .{s.class_decl.name});
                 for (s.class_decl.body.items) |it| {
-                    try it.print();
+                    const str = try it.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
-                try stdout.print("\n", .{});
             },
             .expression => {
                 try stdout.print("Expression Statement\n", .{});
-                try s.expression.expression.print();
-                try stdout.print("\n", .{});
+                const str = try s.expression.expression.toString(allocator);
+                defer allocator.free(str);
+                try stdout.print("{s}\n", .{str});
             },
             .foreach_stmt => {
                 try stdout.print("Foreach Statement\n", .{});
                 for (s.foreach_stmt.body.items) |it| {
-                    try it.print();
+                    const str = try it.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
                 try stdout.print("Value: {s}\n", .{s.foreach_stmt.value});
                 try stdout.print("Index: {s}\n", .{if (s.foreach_stmt.index) "true" else "false"});
-                try s.foreach_stmt.iterable.print();
-                try stdout.print("\n", .{});
+                const str = try s.foreach_stmt.iterable.toString(allocator);
+                defer allocator.free(str);
+                try stdout.print("{s}\n", .{str});
             },
             .while_stmt => {
                 try stdout.print("While Statement\n", .{});
                 for (s.while_stmt.body.items) |it| {
-                    try it.print();
+                    const str = try it.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
                 try stdout.print("Condition:\n", .{});
-                try s.while_stmt.condition.print();
-                try stdout.print("\n", .{});
+                const str = try s.while_stmt.condition.toString(allocator);
+                defer allocator.free(str);
+                try stdout.print("{s}\n", .{str});
             },
             .function_decl => {
                 try stdout.print("Function Declaration Statement: Name = {s}\n", .{s.function_decl.name});
                 for (s.function_decl.body.items) |it| {
-                    try it.print();
+                    const str = try it.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
                 try stdout.print("{d} Parameter(s)\n", .{s.function_decl.parameters.items.len});
                 for (s.function_decl.parameters.items) |it| {
-                    try it.print();
+                    const str = try it.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
                 try stdout.print("Return type: ", .{});
-                try s.function_decl.return_type.print();
-                try stdout.print("\n", .{});
+                const str = try s.function_decl.return_type.toString(allocator);
+                defer allocator.free(str);
+                try stdout.print("{s}\n", .{str});
             },
             .if_stmt => {
                 try stdout.print("If Statement\n", .{});
                 try stdout.print("Condition: ", .{});
-                try s.if_stmt.condition.print();
+                const str_cond = try s.if_stmt.condition.toString(allocator);
+                defer allocator.free(str_cond);
+                try stdout.print("{s}\n", .{str_cond});
                 if (s.if_stmt.alternate) |alt| {
                     try stdout.print("Alternate: ", .{});
-                    try alt.print();
+                    const str = try alt.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
                 try stdout.print("Consequent: ", .{});
-                try s.if_stmt.consequent.print();
-                try stdout.print("\n", .{});
+                const str = try s.if_stmt.consequent.toString(allocator);
+                defer allocator.free(str);
+                try stdout.print("{s}\n", .{str});
             },
             .import_stmt => {
                 try stdout.print("Import Statement\n", .{});
                 try stdout.print("Name: {s} -- From {s}\n", .{ s.import_stmt.name, s.import_stmt.from });
-                try stdout.print("\n", .{});
             },
             .var_decl => {
                 try stdout.print("Variable Declaration Statement: Identifier = {s}\n", .{s.var_decl.identifier});
                 try stdout.print("Constant: {s}\n", .{if (s.var_decl.constant) "true" else "false"});
                 if (s.var_decl.explicit_type) |et| {
                     try stdout.print("Explicit Type: ", .{});
-                    try et.print();
+                    const str = try et.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
                 if (s.var_decl.assigned_value) |av| {
                     try stdout.print("Assigned Value: ", .{});
-                    try av.print();
+                    const str = try av.toString(allocator);
+                    defer allocator.free(str);
+                    try stdout.print("{s}\n", .{str});
                 }
-                try stdout.print("\n", .{});
             },
             .break_stmt => {
                 try stdout.print("break\n", .{});

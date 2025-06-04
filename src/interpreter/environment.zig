@@ -65,9 +65,16 @@ pub const Value = union(enum) {
             try str_builder.appendSlice(formatted);
         }
         const len_str = try std.fmt.allocPrint(allocator, "FN Body Len: {d}\n", .{body.items.len});
-        // TODO: toString for stmts (not just strings)
         defer allocator.free(len_str);
         try str_builder.appendSlice(len_str);
+
+        try str_builder.appendSlice("FN Body:\n");
+        for (body.items) |b| {
+            const stmt_str = try b.toString(allocator);
+            defer allocator.free(stmt_str);
+            try str_builder.appendSlice(stmt_str);
+            try str_builder.appendSlice("\n");
+        }
 
         return try str_builder.toOwnedSlice();
     }
@@ -103,7 +110,14 @@ pub const Value = union(enum) {
         const formatted_len = try std.fmt.allocPrint(allocator, "Class Body Len: {d}\n", .{body.items.len});
         defer allocator.free(formatted_len);
         try str_builder.appendSlice(formatted_len);
-        // TODO: toString for stmts (not just strings)
+        
+        try str_builder.appendSlice("Class Body:\n");
+        for (body.items) |b| {
+            const stmt_str = try b.toString(allocator);
+            defer allocator.free(stmt_str);
+            try str_builder.appendSlice(stmt_str);
+            try str_builder.appendSlice("\n");
+        }
 
         const formatted_ctor = try std.fmt.allocPrint(allocator, "Constructor: {s}\n", .{if (ctor) |_| "true" else "false"});
         defer allocator.free(formatted_ctor);

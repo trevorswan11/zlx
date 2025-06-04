@@ -6,7 +6,7 @@ class Greeter {
     }
 
     fn greet() {
-        print("Hello, " + this.name);
+        println("Hello, " + this.name);
     }
 }
 

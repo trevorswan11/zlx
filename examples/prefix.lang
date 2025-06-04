@@ -1,12 +1,12 @@
 let a = 5;
 let b = --a;
-print("minus minus:");
-print(b);
+println("minus minus:");
+println(b);
 let c = ++a;
-print("plus plus:");
-print(c);
-print("a");
-print(a);
+println("plus plus:");
+println(c);
+println("a");
+println(a);
 
-print("nested:");
-print(++a);
+println("nested:");
+println(++a);

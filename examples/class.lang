@@ -9,4 +9,4 @@ class Person {
 }
 
 let p = new Person("Alice", 42);
-print(p.name);
+println(p.name);
