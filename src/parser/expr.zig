@@ -182,7 +182,7 @@ pub fn parseArrayLiteralExpr(p: *parser.Parser) !ast.Expr {
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_BRACKET) {
         try array_contents.append(try boxExpr(p, try parseExpr(p, .LOGICAL)));
 
-        if (!@constCast(&p.currentToken()).isOneOfMany(@constCast(&[_]token.TokenKind{ .EOF, .CLOSE_BRACKET }))) {
+        if (!p.currentToken().isOneOfManyRuntime(&[_]token.TokenKind{ .EOF, .CLOSE_BRACKET })) {
             _ = try p.expect(.COMMA);
         }
     }
@@ -211,7 +211,7 @@ pub fn parseCallExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !a
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {
         try arguments.append(try boxExpr(p, try parseExpr(p, .ASSIGNMENT)));
 
-        if (!@constCast(&p.currentToken()).isOneOfMany(@constCast(&[_]token.TokenKind{ .EOF, .CLOSE_PAREN }))) {
+        if (!p.currentToken().isOneOfManyRuntime(&[_]token.TokenKind{ .EOF, .CLOSE_PAREN })) {
             _ = try p.expect(.COMMA);
         }
     }

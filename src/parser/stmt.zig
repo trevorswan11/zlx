@@ -143,7 +143,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         param_ptr.* = param;
         try function_params.append(param_ptr);
 
-        if (!@constCast(&p.currentToken()).isOneOfMany(@constCast(&[_]token.TokenKind{ .CLOSE_PAREN, .EOF }))) {
+        if (!p.currentToken().isOneOfManyRuntime(&[_]token.TokenKind{ .CLOSE_PAREN, .EOF })) {
             _ = try p.expect(.COMMA);
         }
     }

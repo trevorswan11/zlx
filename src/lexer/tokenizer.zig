@@ -242,9 +242,10 @@ pub fn tokenize(allocator: std.mem.Allocator, source: []const u8) !std.ArrayList
 
     while (!lex.atEOF()) {
         var matched = false;
-        for (lex.patterns.items) |pattern| {
-            if (try @constCast(&pattern.regex).match(lex.remainder())) {
-                try pattern.handler.func(pattern.handler.ctx, &lex, @constCast(&pattern.regex));
+        for (lex.patterns.items) |pattern_const| {
+            var pattern = pattern_const;
+            if (try pattern.regex.match(lex.remainder())) {
+                try pattern.handler.func(pattern.handler.ctx, &lex, &pattern.regex);
                 matched = true;
                 break;
             }
@@ -309,8 +310,9 @@ const SimpleHandlerWrapper = struct {
 
 fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
-    if (try regex.captures(text)) |caps| {
-        defer @constCast(&caps).deinit();
+    if (try regex.captures(text)) |caps_const| {
+        var caps = caps_const;
+        defer caps.deinit();
 
         const span = caps.boundsAt(0).?;
         const matched = text[(span.lower + 1)..(span.upper - 1)];
@@ -322,8 +324,9 @@ fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
 fn numberHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
-    if (try regex.captures(text)) |caps| {
-        defer @constCast(&caps).deinit();
+    if (try regex.captures(text)) |caps_const| {
+        var caps = caps_const;
+        defer caps.deinit();
 
         const span = caps.boundsAt(0).?;
         const matched = text[span.lower..span.upper];
@@ -335,8 +338,9 @@ fn numberHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
 fn symbolHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
-    if (try regex.captures(text)) |caps| {
-        defer @constCast(&caps).deinit();
+    if (try regex.captures(text)) |caps_const| {
+        var caps = caps_const;
+        defer caps.deinit();
 
         const span = caps.boundsAt(0).?;
         const word = text[span.lower..span.upper];
@@ -351,8 +355,10 @@ fn symbolHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
 fn skipHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
-    if (try regex.captures(text)) |caps| {
-        defer @constCast(&caps).deinit();
+    if (try regex.captures(text)) |caps_const| {
+        var caps = caps_const;
+        defer caps.deinit();
+        
         const span = caps.boundsAt(0).?;
         lex.advanceN(span.upper);
         lex.line += countNewlines(text[span.lower..span.upper]);
@@ -361,8 +367,10 @@ fn skipHandler(lex: *Lexer, regex: *Regex) LexerError!void {
 
 fn commentHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     const text = lex.remainder();
-    if (try regex.captures(text)) |caps| {
-        defer @constCast(&caps).deinit();
+    if (try regex.captures(text)) |caps_const| {
+        var caps = caps_const;
+        defer caps.deinit();
+
         const span = caps.boundsAt(0).?;
         lex.advanceN(span.upper);
         if (text[span.upper - 1] == '\n') {

@@ -1,5 +1,4 @@
 import fs;
-import path;
 import time;
 
 class DirectoryReader {

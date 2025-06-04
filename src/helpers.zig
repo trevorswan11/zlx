@@ -45,7 +45,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     // The first arg can specify either run or ast, defaulting to run
     const raw_args = try std.process.argsAlloc(allocator);
     defer allocator.free(raw_args);
-    if (raw_args.len == 3) optional_arg: {
+    if (raw_args.len >= 3) optional_arg: {
         if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run")) {
             break :optional_arg;
         }
