@@ -81,6 +81,44 @@ pub const Parser = struct {
 
         return self.advance();
     }
+
+    pub fn expectMany(self: *Self, expected_kinds: []const token.TokenKind) !token.Token {
+        return try self.expectManyError(expected_kinds, null);
+    }
+
+    pub fn expectManyError(self: *Self, expected_kinds: []const token.TokenKind, err: ?anyerror) !token.Token {
+        const stderr = std.io.getStdErr().writer();
+        const tok = self.currentToken();
+        const kind = tok.kind;
+
+        for (expected_kinds) |expected_kind| {
+            if (kind == expected_kind) {
+                return self.advance();
+            }
+        }
+
+        try stderr.print("Expected one of: ", .{});
+        for (expected_kinds, 0..) |expected_kind, i| {
+            try stderr.print("{s}{s}", .{
+                if (i > 0) ", " else "",
+                try token.tokenKindString(self.allocator, expected_kind),
+            });
+        }
+        try stderr.print(" but received {s} instead at token {d}/{d} @ Line {d}\n", .{
+            try token.tokenKindString(self.allocator, kind),
+            self.pos,
+            self.tokens.items.len,
+            tok.line,
+        });
+
+        try tok.debugRuntime();
+
+        if (err) |e| {
+            return e;
+        } else {
+            return error.ParserExpectedKind;
+        }
+    }
 };
 
 pub fn parse(allocator: std.mem.Allocator, source: []const u8) !*ast.Stmt {

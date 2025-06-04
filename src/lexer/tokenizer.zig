@@ -358,7 +358,7 @@ fn skipHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     if (try regex.captures(text)) |caps_const| {
         var caps = caps_const;
         defer caps.deinit();
-        
+
         const span = caps.boundsAt(0).?;
         lex.advanceN(span.upper);
         lex.line += countNewlines(text[span.lower..span.upper]);

@@ -110,7 +110,7 @@ pub const Value = union(enum) {
         const formatted_len = try std.fmt.allocPrint(allocator, "Class Body Len: {d}\n", .{body.items.len});
         defer allocator.free(formatted_len);
         try str_builder.appendSlice(formatted_len);
-        
+
         try str_builder.appendSlice("Class Body:\n");
         for (body.items) |b| {
             const stmt_str = try b.toString(allocator);

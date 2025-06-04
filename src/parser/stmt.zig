@@ -219,8 +219,8 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
 pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     _ = p.advance();
     var import_from: []const u8 = undefined;
-    const import_type: ?token.Token = p.expect(.IDENTIFIER) catch null;
-    const import_name = if (import_type) |tok| tok.value else "*"; // TODO: either identifier or star is allowed
+    const import_type = try p.expectMany(&[_]token.TokenKind{ .IDENTIFIER, .STAR });
+    const import_name = import_type.value;
 
     if (p.currentTokenKind() == .FROM) {
         _ = p.advance();
