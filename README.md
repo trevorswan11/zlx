@@ -9,7 +9,7 @@
 </p>
 
 ### Inspiration
-The backbone project was made with the help of [tylerlaceby's](https://www.youtube.com/@tylerlaceby) lexer playlist on YouTube. It was created with the intent to further learn Zig and to tackle something I had little to no knowledge about: parsing! His full, short playlist can be found [here](https://www.youtube.com/playlist?list=PL_2VhOvlMk4XDeq2eOOSDQMrbZj9zIU_b) if you're interested. 
+The backbone of this project was made with the help of [tylerlaceby's](https://www.youtube.com/@tylerlaceby) lexer playlist on YouTube. It was created with the intent to further learn Zig and to tackle something I had little to no knowledge about: parsing! His full, short playlist can be found [here](https://www.youtube.com/playlist?list=PL_2VhOvlMk4XDeq2eOOSDQMrbZj9zIU_b) if you're interested. 
 
 While I started this project with the intent to make the parser only, I ended up going much deeper and ended up building an interpreter. Ultimately, this project gave me a great understanding of Zig's strengths and weaknesses and taught me more about memory management in this language and in general. It was also a lot of fun!
 
