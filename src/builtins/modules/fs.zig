@@ -1,18 +1,13 @@
 const std = @import("std");
 
-const ast = @import("../parser/ast.zig");
-const environment = @import("../interpreter/environment.zig");
+const ast = @import("../../parser/ast.zig");
+const environment = @import("../../interpreter/environment.zig");
 const eval = environment.eval;
 
 const Environment = environment.Environment;
 const Value = environment.Value;
-const BuiltinModuleHandler = @import("builtins.zig").BuiltinModuleHandler;
-
-fn packHandler(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
-    try map.put(name, Value{
-        .builtin = builtin,
-    });
-}
+const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
+const pack = @import("../builtins.zig").pack;
 
 fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
     if (args.len != 1) {
@@ -45,20 +40,20 @@ fn expectTwoStrings(args: []const *ast.Expr, env: *Environment) !struct { []cons
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
 
-    try packHandler(&map, "read", readHandler);
-    try packHandler(&map, "write", writeHandler);
-    try packHandler(&map, "exists", existsHandler);
-    try packHandler(&map, "delete", deleteHandler);
-    try packHandler(&map, "list", listHandler);
-    try packHandler(&map, "mkdir", mkdirHandler);
-    try packHandler(&map, "rmdir", rmdirHandler);
-    try packHandler(&map, "rm", rmHandler);
-    try packHandler(&map, "copy", copyHandler);
-    try packHandler(&map, "rename", renameHandler);
-    try packHandler(&map, "is_dir", isDirHandler);
-    try packHandler(&map, "read_lines", readLinesHandler);
-    try packHandler(&map, "touch", touchHandler);
-    try packHandler(&map, "append", appendHandler);
+    try pack(&map, "read", readHandler);
+    try pack(&map, "write", writeHandler);
+    try pack(&map, "exists", existsHandler);
+    try pack(&map, "delete", deleteHandler);
+    try pack(&map, "list", listHandler);
+    try pack(&map, "mkdir", mkdirHandler);
+    try pack(&map, "rmdir", rmdirHandler);
+    try pack(&map, "rm", rmHandler);
+    try pack(&map, "copy", copyHandler);
+    try pack(&map, "rename", renameHandler);
+    try pack(&map, "is_dir", isDirHandler);
+    try pack(&map, "read_lines", readLinesHandler);
+    try pack(&map, "touch", touchHandler);
+    try pack(&map, "append", appendHandler);
 
     return Value{
         .object = map,
@@ -85,7 +80,7 @@ fn writeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
     return .nil;
 }
 
-fn existsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+pub fn existsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = try expectStringArg(args, env);
     std.fs.cwd().access(path, .{}) catch {
         return Value{

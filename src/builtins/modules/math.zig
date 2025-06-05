@@ -1,18 +1,13 @@
 const std = @import("std");
 
-const ast = @import("../parser/ast.zig");
-const environment = @import("../interpreter/environment.zig");
+const ast = @import("../../parser/ast.zig");
+const environment = @import("../../interpreter/environment.zig");
 const eval = environment.eval;
 
 const Environment = environment.Environment;
 const Value = environment.Value;
-const BuiltinModuleHandler = @import("builtins.zig").BuiltinModuleHandler;
-
-fn packHandler(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
-    try map.put(name, Value{
-        .builtin = builtin,
-    });
-}
+const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
+const pack = @import("../builtins.zig").pack;
 
 fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
     if (args.len != 1) {
@@ -50,26 +45,26 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     });
 
     // Unary functions
-    try packHandler(&map, "sqrt", sqrtHandler);
-    try packHandler(&map, "abs", absHandler);
-    try packHandler(&map, "sin", sinHandler);
-    try packHandler(&map, "cos", cosHandler);
-    try packHandler(&map, "tan", tanHandler);
-    try packHandler(&map, "asin", asinHandler);
-    try packHandler(&map, "acos", acosHandler);
-    try packHandler(&map, "atan", atanHandler);
-    try packHandler(&map, "log", logHandler);
-    try packHandler(&map, "log10", log10Handler);
-    try packHandler(&map, "exp", expHandler);
-    try packHandler(&map, "floor", floorHandler);
-    try packHandler(&map, "ceil", ceilHandler);
-    try packHandler(&map, "round", roundHandler);
+    try pack(&map, "sqrt", sqrtHandler);
+    try pack(&map, "abs", absHandler);
+    try pack(&map, "sin", sinHandler);
+    try pack(&map, "cos", cosHandler);
+    try pack(&map, "tan", tanHandler);
+    try pack(&map, "asin", asinHandler);
+    try pack(&map, "acos", acosHandler);
+    try pack(&map, "atan", atanHandler);
+    try pack(&map, "log", logHandler);
+    try pack(&map, "log10", log10Handler);
+    try pack(&map, "exp", expHandler);
+    try pack(&map, "floor", floorHandler);
+    try pack(&map, "ceil", ceilHandler);
+    try pack(&map, "round", roundHandler);
 
     // Binary functions
-    try packHandler(&map, "pow", powHandler);
-    try packHandler(&map, "min", minHandler);
-    try packHandler(&map, "max", maxHandler);
-    try packHandler(&map, "atan2", atan2Handler);
+    try pack(&map, "pow", powHandler);
+    try pack(&map, "min", minHandler);
+    try pack(&map, "max", maxHandler);
+    try pack(&map, "atan2", atan2Handler);
 
     return Value{
         .object = map,

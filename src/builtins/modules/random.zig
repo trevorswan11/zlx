@@ -1,25 +1,20 @@
 const std = @import("std");
 
-const ast = @import("../parser/ast.zig");
-const environment = @import("../interpreter/environment.zig");
+const ast = @import("../../parser/ast.zig");
+const environment = @import("../../interpreter/environment.zig");
 const eval = environment.eval;
 
 const Environment = environment.Environment;
 const Value = environment.Value;
-const BuiltinModuleHandler = @import("builtins.zig").BuiltinModuleHandler;
-
-fn packHandler(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
-    try map.put(name, Value{
-        .builtin = builtin,
-    });
-}
+const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
+const pack = @import("../builtins.zig").pack;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
 
-    try packHandler(&map, "rand", randHandler);
-    try packHandler(&map, "randint", randintHandler);
-    try packHandler(&map, "choice", choiceHandler);
+    try pack(&map, "rand", randHandler);
+    try pack(&map, "randint", randintHandler);
+    try pack(&map, "choice", choiceHandler);
 
     return Value{
         .object = map,

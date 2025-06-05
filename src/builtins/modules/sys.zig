@@ -1,29 +1,24 @@
 const std = @import("std");
 
-const ast = @import("../parser/ast.zig");
-const environment = @import("../interpreter/environment.zig");
+const ast = @import("../../parser/ast.zig");
+const environment = @import("../../interpreter/environment.zig");
 const eval = environment.eval;
 
 const Environment = environment.Environment;
 const Value = environment.Value;
-const BuiltinModuleHandler = @import("builtins.zig").BuiltinModuleHandler;
+const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
+const pack = @import("../builtins.zig").pack;
 
 var sys_env: std.process.EnvMap = undefined;
-
-fn packHandler(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
-    try map.put(name, Value{
-        .builtin = builtin,
-    });
-}
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
     sys_env = std.process.EnvMap.init(allocator);
 
-    try packHandler(&map, "args", argsHandler);
-    try packHandler(&map, "getenv", getenvHandler);
-    try packHandler(&map, "setenv", setenvHandler);
-    try packHandler(&map, "unsetenv", unsetenvHandler);
+    try pack(&map, "args", argsHandler);
+    try pack(&map, "getenv", getenvHandler);
+    try pack(&map, "setenv", setenvHandler);
+    try pack(&map, "unsetenv", unsetenvHandler);
 
     return Value{
         .object = map,

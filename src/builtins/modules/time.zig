@@ -1,18 +1,13 @@
 const std = @import("std");
 
-const ast = @import("../parser/ast.zig");
-const environment = @import("../interpreter/environment.zig");
+const ast = @import("../../parser/ast.zig");
+const environment = @import("../../interpreter/environment.zig");
 const eval = environment.eval;
 
 const Environment = environment.Environment;
 const Value = environment.Value;
-const BuiltinModuleHandler = @import("builtins.zig").BuiltinModuleHandler;
-
-fn packHandler(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
-    try map.put(name, Value{
-        .builtin = builtin,
-    });
-}
+const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
+const pack = @import("../builtins.zig").pack;
 
 fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
     if (args.len != 1) {
@@ -30,14 +25,14 @@ fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
 
-    try packHandler(&map, "now", nowHandler);
-    try packHandler(&map, "millis", millisHandler);
-    try packHandler(&map, "sleep", sleepHandler);
-    try packHandler(&map, "sleepMs", sleepMsHandler);
-    try packHandler(&map, "start", startHandler);
-    try packHandler(&map, "stop", stopHandler);
-    try packHandler(&map, "delta", deltaHandler);
-    try packHandler(&map, "timestamp", timestampHandler);
+    try pack(&map, "now", nowHandler);
+    try pack(&map, "millis", millisHandler);
+    try pack(&map, "sleep", sleepHandler);
+    try pack(&map, "sleepMs", sleepMsHandler);
+    try pack(&map, "start", startHandler);
+    try pack(&map, "stop", stopHandler);
+    try pack(&map, "delta", deltaHandler);
+    try pack(&map, "timestamp", timestampHandler);
 
     // Time constants!
     try loadConstants(&map);

@@ -1,0 +1,24 @@
+import array;
+
+let a = ref([1, 2, 3]);
+array.push(a, 4);
+println(a);  // Expect: [1, 2, 3, 4]
+println(array.pop(a));  // Expect: 4
+println(a);             // Expect: [1, 2, 3]
+array.insert(a, 1, 99);
+println(a);  // Expect: [1, 99, 2, 3]
+println(array.remove(a, 2)); // Expect: 2
+println(a);                  // Expect: [1, 99, 3]
+array.clear(a);
+println(a);  // Expect: []
+
+let b = [10, 20, 30];
+println(array.get(b, 1));  // Expect: 20
+
+let c = ref(b);
+array.set(c, 1, 99);
+println(c);  // Expect: [10, 99, 30]
+
+let d = [1, 2, 3, 4, 5];
+let sub = array.slice(d, 1, 4);
+println(sub);  // Expect: [2, 3, 4]

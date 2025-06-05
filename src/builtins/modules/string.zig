@@ -1,18 +1,13 @@
 const std = @import("std");
 
-const ast = @import("../parser/ast.zig");
-const environment = @import("../interpreter/environment.zig");
+const ast = @import("../../parser/ast.zig");
+const environment = @import("../../interpreter/environment.zig");
 const eval = environment.eval;
 
 const Environment = environment.Environment;
 const Value = environment.Value;
-const BuiltinModuleHandler = @import("builtins.zig").BuiltinModuleHandler;
-
-fn packHandler(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
-    try map.put(name, Value{
-        .builtin = builtin,
-    });
-}
+const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
+const pack = @import("../builtins.zig").pack;
 
 fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
     if (args.len != 1) {
@@ -28,13 +23,13 @@ fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
 
-    try packHandler(&map, "upper", upperHandler);
-    try packHandler(&map, "lower", lowerHandler);
-    try packHandler(&map, "slice", sliceHandler);
-    try packHandler(&map, "find", findHandler);
-    try packHandler(&map, "replace", replaceHandler);
-    try packHandler(&map, "split", splitHandler);
-    try packHandler(&map, "trim", trimHandler);
+    try pack(&map, "upper", upperHandler);
+    try pack(&map, "lower", lowerHandler);
+    try pack(&map, "slice", sliceHandler);
+    try pack(&map, "find", findHandler);
+    try pack(&map, "replace", replaceHandler);
+    try pack(&map, "split", splitHandler);
+    try pack(&map, "trim", trimHandler);
 
     return Value{
         .object = map,

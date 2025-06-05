@@ -3,9 +3,16 @@ const std = @import("std");
 const ast = @import("../parser/ast.zig");
 const environment = @import("../interpreter/environment.zig");
 const eval = @import("../interpreter/eval.zig");
+const fns = @import("fns.zig");
 
 const Environment = environment.Environment;
 const Value = environment.Value;
+
+pub fn pack(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
+    try map.put(name, Value{
+        .builtin = builtin,
+    });
+}
 
 // === Builtin Functions ===
 
@@ -21,48 +28,11 @@ const BuiltinFn = struct {
 };
 
 pub const builtin_fns = [_]BuiltinFn{
-    .{ .name = "print", .handler = builtinPrint },
-    .{ .name = "println", .handler = builtinPrintLn },
-    .{ .name = "len", .handler = builtinLen },
+    .{ .name = "print", .handler = fns.print },
+    .{ .name = "println", .handler = fns.println },
+    .{ .name = "len", .handler = fns.len },
+    .{ .name = "ref", .handler = fns.ref },
 };
-
-fn builtinPrint(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const stdout = std.io.getStdOut().writer();
-    for (args) |arg_expr| {
-        const val = try eval.evalExpr(arg_expr, env);
-        const str = try val.toString(allocator);
-        defer allocator.free(str);
-        try stdout.print("{s}", .{str});
-    }
-    return .nil;
-}
-
-fn builtinPrintLn(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const stdout = std.io.getStdOut().writer();
-    for (args) |arg_expr| {
-        const val = try eval.evalExpr(arg_expr, env);
-        const str = try val.toString(allocator);
-        defer allocator.free(str);
-        try stdout.print("{s}\n", .{str});
-    }
-    return .nil;
-}
-
-fn builtinLen(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) {
-        return error.ArgumentCountMismatch;
-    }
-    const val = try eval.evalExpr(args[0], env);
-    return switch (val) {
-        .array => |a| Value{
-            .number = @floatFromInt(a.items.len),
-        },
-        .string => |s| Value{
-            .number = @floatFromInt(s.len),
-        },
-        else => error.TypeMismatch,
-    };
-}
 
 // === Builtin Modules ===
 
@@ -82,11 +52,13 @@ const BuiltinModule = struct {
 };
 
 pub const builtin_modules = [_]BuiltinModule{
-    .{ .name = "fs", .loader = @import("fs.zig").load },
-    .{ .name = "time", .loader = @import("time.zig").load },
-    .{ .name = "math", .loader = @import("math.zig").load },
-    .{ .name = "random", .loader = @import("random.zig").load },
-    .{ .name = "string", .loader = @import("string.zig").load },
-    .{ .name = "sys", .loader = @import("sys.zig").load },
-    .{ .name = "debug", .loader = @import("debug.zig").load },
+    .{ .name = "fs", .loader = @import("modules/fs.zig").load },
+    .{ .name = "time", .loader = @import("modules/time.zig").load },
+    .{ .name = "math", .loader = @import("modules/math.zig").load },
+    .{ .name = "random", .loader = @import("modules/random.zig").load },
+    .{ .name = "string", .loader = @import("modules/string.zig").load },
+    .{ .name = "sys", .loader = @import("modules/sys.zig").load },
+    .{ .name = "debug", .loader = @import("modules/debug.zig").load },
+    .{ .name = "array", .loader = @import("modules/array.zig").load },
+    .{ .name = "path", .loader = @import("modules/path.zig").load },
 };
