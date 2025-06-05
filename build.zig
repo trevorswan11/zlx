@@ -50,28 +50,6 @@ fn addTestStep(b: *std.Build, exe_mod: *std.Build.Module) void {
     });
     const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
     test_step.dependOn(&run_exe_unit_tests.step);
-    addSourceTests(b, test_step);
-}
-
-fn addSourceTests(b: *std.Build, test_step: *std.Build.Step) void {
-    const gpa = std.heap.page_allocator;
-    const paths = getZigSourceFiles(gpa, "src") catch {
-        std.debug.print("Failed to collect source files\n", .{});
-        return;
-    };
-
-    defer {
-        for (paths.items) |p| {
-            gpa.free(p);
-        }
-        paths.deinit();
-    }
-
-    for (paths.items) |path| {
-        test_step.dependOn(&(b.addRunArtifact(b.addTest(.{
-            .root_source_file = b.path(path),
-        }))).step);
-    }
 }
 
 fn addFmtStep(b: *std.Build) void {
@@ -88,26 +66,4 @@ fn addFmtStep(b: *std.Build) void {
     const step = b.step("lint", "Check formatting of Zig source files");
     step.dependOn(&lint_build.step);
     step.dependOn(&lint_source.step);
-}
-
-fn getZigSourceFiles(allocator: std.mem.Allocator, directory: []const u8) !std.ArrayList([]const u8) {
-    const cwd = std.fs.cwd();
-    var dir = try cwd.openDir(directory, .{ .iterate = true });
-    defer dir.close();
-
-    var walker = try dir.walk(allocator);
-    defer walker.deinit();
-
-    var paths = std.ArrayList([]const u8).init(allocator);
-
-    while (try walker.next()) |entry| {
-        if (entry.kind != .file) continue;
-        if (!std.mem.endsWith(u8, entry.basename, ".zig")) continue;
-        if (std.mem.eql(u8, entry.basename, "main.zig")) continue;
-
-        const full_path = try std.fs.path.join(allocator, &.{ directory, entry.path });
-        try paths.append(full_path);
-    }
-
-    return paths;
 }

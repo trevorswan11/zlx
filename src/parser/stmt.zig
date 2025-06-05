@@ -139,7 +139,6 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
             return error.ReservedIdentifier;
         }
 
-
         var param_type: ast.Type = .{
             .symbol = .{
                 .value_type = "any",
