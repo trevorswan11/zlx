@@ -1,6 +1,8 @@
 # zlx
 
-<img src="/resources/logo.png" alt="Logo" width="200"/>
+<p align="center">
+  <img src="/resources/logo.png" alt="Logo" width="300"/>
+</p>
 
 A lexical analyzer, parser, and interpreter written in Zig.
 
