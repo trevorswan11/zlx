@@ -40,7 +40,7 @@ pub fn createTypeTokenLookups(allocator: std.mem.Allocator) !void {
         pub fn afn(p: *Parser) !ast.Type {
             return ast.Type{
                 .symbol = ast.SymbolType{
-                    .value = p.advance().value,
+                    .value_type = p.advance().value,
                 },
             };
         }

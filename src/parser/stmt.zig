@@ -142,8 +142,16 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
             return error.ReservedIdentifier;
         }
 
-        _ = try p.expect(.COLON);
-        const param_type = try types.parseType(p, binding.DEFAULT_BP);
+        var param_type: ast.Type = .{
+            .symbol = .{
+                .value_type = "any",
+            },
+        };
+
+        if (p.currentTokenKind() == .COLON) {
+            _ = try p.expect(.COLON);
+            param_type = try types.parseType(p, binding.DEFAULT_BP);
+        }
 
         const param_ptr = try p.allocator.create(ast.Parameter);
         const param = ast.Parameter{
@@ -166,7 +174,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         return_type = try types.parseType(p, binding.DEFAULT_BP);
     } else {
         return_type = ast.Type{ .symbol = ast.SymbolType{
-            .value = "void",
+            .value_type = "void",
         } };
     }
 

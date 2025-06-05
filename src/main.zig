@@ -12,6 +12,7 @@ const printStmt = helpers.printStmt;
 pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
     var t1: i128 = undefined;
+    var t2: i128 = undefined;
 
     const stdout = std.io.getStdOut().writer();
     const stderr = std.io.getStdErr().writer();
@@ -56,29 +57,43 @@ pub fn main() !void {
     defer env.deinit();
 
     if (input.verbose) {
-        try stdout.print("Dumping AST...\n", .{});
+        if (input.dump) {
+            try stdout.print("Dumping AST...\n", .{});
+        }
         printStmt(block, allocator) catch |err| {
             try stderr.print("Error parsing main block statement: {!}\n", .{err});
         };
     }
+    t1 = std.time.nanoTimestamp();
 
     // Successful parsing
-    t1 = std.time.nanoTimestamp();
-    if (input.time) {
-        try stdout.print("Parsing took {d} ms\n", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
-    }
-
     if (input.run) {
-        try stdout.print("Evaluating Target...\n", .{});
+        if (input.verbose) {
+        try stdout.print("Parsing completed without error\n", .{});
+            try stdout.print("Evaluating target...\n", .{});
+        }
         const number = interpreter.evalStmt(block, &env) catch |err| blk: {
             try stderr.print("Statement Evaluation Error: {!}\n", .{err});
             break :blk .nil;
         };
-        try stdout.print("Statement Evaluation Result: {s}\n", .{try number.toString(allocator)});
+        if (number != .nil) {
+            try stdout.print("Statement Evaluation Yielded: {s}\n", .{try number.toString(allocator)});
+        }
     } else if (input.dump) {
-        try stdout.print("Dumping file contents:\n", .{});
+        if (input.verbose) {
+            try stdout.print("Dumping file contents...\n", .{});
+        }
         try syntax.highlight(allocator, file_contents);
     } else {
-        try stdout.print("Parsing completed without error\n", .{});
+        try stdout.print("Parsing completed without error", .{});
+    }
+    t2 = std.time.nanoTimestamp();
+    if (input.time) {
+        const parsing = @as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0;
+        const process = @as(f128, @floatFromInt(t2 - t0)) / 1_000_000.0;
+        if (input.run or input.dump) {
+            try stdout.print("\n", .{});
+        }
+        try stdout.print("Parsing took {d} ms; Process took {d} ms", .{ parsing, process });
     }
 }

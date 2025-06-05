@@ -1,0 +1,5 @@
+fn no_type(num) {
+    print(num);
+}
+
+no_type(2);

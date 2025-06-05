@@ -409,7 +409,7 @@ pub const Stmt = union(enum) {
 // === Types ===
 
 pub const SymbolType = struct {
-    value: []const u8,
+    value_type: []const u8,
 };
 
 pub const ListType = struct {
@@ -432,7 +432,7 @@ pub const Type = union(enum) {
         switch (self.*) {
             .symbol => |s| {
                 try indent(writer, indent_level);
-                try writer.print("Type: symbol, value = {s}\n", .{s.value});
+                try writer.print("Type: symbol, value type = \"{s}\"\n", .{s.value_type});
             },
             .list => |l| {
                 try indent(writer, indent_level);

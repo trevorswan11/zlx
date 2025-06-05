@@ -4,12 +4,10 @@ fn test(): number {
         println(i);
         i = i + 1;
         if (i == 3) {
-            return i;  // should exit here
+            return i;
         }
     }
 }
-
-
 
 let a = test();
 println(a);
