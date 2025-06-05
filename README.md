@@ -1,10 +1,12 @@
-# zlx [![Zig](https://img.shields.io/badge/zig-0.14.0-orange)](https://ziglang.org/) [![License](https://img.shields.io/github/license/trevorswan11/zlx)](LICENSE) [![Last commit](https://img.shields.io/github/last-commit/trevorswan11/zlx)](https://github.com/trevorswan11/zlx)
+# zlx [![Zig](https://img.shields.io/badge/zig-0.14.0-orange)](https://ziglang.org/) [![License](https://img.shields.io/github/license/trevorswan11/zlx)](LICENSE) [![Last commit](https://img.shields.io/github/last-commit/trevorswan11/zlx)](https://github.com/trevorswan11/zlx) [![Build](https://github.com/trevorswan11/zlx/actions/workflows/build.yml/badge.svg)](https://github.com/trevorswan11/zlx/actions/workflows/build.yml)
 
 <p align="center">
   <img src="/resources/zlx-logo-v2.png" alt="zlx logo" width="250"/>
 </p>
 
-A lexical analyzer, parser, and interpreter written in Zig.
+<p align="center">
+  A lexical analyzer, parser, and interpreter written in Zig.
+</p>
 
 ### Inspiration
 The backbone project was made with the help of [tylerlaceby's](https://www.youtube.com/@tylerlaceby) lexer playlist on YouTube. It was created with the intent to further learn Zig and to tackle something I had little to no knowledge about: parsing! His full, short playlist can be found [here](https://www.youtube.com/playlist?list=PL_2VhOvlMk4XDeq2eOOSDQMrbZj9zIU_b) if you're interested. 
