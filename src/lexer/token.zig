@@ -77,6 +77,7 @@ pub const TokenKind = enum(u32) {
     IN,
     BREAK,
     CONTINUE,
+    RETURN,
 
     // Misc
     NUM_TOKENS,
@@ -165,6 +166,7 @@ pub const Token = struct {
         try reserved.put("foreach", .FOREACH);
         try reserved.put("while", .WHILE);
         try reserved.put("for", .FOR);
+        try reserved.put("return", .RETURN);
         try reserved.put("break", .BREAK);
         try reserved.put("continue", .CONTINUE);
         try reserved.put("export", .EXPORT);

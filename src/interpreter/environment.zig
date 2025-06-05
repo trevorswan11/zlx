@@ -35,6 +35,7 @@ pub const Value = union(enum) {
     ) anyerror!Value,
     break_signal,
     continue_signal,
+    return_value: *Value,
     nil,
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
@@ -141,6 +142,12 @@ pub const Value = union(enum) {
         return try std.fmt.allocPrint(allocator, "Bound to Instance: {s}", .{inner});
     }
 
+    fn stringReturn(return_val: *Value, allocator: std.mem.Allocator) ![]u8 {
+        const inner = try return_val.toString(allocator);
+        defer allocator.free(inner);
+        return try std.fmt.allocPrint(allocator, "Return: {s}", .{inner});
+    }
+
     pub fn toString(self: Value, allocator: std.mem.Allocator) anyerror![]u8 {
         return switch (self) {
             .number => |n| try std.fmt.allocPrint(allocator, "{d}", .{n}),
@@ -155,6 +162,7 @@ pub const Value = union(enum) {
             .builtin => |_| try std.fmt.allocPrint(allocator, "<Builtin Module>", .{}),
             .break_signal => |_| try std.fmt.allocPrint(allocator, "break", .{}),
             .continue_signal => |_| try std.fmt.allocPrint(allocator, "continue", .{}),
+            .return_value => |r| try stringReturn(r, allocator),
             .nil => try std.fmt.allocPrint(allocator, "nil", .{}),
         };
     }
@@ -207,6 +215,7 @@ pub const Value = union(enum) {
             .builtin => |_| false,
             .break_signal => |_| false,
             .continue_signal => |_| false,
+            .return_value => |_| false,
         };
     }
 };
@@ -231,12 +240,20 @@ pub const Environment = struct {
     }
 
     pub fn define(self: *Self, name: []const u8, value: Value) !void {
+        const stderr = std.io.getStdErr().writer();
         var reserved_map = try token.Token.getReservedMap(self.allocator);
         defer reserved_map.deinit();
         if (reserved_map.get(name) != null) {
+            try stderr.print("Reserved Identifier: \"{s}\"\n", .{name});
             return error.ReservedIdentifier;
         }
-        try self.values.put(name, value);
+
+        if (self.values.contains(name)) {
+            try stderr.print("Duplicate Identifier: \"{s}\"\n", .{name});
+            return error.DuplicateIdentifier;
+        } else {
+            try self.values.put(name, value);
+        }
     }
 
     pub fn assign(self: *Self, name: []const u8, value: Value) !void {
@@ -248,7 +265,7 @@ pub const Environment = struct {
         } else {
             const str = try value.toString(self.allocator);
             defer self.allocator.free(str);
-            try stderr.print("Undefined Value Error: {s}", .{str});
+            try stderr.print("Identifier \"{s}\" is undefined\n", .{str});
             return error.UndefinedVariable;
         }
     }

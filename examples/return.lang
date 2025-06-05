@@ -1,0 +1,15 @@
+fn test(): number {
+    let i = 0;
+    while i < 100 {
+        println(i);
+        i = i + 1;
+        if (i == 3) {
+            return i;  // should exit here
+        }
+    }
+}
+
+
+
+let a = test();
+println(a);

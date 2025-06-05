@@ -139,7 +139,10 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
 
             var result: Value = .nil;
             for (func.body.items) |stmt| {
-                result = evalStmt(stmt, &call_env) catch return .nil;
+                result = try evalStmt(stmt, &call_env);
+                if (result == .return_value) {
+                    return result.return_value.*;
+                }
             }
 
             return result;

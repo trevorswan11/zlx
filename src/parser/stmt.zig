@@ -130,8 +130,8 @@ pub const FunctionInfo = struct {
 };
 
 pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
-    var function_params = std.ArrayList(*ast.Parameter).init(p.allocator);
     _ = try p.expect(.OPEN_PAREN);
+    var function_params = std.ArrayList(*ast.Parameter).init(p.allocator);
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {
         const expected = try p.expect(.IDENTIFIER);
         const param_name = expected.value;
@@ -180,7 +180,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
 }
 
 pub fn parseFnDeclaration(p: *parser.Parser) !ast.Stmt {
-    _ = p.advance();
+    _ = try p.expect(.FN);
     const function_name = (try p.expect(.IDENTIFIER)).value;
     const func_info = try parseFnParamsAndBody(p);
 
@@ -195,13 +195,13 @@ pub fn parseFnDeclaration(p: *parser.Parser) !ast.Stmt {
 }
 
 pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
-    _ = p.advance();
+    _ = try p.expect(.IF);
     const condition = try expr.parseExpr(p, binding.ASSIGNMENT);
     const consequent = try parseBlockStmt(p);
 
     var alternate: ?ast.Stmt = null;
     if (p.currentTokenKind() == .ELSE) {
-        _ = p.advance();
+        _ = try p.expect(.ELSE);
 
         if (p.currentTokenKind() == .IF) {
             alternate = try parseIfStmt(p);
@@ -227,19 +227,19 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
 }
 
 pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
-    _ = p.advance();
+    _ = try p.expect(.IMPORT);
     var import_from: []const u8 = undefined;
     const import_type = try p.expectMany(&[_]token.TokenKind{ .IDENTIFIER, .STAR });
     const import_name = import_type.value;
 
     var reserved_map = try token.Token.getReservedMap(p.allocator);
-        defer reserved_map.deinit();
-        if (reserved_map.get(import_name) != null) {
-            return error.ReservedIdentifier;
-        }
+    defer reserved_map.deinit();
+    if (reserved_map.get(import_name) != null) {
+        return error.ReservedIdentifier;
+    }
 
     if (p.currentTokenKind() == .FROM) {
-        _ = p.advance();
+        _ = try p.expect(.FROM);
         import_from = (try p.expect(.STRING)).value;
     } else {
         if (std.mem.eql(u8, import_name, "*")) {
@@ -258,7 +258,7 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
 }
 
 pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
-    _ = p.advance();
+    _ = try p.expect(.FOREACH);
     const value_name = (try p.expect(.IDENTIFIER)).value;
 
     var index: bool = false;
@@ -299,7 +299,7 @@ pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
 }
 
 pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
-    _ = p.advance();
+    _ = try p.expect(.CLASS);
     const class_name = (try p.expect(.IDENTIFIER)).value;
     var reserved_map = try token.Token.getReservedMap(p.allocator);
     defer reserved_map.deinit();
@@ -331,5 +331,26 @@ pub fn parseContinueStmt(p: *parser.Parser) !ast.Stmt {
 
     return ast.Stmt{
         .continue_stmt = ast.ContinueStmt{},
+    };
+}
+
+pub fn parseReturnStmt(p: *parser.Parser) !ast.Stmt {
+    _ = try p.expect(.RETURN);
+
+    if (p.currentTokenKind() == .SEMI_COLON) {
+        _ = try p.expect(.SEMI_COLON);
+        return ast.Stmt{
+            .return_stmt = ast.ReturnStmt{
+                .value = null,
+            },
+        };
+    }
+
+    const value_expr = try boxExpr(p, try expr.parseExpr(p, binding.DEFAULT_BP));
+    _ = try p.expect(.SEMI_COLON);
+    return ast.Stmt{
+        .return_stmt = ast.ReturnStmt{
+            .value = value_expr,
+        },
     };
 }

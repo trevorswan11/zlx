@@ -25,6 +25,9 @@ pub fn block(b: *ast.BlockStmt, env: *Environment) !Value {
     var last: Value = .nil;
     for (b.body.items) |s| {
         last = try evalStmt(s, env);
+        if (last == .return_value) {
+            return last;
+        }
     }
     return last;
 }
@@ -64,6 +67,7 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
             switch (val) {
                 .break_signal => return .nil,
                 .continue_signal => break,
+                .return_value => |rval| return rval.*,
                 else => {},
             }
         }
@@ -87,6 +91,7 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
             switch (val) {
                 .break_signal => return .nil,
                 .continue_signal => break,
+                .return_value => |rval| return rval.*,
                 else => {},
             }
         }
@@ -169,4 +174,16 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
     const ast_block = try parse(allocator, contents);
 
     return try evalStmt(ast_block, env);
+}
+
+pub fn returns(r: *ast.ReturnStmt, env: *Environment) !Value {
+    const value = if (r.value) |v|
+        try evalExpr(v, env)
+    else
+        Value.nil;
+    const value_ptr = try env.allocator.create(Value);
+    value_ptr.* = value;
+    return Value{
+        .return_value = value_ptr,
+    };
 }

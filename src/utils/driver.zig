@@ -225,6 +225,12 @@ pub fn printStmt(stmt: *ast.Stmt, allocator: std.mem.Allocator) !void {
             .continue_stmt => {
                 try stdout.print("continue\n", .{});
             },
+            .return_stmt => {
+                try stdout.print("Return: ", .{});
+                const str = try s.toString(allocator);
+                defer allocator.free(str);
+                try stdout.print("{s}\n", .{str});
+            },
         }
     }
 }

@@ -263,6 +263,10 @@ pub const ClassDeclarationStmt = struct {
 pub const BreakStmt = struct {};
 pub const ContinueStmt = struct {};
 
+pub const ReturnStmt = struct {
+    value: ?*Expr,
+};
+
 pub const Stmt = union(enum) {
     block: BlockStmt,
     var_decl: VarDeclarationStmt,
@@ -275,6 +279,7 @@ pub const Stmt = union(enum) {
     class_decl: ClassDeclarationStmt,
     break_stmt: BreakStmt,
     continue_stmt: ContinueStmt,
+    return_stmt: ReturnStmt,
 
     pub fn toString(self: *Stmt, allocator: std.mem.Allocator) ![]const u8 {
         var buffer = std.ArrayList(u8).init(allocator);
@@ -386,6 +391,16 @@ pub const Stmt = union(enum) {
             .continue_stmt => |_| {
                 try indent(writer, indent_level);
                 try writer.print("continue\n", .{});
+            },
+            .return_stmt => |r| {
+                try indent(writer, indent_level);
+                try writer.print("ReturnStmt:\n", .{});
+                if (r.value) |v| {
+                    try v.writeTo(writer, indent_level + 1);
+                } else {
+                    try indent(writer, indent_level + 1);
+                    try writer.print("void\n", .{});
+                }
             },
         }
     }
