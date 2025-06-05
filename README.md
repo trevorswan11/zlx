@@ -22,10 +22,10 @@ While I started this project with the intent to make the parser only, I ended up
 
 ## Building/Running the Program
 - You can build the binary using `zig build` as mentioned above, but you can specify optimization targets if desired using these extra arguments
-    - `-Doptimize=Debug`        : This is the default and enables all checks
-    - `-Doptimize=ReleaseFast`  : Prioritize performance without safety checks
-    - `-Doptimize=ReleaseSmall` : Prioritize small binary size over performance and safety
-    - `-Doptimize=ReleaseSafe`  : Balance between fast and small release modes 
+    - `-Doptimize=Debug`: This is the default and enables all checks
+    - `-Doptimize=ReleaseFast`: Prioritize performance without safety checks
+    - `-Doptimize=ReleaseSmall`: Prioritize small binary size over performance and safety
+    - `-Doptimize=ReleaseSafe`: Balance between fast and small release modes 
 - You can use the example language "tests" with `zig build run -- <run|dump|ast> examples/<filename> <time?> <-v?>`
     - `run` interprets the program, `dump` prints the syntax-highlighted file, and `ast` simply parses the program
     - `time` times the parser, interpreter, and program - this is an optional parameter
