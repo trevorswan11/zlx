@@ -135,6 +135,13 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {
         const expected = try p.expect(.IDENTIFIER);
         const param_name = expected.value;
+
+        var reserved_map = try token.Token.getReservedMap(p.allocator);
+        defer reserved_map.deinit();
+        if (reserved_map.get(param_name) != null) {
+            return error.ReservedIdentifier;
+        }
+
         _ = try p.expect(.COLON);
         const param_type = try types.parseType(p, binding.DEFAULT_BP);
 
@@ -225,6 +232,12 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     const import_type = try p.expectMany(&[_]token.TokenKind{ .IDENTIFIER, .STAR });
     const import_name = import_type.value;
 
+    var reserved_map = try token.Token.getReservedMap(p.allocator);
+        defer reserved_map.deinit();
+        if (reserved_map.get(import_name) != null) {
+            return error.ReservedIdentifier;
+        }
+
     if (p.currentTokenKind() == .FROM) {
         _ = p.advance();
         import_from = (try p.expect(.STRING)).value;
@@ -248,10 +261,11 @@ pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
     _ = p.advance();
     const value_name = (try p.expect(.IDENTIFIER)).value;
 
-    var index: bool = undefined;
+    var index: bool = false;
+    var index_name: ?[]const u8 = null;
     if (p.currentTokenKind() == .COMMA) {
         _ = try p.expect(.COMMA);
-        _ = try p.expect(.IDENTIFIER);
+        index_name = (try p.expect(.IDENTIFIER)).value;
         index = true;
     }
 
@@ -264,6 +278,7 @@ pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
         .foreach_stmt = ast.ForeachStmt{
             .value = value_name,
             .index = index,
+            .index_name = index_name,
             .iterable = try boxExpr(p, iterable),
             .body = body,
         },
@@ -286,6 +301,11 @@ pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
 pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
     _ = p.advance();
     const class_name = (try p.expect(.IDENTIFIER)).value;
+    var reserved_map = try token.Token.getReservedMap(p.allocator);
+    defer reserved_map.deinit();
+    if (reserved_map.get(class_name) != null) {
+        return error.ReservedIdentifier;
+    }
     const class_body = try parseBlockStmt(p);
 
     return ast.Stmt{

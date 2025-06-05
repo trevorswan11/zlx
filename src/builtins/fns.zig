@@ -62,3 +62,46 @@ pub fn ref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Va
         .reference = heap_val,
     };
 }
+
+pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    if (args.len != 3) {
+        return error.ArgumentCountMismatch;
+    }
+
+    const a = try eval.evalExpr(args[0], env);
+    const b = try eval.evalExpr(args[1], env);
+    const c = try eval.evalExpr(args[2], env);
+
+    if (a != .number or b != .number or c != .number) {
+        return error.TypeMismatch;
+    }
+
+    const start: i64 = @intFromFloat(a.number);
+    const end: i64 = @intFromFloat(b.number);
+    const step: i64 = @intFromFloat(c.number);
+
+    if (step == 0) {
+        return error.InvalidStep;
+    }
+
+    var result = std.ArrayList(Value).init(allocator);
+    if (step > 0) {
+        var i = start;
+        while (i < end) : (i += step) {
+            try result.append(Value{
+                .number = @floatFromInt(i),
+            });
+        }
+    } else {
+        var i = start;
+        while (i > end) : (i += step) {
+            try result.append(Value{
+                .number = @floatFromInt(i),
+            });
+        }
+    }
+
+    return Value{
+        .array = result,
+    };
+}

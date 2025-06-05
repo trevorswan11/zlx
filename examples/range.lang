@@ -1,3 +1,24 @@
 foreach val in 1..4 {
     val;
 }
+
+println(range(0, 5, 1));      // [0, 1, 2, 3, 4]
+println(range(5, 0, -1));     // [5, 4, 3, 2, 1]
+println(range(0, 10, 2));     // [0, 2, 4, 6, 8]
+println(range(3, 3, 1));      // []
+
+let nums = [1, 2, 3, 4, 5];
+foreach x, spot in nums {
+    if (x == 3) {
+        continue;
+    }
+    if (x == 5) {
+        break;
+    }
+    println("Index: " + spot);
+    println(x);
+}
+// Output should be:
+// 1
+// 2
+// 4

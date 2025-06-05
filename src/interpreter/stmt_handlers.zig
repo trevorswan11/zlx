@@ -54,13 +54,18 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
         var child_env = Environment.init(env.allocator, env);
         try child_env.define(f.value, item);
         if (f.index) {
-            try child_env.define("index", Value{
+            try child_env.define(f.index_name.?, Value{
                 .number = @floatFromInt(i),
             });
         }
 
         for (f.body.items) |parsed| {
-            _ = try evalStmt(parsed, &child_env);
+            const val = try evalStmt(parsed, &child_env);
+            switch (val) {
+                .break_signal => return .nil,
+                .continue_signal => break,
+                else => {},
+            }
         }
     }
 

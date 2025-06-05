@@ -4,6 +4,7 @@ const ast = @import("../parser/ast.zig");
 pub const eval = @import("eval.zig");
 pub const evalExpr = eval.evalExpr;
 pub const evalStmt = eval.evalStmt;
+const token = @import("../lexer/token.zig");
 
 pub const Value = union(enum) {
     number: f64,
@@ -47,7 +48,9 @@ pub const Value = union(enum) {
             }
             const item_str = try item.toString(allocator);
             defer allocator.free(item_str);
+            try str_builder.appendSlice("\"");
             try str_builder.appendSlice(item_str);
+            try str_builder.appendSlice("\"");
         }
         try str_builder.append(']');
 
@@ -228,6 +231,11 @@ pub const Environment = struct {
     }
 
     pub fn define(self: *Self, name: []const u8, value: Value) !void {
+        var reserved_map = try token.Token.getReservedMap(self.allocator);
+        defer reserved_map.deinit();
+        if (reserved_map.get(name) != null) {
+            return error.ReservedIdentifier;
+        }
         try self.values.put(name, value);
     }
 

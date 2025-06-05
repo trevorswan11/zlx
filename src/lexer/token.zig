@@ -152,6 +152,7 @@ pub const Token = struct {
     pub fn getReservedMap(allocator: std.mem.Allocator) !std.StringHashMap(TokenKind) {
         var reserved = std.StringHashMap(TokenKind).init(allocator);
 
+        // Keywords
         try reserved.put("let", .LET);
         try reserved.put("const", .CONST);
         try reserved.put("class", .CLASS);
@@ -172,7 +173,29 @@ pub const Token = struct {
         try reserved.put("true", .TRUE);
         try reserved.put("false", .FALSE);
 
+        // Built-in functions
+        try reserved.put("print", .IDENTIFIER);
+        try reserved.put("println", .IDENTIFIER);
+        try reserved.put("len", .IDENTIFIER);
+        try reserved.put("ref", .IDENTIFIER);
+        try reserved.put("range", .IDENTIFIER);
+
+        // Built-in modules
+        try reserved.put("array", .IDENTIFIER);
+        try reserved.put("debug", .IDENTIFIER);
+        try reserved.put("fs", .IDENTIFIER);
+        try reserved.put("math", .IDENTIFIER);
+        try reserved.put("path", .IDENTIFIER);
+        try reserved.put("random", .IDENTIFIER);
+        try reserved.put("string", .IDENTIFIER);
+        try reserved.put("sys", .IDENTIFIER);
+        try reserved.put("time", .IDENTIFIER);
+
         return reserved;
+    }
+
+    pub fn isReservedIdentifier(reserved: *const std.StringHashMap(TokenKind), ident: []const u8) bool {
+        return reserved.get(ident) != null;
     }
 };
 

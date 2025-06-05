@@ -134,7 +134,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try nud(.OPEN_BRACKET, binding.PRIMARY, exprs.parseArrayLiteralExpr);
 
     // Object Literal
-    try nud(.OPEN_CURLY, binding.PRIMARY, exprs.parseObjectLiteral);
+    _ = try nud_lu.put(.OPEN_CURLY, exprs.parseObjectLiteral);
 
     // Member / Call
     try led(.DOT, binding.MEMBER, exprs.parseMemberExpr);
@@ -168,7 +168,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try nud(.FALSE, binding.PRIMARY, exprs.parseBooleanLiteral);
 
     // Statements
-    try stmt(.OPEN_CURLY, stmts.parseBlockStmt);
+    _ = try stmt_lu.put(.OPEN_CURLY, stmts.parseBlockStmt);
     try stmt(.LET, stmts.parseVarDeclStmt);
     try stmt(.CONST, stmts.parseVarDeclStmt);
     try stmt(.FN, stmts.parseFnDeclaration);

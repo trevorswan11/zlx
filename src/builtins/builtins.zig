@@ -32,6 +32,7 @@ pub const builtin_fns = [_]BuiltinFn{
     .{ .name = "println", .handler = fns.println },
     .{ .name = "len", .handler = fns.len },
     .{ .name = "ref", .handler = fns.ref },
+    .{ .name = "range", .handler = fns.range },
 };
 
 // === Builtin Modules ===

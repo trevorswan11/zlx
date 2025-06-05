@@ -6,7 +6,7 @@ const Token = tokens.Token;
 const TokenKind = tokens.TokenKind;
 const Regex = regxp.Regex;
 
-var reserved_map: std.StringHashMap(TokenKind) = undefined;
+pub var reserved_map: std.StringHashMap(TokenKind) = undefined;
 
 const LexerError = error{
     Regex,

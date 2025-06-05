@@ -245,6 +245,7 @@ pub const ImportStmt = struct {
 pub const ForeachStmt = struct {
     value: []const u8,
     index: bool,
+    index_name: ?[]const u8,
     iterable: *Expr,
     body: std.ArrayList(*Stmt),
 };
