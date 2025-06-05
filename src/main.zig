@@ -90,10 +90,14 @@ pub fn main() !void {
     t2 = std.time.nanoTimestamp();
     if (input.time) {
         const parsing = @as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0;
+        const interpreting = @as(f128, @floatFromInt(t2 - t1)) / 1_000_000.0;
         const process = @as(f128, @floatFromInt(t2 - t0)) / 1_000_000.0;
         if (input.run or input.dump) {
             try stdout.print("\n", .{});
         }
-        try stdout.print("Parsing took {d} ms; Process took {d} ms", .{ parsing, process });
+        try stdout.print("Timing:\n", .{});
+        try stdout.print("  Parsing took:       {d} ms\n", .{ parsing });
+        try stdout.print("  Interpreting took:  {d} ms\n", .{ interpreting });
+        try stdout.print("  Process took:       {d} ms", .{ process });
     }
 }

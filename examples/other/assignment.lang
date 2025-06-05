@@ -1,4 +1,3 @@
-
 let foo = 45.5;
 let bar = foo * 10;
 
