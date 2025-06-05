@@ -31,7 +31,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "split", splitHandler);
     try pack(&map, "trim", trimHandler);
 
-    return Value{
+    return .{
         .object = map,
     };
 }
@@ -39,7 +39,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 fn upperHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const s = try expectStringArg(args, env);
     const upper = try std.ascii.allocUpperString(allocator, s);
-    return Value{
+    return .{
         .string = upper,
     };
 }
@@ -47,7 +47,7 @@ fn upperHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 fn lowerHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const s = try expectStringArg(args, env);
     const lower = try std.ascii.allocLowerString(allocator, s);
-    return Value{
+    return .{
         .string = lower,
     };
 }
@@ -69,7 +69,7 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     const e = @min(@as(usize, @intFromFloat(end.number)), @as(usize, @intCast(str.string.len)));
 
     const slice = try allocator.dupe(u8, str.string[s..e]);
-    return Value{
+    return .{
         .string = slice,
     };
 }
@@ -87,7 +87,7 @@ fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     }
 
     if (std.mem.indexOf(u8, haystack.string, needle.string)) |idx| {
-        return Value{
+        return .{
             .number = @floatFromInt(idx),
         };
     } else {
@@ -109,7 +109,7 @@ fn replaceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
     }
 
     const result = try std.mem.replaceOwned(u8, allocator, haystack.string, needle.string, replacement.string);
-    return Value{
+    return .{
         .string = result,
     };
 }
@@ -131,9 +131,11 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 
     while (iter.next()) |part| {
         const copy = try allocator.dupe(u8, part);
-        try list.append(Value{
-            .string = copy,
-        });
+        try list.append(
+            .{
+                .string = copy,
+            },
+        );
     }
 
     return Value{
@@ -144,7 +146,7 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 fn trimHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const s = try expectStringArg(args, env);
     const trimmed = std.mem.trim(u8, s, " \t\n\r");
-    return Value{
+    return .{
         .string = try allocator.dupe(u8, trimmed),
     };
 }

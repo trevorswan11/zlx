@@ -10,24 +10,6 @@ const types = @import("types.zig");
 const BindingPower = lus.BindingPower;
 const binding = lus.binding;
 
-fn boxStmt(p: *parser.Parser, stmt: ast.Stmt) !*ast.Stmt {
-    const ptr = try p.allocator.create(ast.Stmt);
-    ptr.* = stmt;
-    return ptr;
-}
-
-fn boxExpr(p: *parser.Parser, e: ast.Expr) !*ast.Expr {
-    const ptr = try p.allocator.create(ast.Expr);
-    ptr.* = e;
-    return ptr;
-}
-
-fn boxType(p: *parser.Parser, e: ast.Type) !*ast.Type {
-    const ptr = try p.allocator.create(ast.Type);
-    ptr.* = e;
-    return ptr;
-}
-
 pub fn parseStmt(p: *parser.Parser) !ast.Stmt {
     if (lus.stmt_lu.get(p.currentTokenKind())) |stmt_fn| {
         return try stmt_fn(p);
@@ -40,9 +22,9 @@ pub fn parseExpressionStmt(p: *parser.Parser) !ast.Stmt {
     const expression = try expr.parseExpr(p, binding.DEFAULT_BP);
     _ = try p.expect(.SEMI_COLON);
 
-    return ast.Stmt{
-        .expression = ast.ExpressionStmt{
-            .expression = try boxExpr(p, expression),
+    return .{
+        .expression = .{
+            .expression = try ast.boxExpr(p, expression),
         },
     };
 }
@@ -53,13 +35,13 @@ pub fn parseBlockStmt(p: *parser.Parser) !ast.Stmt {
 
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_CURLY) {
         const stmt = try parseStmt(p);
-        const stmt_ptr = try boxStmt(p, stmt);
+        const stmt_ptr = try ast.boxStmt(p, stmt);
         try body.append(stmt_ptr);
     }
 
     _ = try p.expect(.CLOSE_CURLY);
-    return ast.Stmt{
-        .block = ast.BlockStmt{
+    return .{
+        .block = .{
             .body = body,
         },
     };
@@ -105,16 +87,16 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
 
     var av_ptr: ?*ast.Expr = null;
     if (assignment_value) |av| {
-        av_ptr = try boxExpr(p, av);
+        av_ptr = try ast.boxExpr(p, av);
     }
 
     var et_ptr: ?*ast.Type = null;
     if (explicit_type) |et| {
-        et_ptr = try boxType(p, et);
+        et_ptr = try ast.boxType(p, et);
     }
 
-    return ast.Stmt{
-        .var_decl = ast.VarDeclarationStmt{
+    return .{
+        .var_decl = .{
             .constant = is_constant,
             .identifier = symbol_name.value,
             .assigned_value = av_ptr,
@@ -156,7 +138,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         const param_ptr = try p.allocator.create(ast.Parameter);
         const param = ast.Parameter{
             .name = param_name,
-            .type = try boxType(p, param_type),
+            .type = try ast.boxType(p, param_type),
         };
         param_ptr.* = param;
         try function_params.append(param_ptr);
@@ -173,9 +155,11 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         _ = p.advance();
         return_type = try types.parseType(p, binding.DEFAULT_BP);
     } else {
-        return_type = ast.Type{ .symbol = ast.SymbolType{
-            .value_type = "void",
-        } };
+        return_type = .{
+            .symbol = .{
+                .value_type = "void",
+            },
+        };
     }
 
     const block_stmt = try parseBlockStmt(p);
@@ -183,7 +167,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
     return FunctionInfo{
         .body = function_body,
         .parameters = function_params,
-        .return_type = try boxType(p, return_type),
+        .return_type = try ast.boxType(p, return_type),
     };
 }
 
@@ -192,8 +176,8 @@ pub fn parseFnDeclaration(p: *parser.Parser) !ast.Stmt {
     const function_name = (try p.expect(.IDENTIFIER)).value;
     const func_info = try parseFnParamsAndBody(p);
 
-    return ast.Stmt{
-        .function_decl = ast.FunctionDeclarationStmt{
+    return .{
+        .function_decl = .{
             .parameters = func_info.parameters,
             .return_type = func_info.return_type,
             .body = func_info.body,
@@ -218,15 +202,15 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
         }
     }
 
-    const cons_ptr = try boxStmt(p, consequent);
+    const cons_ptr = try ast.boxStmt(p, consequent);
     var alt_ptr: ?*ast.Stmt = null;
     if (alternate) |a| {
-        alt_ptr = try boxStmt(p, a);
+        alt_ptr = try ast.boxStmt(p, a);
     }
-    const cond_ptr = try boxExpr(p, condition);
+    const cond_ptr = try ast.boxExpr(p, condition);
 
-    return ast.Stmt{
-        .if_stmt = ast.IfStmt{
+    return .{
+        .if_stmt = .{
             .condition = cond_ptr,
             .consequent = cons_ptr,
             .alternate = alt_ptr,
@@ -257,8 +241,8 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     }
 
     _ = try p.expect(.SEMI_COLON);
-    return ast.Stmt{
-        .import_stmt = ast.ImportStmt{
+    return .{
+        .import_stmt = .{
             .name = import_name,
             .from = import_from,
         },
@@ -282,12 +266,12 @@ pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
     const block_stmt = try parseBlockStmt(p);
     const body = block_stmt.block.body;
 
-    return ast.Stmt{
-        .foreach_stmt = ast.ForeachStmt{
+    return .{
+        .foreach_stmt = .{
             .value = value_name,
             .index = index,
             .index_name = index_name,
-            .iterable = try boxExpr(p, iterable),
+            .iterable = try ast.boxExpr(p, iterable),
             .body = body,
         },
     };
@@ -298,9 +282,9 @@ pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
     const condition = try expr.parseExpr(p, binding.DEFAULT_BP);
     const block_stmt = try parseBlockStmt(p);
 
-    return ast.Stmt{
-        .while_stmt = ast.WhileStmt{
-            .condition = try boxExpr(p, condition),
+    return .{
+        .while_stmt = .{
+            .condition = try ast.boxExpr(p, condition),
             .body = block_stmt.block.body,
         },
     };
@@ -316,8 +300,8 @@ pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
     }
     const class_body = try parseBlockStmt(p);
 
-    return ast.Stmt{
-        .class_decl = ast.ClassDeclarationStmt{
+    return .{
+        .class_decl = .{
             .name = class_name,
             .body = class_body.block.body,
         },
@@ -328,8 +312,8 @@ pub fn parseBreakStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.BREAK);
     _ = try p.expect(.SEMI_COLON);
 
-    return ast.Stmt{
-        .break_stmt = ast.BreakStmt{},
+    return .{
+        .break_stmt = .{},
     };
 }
 
@@ -337,8 +321,8 @@ pub fn parseContinueStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.CONTINUE);
     _ = try p.expect(.SEMI_COLON);
 
-    return ast.Stmt{
-        .continue_stmt = ast.ContinueStmt{},
+    return .{
+        .continue_stmt = .{},
     };
 }
 
@@ -347,18 +331,56 @@ pub fn parseReturnStmt(p: *parser.Parser) !ast.Stmt {
 
     if (p.currentTokenKind() == .SEMI_COLON) {
         _ = try p.expect(.SEMI_COLON);
-        return ast.Stmt{
-            .return_stmt = ast.ReturnStmt{
+        return .{
+            .return_stmt = .{
                 .value = null,
             },
         };
     }
 
-    const value_expr = try boxExpr(p, try expr.parseExpr(p, binding.DEFAULT_BP));
+    const value_expr = try ast.boxExpr(p, try expr.parseExpr(p, binding.DEFAULT_BP));
     _ = try p.expect(.SEMI_COLON);
-    return ast.Stmt{
-        .return_stmt = ast.ReturnStmt{
+    return .{
+        .return_stmt = .{
             .value = value_expr,
+        },
+    };
+}
+
+pub fn parseMatchStmt(p: *parser.Parser) !ast.Stmt {
+    _ = try p.expect(.MATCH);
+    const exp = try ast.boxExpr(p, try expr.parseExpr(p, binding.DEFAULT_BP));
+    _ = try p.expect(.OPEN_CURLY);
+
+    var cases = std.ArrayList(ast.MatchCase).init(p.allocator);
+
+    while (p.currentTokenKind() != .CLOSE_CURLY) {
+        const pattern_expr = try ast.boxExpr(p, try expr.parseExpr(p, binding.DEFAULT_BP));
+        _ = try p.expect(.ARROW);
+
+        var stmt: *ast.Stmt = undefined;
+
+        if (p.currentTokenKind() == .OPEN_CURLY) {
+            // Parse block statement and require a trailing comma
+            stmt = try ast.boxStmt(p, try parseBlockStmt(p));
+            _ = try p.expect(.COMMA);
+        } else {
+            // Parse single statement and require trailing semicolon (consumed while parsing)
+            stmt = try ast.boxStmt(p, try parseStmt(p));
+        }
+
+        try cases.append(.{
+            .pattern = pattern_expr,
+            .body = stmt,
+        });
+    }
+
+    _ = try p.expect(.CLOSE_CURLY);
+
+    return .{
+        .match_stmt = .{
+            .expression = exp,
+            .cases = cases,
         },
     };
 }

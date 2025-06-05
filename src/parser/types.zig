@@ -38,8 +38,8 @@ pub fn createTypeTokenLookups(allocator: std.mem.Allocator) !void {
     // IDENTIFIER => SymbolType
     try typeNud(.IDENTIFIER, binding.PRIMARY, struct {
         pub fn afn(p: *Parser) !ast.Type {
-            return ast.Type{
-                .symbol = ast.SymbolType{
+            return .{
+                .symbol = .{
                     .value_type = p.advance().value,
                 },
             };
@@ -55,8 +55,8 @@ pub fn createTypeTokenLookups(allocator: std.mem.Allocator) !void {
             const inner_ptr = try p.allocator.create(ast.Type);
             inner_ptr.* = inner_val;
 
-            return ast.Type{
-                .list = ast.ListType{
+            return .{
+                .list = .{
                     .underlying = inner_ptr,
                 },
             };

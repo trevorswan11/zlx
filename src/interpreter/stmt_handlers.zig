@@ -34,7 +34,7 @@ pub fn block(b: *ast.BlockStmt, env: *Environment) !Value {
 
 pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
     const cond = try evalExpr(i.condition, env);
-    if (cond != Value.boolean) {
+    if (cond != .boolean) {
         return error.TypeMismatch;
     }
 
@@ -49,7 +49,7 @@ pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
 
 pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
     const iterable = try evalExpr(f.iterable, env);
-    if (iterable != Value.array) {
+    if (iterable != .array) {
         return error.TypeMismatch;
     }
 
@@ -57,7 +57,7 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
         var child_env = Environment.init(env.allocator, env);
         try child_env.define(f.value, item);
         if (f.index) {
-            try child_env.define(f.index_name.?, Value{
+            try child_env.define(f.index_name.?, .{
                 .number = @floatFromInt(i),
             });
         }
@@ -115,7 +115,7 @@ pub fn class(c: *ast.ClassDeclarationStmt, env: *Environment) !Value {
         }
     }
 
-    const cls_val = Value{
+    const cls_val: Value = .{
         .class = .{
             .name = c.name,
             .body = c.body,
@@ -133,7 +133,7 @@ pub fn function(f: *ast.FunctionDeclarationStmt, env: *Environment) !Value {
         param_names[i] = p.name;
     }
 
-    const func_val = Value{
+    const func_val: Value = .{
         .function = .{
             .parameters = param_names,
             .body = f.body,
@@ -177,13 +177,32 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
 }
 
 pub fn returns(r: *ast.ReturnStmt, env: *Environment) !Value {
-    const value = if (r.value) |v|
+    const value: Value = if (r.value) |v|
         try evalExpr(v, env)
     else
-        Value.nil;
+        .nil;
     const value_ptr = try env.allocator.create(Value);
     value_ptr.* = value;
-    return Value{
+    return .{
         .return_value = value_ptr,
     };
+}
+
+pub fn match(m: *ast.Match, env: *Environment) !Value {
+    const match_val = try evalExpr(m.expression, env);
+
+    for (m.cases.items) |case| {
+        // Use '_' for wildcard (else)
+        if (case.pattern.* == .symbol and std.mem.eql(u8, case.pattern.symbol.value, "_")) {
+            return try evalStmt(case.body, env);
+        }
+
+        const pattern_val = try evalExpr(case.pattern, env);
+
+        if (match_val.eql(pattern_val)) {
+            return try evalStmt(case.body, env);
+        }
+    }
+
+    return .nil;
 }

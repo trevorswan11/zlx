@@ -34,7 +34,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "set", setHandler);
     try pack(&map, "slice", sliceHandler);
 
-    return Value{
+    return .{
         .object = map,
     };
 }
@@ -173,7 +173,7 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
         try new_array.append(val.array.items[i]);
     }
 
-    return Value{
+    return .{
         .array = new_array,
     };
 }

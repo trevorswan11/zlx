@@ -8,16 +8,9 @@ const Regex = regxp.Regex;
 
 pub var reserved_map: std.StringHashMap(TokenKind) = undefined;
 
-const LexerError = error{
-    Regex,
-    IndexOutOfBounds,
-    OutOfMemory,
-    UnrecognizedToken,
-};
-
 pub const RegexHandler = struct {
     ctx: *const anyopaque,
-    func: *const fn (*const anyopaque, *Lexer, *Regex) LexerError!void,
+    func: *const fn (*const anyopaque, *Lexer, *Regex) anyerror!void,
 };
 
 pub const RegexPattern = struct {
@@ -105,6 +98,10 @@ pub const Lexer = struct {
         try patterns.append(.{
             .regex = try Regex.compile(allocator, "!="),
             .handler = try defaultHandler(allocator, .NOT_EQUALS, "!="),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "=>"),
+            .handler = try defaultHandler(allocator, .ARROW, "=>"),
         });
         try patterns.append(.{
             .regex = try Regex.compile(allocator, "="),
@@ -259,7 +256,7 @@ pub fn tokenize(allocator: std.mem.Allocator, source: []const u8) !std.ArrayList
         }
 
         if (!matched) {
-            return LexerError.UnrecognizedToken;
+            return error.UnrecognizedToken;
         }
     }
 
@@ -272,7 +269,7 @@ const DefaultHandlerCtx = struct {
     kind: TokenKind,
     value: []const u8,
 
-    pub fn call(ctx: *const anyopaque, lex: *Lexer, _: *Regex) LexerError!void {
+    pub fn call(ctx: *const anyopaque, lex: *Lexer, _: *Regex) anyerror!void {
         const self: *const DefaultHandlerCtx = @alignCast(@ptrCast(ctx));
         const start = lex.pos;
         const end = start + self.value.len;
@@ -302,7 +299,7 @@ const SimpleHandlerWrapper = struct {
     const Self = @This();
 
     pub fn wrap(
-        func: *const fn (*Lexer, *Regex) LexerError!void,
+        func: *const fn (*Lexer, *Regex) anyerror!void,
     ) RegexHandler {
         const function_ctx: *const anyopaque = @ptrCast(func);
         return RegexHandler{
@@ -311,13 +308,13 @@ const SimpleHandlerWrapper = struct {
         };
     }
 
-    fn call(ctx: *const anyopaque, lex: *Lexer, regex: *Regex) LexerError!void {
-        const real: *const fn (*Lexer, *Regex) LexerError!void = @ptrCast(ctx);
+    fn call(ctx: *const anyopaque, lex: *Lexer, regex: *Regex) anyerror!void {
+        const real: *const fn (*Lexer, *Regex) anyerror!void = @ptrCast(ctx);
         try real(lex, regex);
     }
 };
 
-fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
+fn stringHandler(lex: *Lexer, regex: *Regex) anyerror!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps_const| {
         var caps = caps_const;
@@ -335,7 +332,7 @@ fn stringHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     }
 }
 
-fn numberHandler(lex: *Lexer, regex: *Regex) LexerError!void {
+fn numberHandler(lex: *Lexer, regex: *Regex) anyerror!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps_const| {
         var caps = caps_const;
@@ -353,7 +350,7 @@ fn numberHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     }
 }
 
-fn symbolHandler(lex: *Lexer, regex: *Regex) LexerError!void {
+fn symbolHandler(lex: *Lexer, regex: *Regex) anyerror!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps_const| {
         var caps = caps_const;
@@ -372,7 +369,7 @@ fn symbolHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     }
 }
 
-fn skipHandler(lex: *Lexer, regex: *Regex) LexerError!void {
+fn skipHandler(lex: *Lexer, regex: *Regex) anyerror!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps_const| {
         var caps = caps_const;
@@ -384,7 +381,7 @@ fn skipHandler(lex: *Lexer, regex: *Regex) LexerError!void {
     }
 }
 
-fn commentHandler(lex: *Lexer, regex: *Regex) LexerError!void {
+fn commentHandler(lex: *Lexer, regex: *Regex) anyerror!void {
     const text = lex.remainder();
     if (try regex.captures(text)) |caps_const| {
         var caps = caps_const;

@@ -265,7 +265,7 @@ pub const Environment = struct {
         } else {
             const str = try value.toString(self.allocator);
             defer self.allocator.free(str);
-            try stderr.print("Identifier \"{s}\" is undefined\n", .{str});
+            try stderr.print("Identifier \"{s}\" is Undefined\n", .{str});
             return error.UndefinedVariable;
         }
     }

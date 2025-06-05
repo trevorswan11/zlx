@@ -48,6 +48,7 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
         .function_expr => |*f| return try expr_handlers.function(f, env),
         .new_expr => |*n| return try expr_handlers.new(n, env),
         .object => |*o| return try expr_handlers.object(o, env),
+        .match_expr => |*m| return try expr_handlers.match(m, env),
     }
 }
 
@@ -65,5 +66,6 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
         .break_stmt => |_| return .break_signal,
         .continue_stmt => |_| return .continue_signal,
         .return_stmt => |*s| return try stmt_handlers.returns(s, env),
+        .match_stmt => |*m| return try stmt_handlers.match(m, env),
     }
 }

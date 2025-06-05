@@ -1,6 +1,18 @@
 const std = @import("std");
 const tokens = @import("../lexer/token.zig");
 
+// === Shared Types ===
+
+pub const Match = struct {
+    expression: *Expr,
+    cases: std.ArrayList(MatchCase),
+};
+
+pub const MatchCase = struct {
+    pattern: *Expr,
+    body: *Stmt,
+};
+
 // === Expressions ===
 
 pub const NumberExpr = struct {
@@ -90,6 +102,7 @@ pub const Expr = union(enum) {
     array_literal: ArrayLiteral,
     new_expr: NewExpr,
     object: ObjectExpr,
+    match_expr: Match,
 
     pub fn toString(self: *Expr, allocator: std.mem.Allocator) ![]const u8 {
         var buffer = std.ArrayList(u8).init(allocator);
@@ -203,6 +216,25 @@ pub const Expr = union(enum) {
                     try entry.value.writeTo(writer, indent_level + 2);
                 }
             },
+            .match_expr => |m| {
+                try indent(writer, indent_level);
+                try writer.print("MatchStmt:\n", .{});
+                try indent(writer, indent_level + 1);
+                try writer.print("Expression:\n", .{});
+                try m.expression.writeTo(writer, indent_level + 2);
+
+                try indent(writer, indent_level + 1);
+                try writer.print("Case(s):\n", .{});
+                for (m.cases.items) |stmt| {
+                    try indent(writer, indent_level + 2);
+                    try writer.print("Pattern:\n", .{});
+                    try stmt.pattern.writeTo(writer, indent_level + 3);
+
+                    try indent(writer, indent_level + 2);
+                    try writer.print("Body:\n", .{});
+                    try stmt.body.writeTo(writer, indent_level + 3);
+                }
+            },
         }
     }
 };
@@ -280,6 +312,7 @@ pub const Stmt = union(enum) {
     break_stmt: BreakStmt,
     continue_stmt: ContinueStmt,
     return_stmt: ReturnStmt,
+    match_stmt: Match,
 
     pub fn toString(self: *Stmt, allocator: std.mem.Allocator) ![]const u8 {
         var buffer = std.ArrayList(u8).init(allocator);
@@ -402,6 +435,25 @@ pub const Stmt = union(enum) {
                     try writer.print("void\n", .{});
                 }
             },
+            .match_stmt => |m| {
+                try indent(writer, indent_level);
+                try writer.print("MatchStmt:\n", .{});
+                try indent(writer, indent_level + 1);
+                try writer.print("Expression:\n", .{});
+                try m.expression.writeTo(writer, indent_level + 2);
+
+                try indent(writer, indent_level + 1);
+                try writer.print("Case(s):\n", .{});
+                for (m.cases.items) |stmt| {
+                    try indent(writer, indent_level + 2);
+                    try writer.print("Pattern:\n", .{});
+                    try stmt.pattern.writeTo(writer, indent_level + 3);
+
+                    try indent(writer, indent_level + 2);
+                    try writer.print("Body:\n", .{});
+                    try stmt.body.writeTo(writer, indent_level + 3);
+                }
+            },
         }
     }
 };
@@ -468,4 +520,25 @@ fn indent(writer: anytype, level: usize) !void {
     for (0..level) |_| {
         try writer.writeAll("  ");
     }
+}
+
+// === Memory Safety ===
+const Parser = @import("parser.zig").Parser;
+
+pub fn boxExpr(p: *Parser, e: Expr) !*Expr {
+    const ptr = try p.allocator.create(Expr);
+    ptr.* = e;
+    return ptr;
+}
+
+pub fn boxStmt(p: *Parser, stmt: Stmt) !*Stmt {
+    const ptr = try p.allocator.create(Stmt);
+    ptr.* = stmt;
+    return ptr;
+}
+
+pub fn boxType(p: *Parser, e: Type) !*Type {
+    const ptr = try p.allocator.create(Type);
+    ptr.* = e;
+    return ptr;
 }

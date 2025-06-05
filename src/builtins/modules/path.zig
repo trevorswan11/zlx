@@ -41,7 +41,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "normalize", normalizeHandler);
     try pack(&map, "split", splitHandler);
 
-    return Value{
+    return .{
         .object = map,
     };
 }
@@ -57,49 +57,49 @@ fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
         try parts.append(val.string);
     }
     const joined = try std.fs.path.join(allocator, parts.items);
-    return Value{
+    return .{
         .string = joined,
     };
 }
 
 fn basenameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(allocator, args, env, 1))[0];
-    return Value{
+    return .{
         .string = try allocator.dupe(u8, std.fs.path.basename(path)),
     };
 }
 
 fn dirnameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(allocator, args, env, 1))[0];
-    return Value{
+    return .{
         .string = try allocator.dupe(u8, std.fs.path.dirname(path) orelse "."),
     };
 }
 
 fn extnameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(allocator, args, env, 1))[0];
-    return Value{
+    return .{
         .string = try allocator.dupe(u8, std.fs.path.extension(path)),
     };
 }
 
 fn stemHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(allocator, args, env, 1))[0];
-    return Value{
+    return .{
         .string = try allocator.dupe(u8, std.fs.path.stem(path)),
     };
 }
 
 fn isAbsoluteHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(allocator, args, env, 1))[0];
-    return Value{
+    return .{
         .boolean = std.fs.path.isAbsolute(path),
     };
 }
 
 fn isRelativeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(allocator, args, env, 1))[0];
-    return Value{
+    return .{
         .boolean = !std.fs.path.isAbsolute(path),
     };
 }
@@ -107,7 +107,7 @@ fn isRelativeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env:
 fn normalizeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(allocator, args, env, 1))[0];
     const norm = try std.fs.path.resolve(allocator, &[_][]const u8{path});
-    return Value{
+    return .{
         .string = norm,
     };
 }
@@ -117,9 +117,17 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     const dir = std.fs.path.dirname(path) orelse "";
     const base = std.fs.path.basename(path);
     var list = std.ArrayList(Value).init(allocator);
-    try list.append(Value{ .string = try allocator.dupe(u8, dir) });
-    try list.append(Value{ .string = try allocator.dupe(u8, base) });
-    return Value{
+    try list.append(
+        .{
+            .string = try allocator.dupe(u8, dir),
+        },
+    );
+    try list.append(
+        .{
+            .string = try allocator.dupe(u8, base),
+        },
+    );
+    return .{
         .array = list,
     };
 }

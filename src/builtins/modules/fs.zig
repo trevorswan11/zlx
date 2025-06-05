@@ -34,7 +34,10 @@ fn expectTwoStrings(args: []const *ast.Expr, env: *Environment) !struct { []cons
         return error.TypeMismatch;
     }
 
-    return .{ a.string, b.string };
+    return .{
+        a.string,
+        b.string,
+    };
 }
 
 pub fn load(allocator: std.mem.Allocator) !Value {
@@ -55,7 +58,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "touch", touchHandler);
     try pack(&map, "append", appendHandler);
 
-    return Value{
+    return .{
         .object = map,
     };
 }
@@ -66,7 +69,7 @@ fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     defer file.close();
 
     const contents = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
-    return Value{
+    return .{
         .string = contents,
     };
 }
@@ -83,12 +86,12 @@ fn writeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
 pub fn existsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = try expectStringArg(args, env);
     std.fs.cwd().access(path, .{}) catch {
-        return Value{
+        return .{
             .boolean = false,
         };
     };
 
-    return Value{
+    return .{
         .boolean = true,
     };
 }
@@ -102,7 +105,12 @@ fn deleteHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 
 fn listHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = try expectStringArg(args, env);
-    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
+    var dir = try std.fs.cwd().openDir(
+        path,
+        .{
+            .iterate = true,
+        },
+    );
     defer dir.close();
 
     var it = dir.iterate();
@@ -124,12 +132,14 @@ fn listHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
             name = try allocator.dupe(u8, name);
         }
 
-        try array.append(Value{
-            .string = name,
-        });
+        try array.append(
+            .{
+                .string = name,
+            },
+        );
     }
 
-    return Value{
+    return .{
         .array = array,
     };
 }
@@ -170,13 +180,13 @@ fn copyHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     defer src_dir.close();
 
     src_dir.access(src_basename, .{}) catch {
-        return Value{
+        return .{
             .string = "Source file not found!",
         };
     };
 
     cwd.makePath(dst_dir_path) catch {
-        return Value{
+        return .{
             .string = "Failed to create destination directory!",
         };
     };
@@ -198,12 +208,12 @@ fn renameHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 fn isDirHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = try expectStringArg(args, env);
     var dir = std.fs.cwd().openDir(path, .{}) catch {
-        return Value{
+        return .{
             .boolean = false,
         };
     };
     dir.close();
-    return Value{
+    return .{
         .boolean = true,
     };
 }
@@ -218,30 +228,38 @@ fn readLinesHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: 
     var lines = std.ArrayList(Value).init(allocator);
 
     while (try buf.readUntilDelimiterOrEofAlloc(allocator, '\n', 4096)) |line| {
-        try lines.append(Value{
-            .string = line,
-        });
+        try lines.append(
+            .{
+                .string = line,
+            },
+        );
     }
 
-    return Value{
+    return .{
         .array = lines,
     };
 }
 
 fn touchHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = try expectStringArg(args, env);
-    const file = try std.fs.cwd().createFile(path, .{
-        .truncate = false,
-    });
+    const file = try std.fs.cwd().createFile(
+        path,
+        .{
+            .truncate = false,
+        },
+    );
     defer file.close();
     return .nil;
 }
 
 fn appendHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectTwoStrings(args, env);
-    const file = try std.fs.cwd().openFile(parts[0], .{
-        .mode = .write_only,
-    });
+    const file = try std.fs.cwd().openFile(
+        parts[0],
+        .{
+            .mode = .write_only,
+        },
+    );
     defer file.close();
     try file.writeAll(parts[1]);
     return .nil;

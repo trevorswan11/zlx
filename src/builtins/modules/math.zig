@@ -66,7 +66,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "max", maxHandler);
     try pack(&map, "atan2", atan2Handler);
 
-    return Value{
+    return .{
         .object = map,
     };
 }
@@ -74,47 +74,47 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 fn sqrtHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const arg = try expectNumberArg(args, env);
     if (arg < 0) {
-        return Value{
+        return .{
             .string = "NaN",
         };
     }
-    return Value{
+    return .{
         .number = std.math.sqrt(arg),
     };
 }
 
 fn absHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = @abs(try expectNumberArg(args, env)),
     };
 }
 
 fn sinHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.sin(try expectNumberArg(args, env)),
     };
 }
 
 fn cosHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.cos(try expectNumberArg(args, env)),
     };
 }
 
 fn tanHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.tan(try expectNumberArg(args, env)),
     };
 }
 
 fn logHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.log(f64, std.math.e, try expectNumberArg(args, env)),
     };
 }
 
 fn expHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.exp(try expectNumberArg(args, env)),
     };
 }
@@ -131,70 +131,70 @@ fn powHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
         return error.TypeMismatch;
     }
 
-    return Value{
+    return .{
         .number = std.math.pow(f64, base.number, exponent.number),
     };
 }
 
 fn asinHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.asin(try expectNumberArg(args, env)),
     };
 }
 
 fn acosHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.acos(try expectNumberArg(args, env)),
     };
 }
 
 fn atanHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.atan(try expectNumberArg(args, env)),
     };
 }
 
 fn atan2Handler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const vals = try expectTwoNumbers(args, env);
-    return Value{
+    return .{
         .number = std.math.atan2(vals[0], vals[1]),
     };
 }
 
 fn log10Handler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.log10(try expectNumberArg(args, env)),
     };
 }
 
 fn floorHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.floor(try expectNumberArg(args, env)),
     };
 }
 
 fn ceilHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.ceil(try expectNumberArg(args, env)),
     };
 }
 
 fn roundHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    return Value{
+    return .{
         .number = std.math.round(try expectNumberArg(args, env)),
     };
 }
 
 fn minHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const vals = try expectTwoNumbers(args, env);
-    return Value{
+    return .{
         .number = @min(vals[0], vals[1]),
     };
 }
 
 fn maxHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const vals = try expectTwoNumbers(args, env);
-    return Value{
+    return .{
         .number = @max(vals[0], vals[1]),
     };
 }

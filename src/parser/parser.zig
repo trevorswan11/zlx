@@ -140,8 +140,8 @@ pub fn parse(allocator: std.mem.Allocator, source: []const u8) !*ast.Stmt {
     }
 
     const stmt_ptr = try allocator.create(ast.Stmt);
-    const block = ast.Stmt{
-        .block = ast.BlockStmt{
+    const block: ast.Stmt = .{
+        .block = .{
             .body = body,
         },
     };

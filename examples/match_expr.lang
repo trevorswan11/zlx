@@ -1,0 +1,8 @@
+let x = 3;
+
+let y = match x {
+    3 => 4,
+    _ => 100,
+};
+
+println(y);

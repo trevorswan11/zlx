@@ -132,6 +132,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     _ = try nud_lu.put(.MINUS, exprs.parsePrefixExpr);
     try nud(.NOT, binding.UNARY, exprs.parsePrefixExpr);
     try nud(.OPEN_BRACKET, binding.PRIMARY, exprs.parseArrayLiteralExpr);
+    try nud_lu.put(.MATCH, exprs.parseMatchExpr);
 
     // Object Literal
     _ = try nud_lu.put(.OPEN_CURLY, exprs.parseObjectLiteral);
@@ -180,4 +181,5 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try stmt(.BREAK, stmts.parseBreakStmt);
     try stmt(.CONTINUE, stmts.parseContinueStmt);
     try stmt(.RETURN, stmts.parseReturnStmt);
+    try stmt(.MATCH, stmts.parseMatchStmt);
 }

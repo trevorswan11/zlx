@@ -16,7 +16,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "randint", randintHandler);
     try pack(&map, "choice", choiceHandler);
 
-    return Value{
+    return .{
         .object = map,
     };
 }
@@ -28,7 +28,7 @@ fn randHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) !
 
     var prng = std.Random.DefaultPrng.init(@intCast(std.time.nanoTimestamp()));
     const rand_val = prng.random().float(f64);
-    return Value{
+    return .{
         .number = rand_val,
     };
 }
@@ -53,7 +53,7 @@ fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
 
     var prng = std.Random.DefaultPrng.init(@intCast(std.time.nanoTimestamp()));
     const rand_int = prng.random().intRangeAtMost(i64, min, max);
-    return Value{
+    return .{
         .number = @floatFromInt(rand_int),
     };
 }

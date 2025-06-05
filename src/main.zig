@@ -69,7 +69,7 @@ pub fn main() !void {
     // Successful parsing
     if (input.run) {
         if (input.verbose) {
-        try stdout.print("Parsing completed without error\n", .{});
+            try stdout.print("Parsing completed without error\n", .{});
             try stdout.print("Evaluating target...\n", .{});
         }
         const number = interpreter.evalStmt(block, &env) catch |err| blk: {

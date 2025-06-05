@@ -35,10 +35,10 @@ pub fn len(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Va
     }
     const val = try eval.evalExpr(args[0], env);
     return switch (val) {
-        .array => |a| Value{
+        .array => |a| .{
             .number = @floatFromInt(a.items.len),
         },
-        .string => |s| Value{
+        .string => |s| .{
             .number = @floatFromInt(s.len),
         },
         else => error.TypeMismatch,
@@ -58,7 +58,7 @@ pub fn ref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Va
     const heap_val = try env.allocator.create(Value);
     heap_val.* = val;
 
-    return Value{
+    return .{
         .reference = heap_val,
     };
 }
@@ -88,20 +88,24 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     if (step > 0) {
         var i = start;
         while (i < end) : (i += step) {
-            try result.append(Value{
-                .number = @floatFromInt(i),
-            });
+            try result.append(
+                .{
+                    .number = @floatFromInt(i),
+                },
+            );
         }
     } else {
         var i = start;
         while (i > end) : (i += step) {
-            try result.append(Value{
-                .number = @floatFromInt(i),
-            });
+            try result.append(
+                .{
+                    .number = @floatFromInt(i),
+                },
+            );
         }
     }
 
-    return Value{
+    return .{
         .array = result,
     };
 }

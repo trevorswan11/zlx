@@ -23,7 +23,7 @@ fn colorForKind(kind: TokenKind) []const u8 {
         // Core keywords
         .IF, .ELSE, .WHILE, .FOR, .FOREACH, .BREAK, .CONTINUE => colors.keyword,
         .IMPORT, .FROM, .EXPORT, .TYPEOF => colors.keyword,
-        .LET, .CONST, .FN, .CLASS, .NEW, .IN, .RETURN => colors.keyword,
+        .LET, .CONST, .FN, .CLASS, .NEW, .IN, .RETURN, .MATCH => colors.keyword,
 
         // Literals
         .TRUE, .FALSE => colors.boolean,
@@ -58,6 +58,7 @@ fn colorForKind(kind: TokenKind) []const u8 {
         .NULLISH_ASSIGNMENT,
         .PLUS_PLUS,
         .MINUS_MINUS,
+        .ARROW,
         => colors.operator,
 
         // Punctuation

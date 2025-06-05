@@ -9,9 +9,12 @@ const Environment = environment.Environment;
 const Value = environment.Value;
 
 pub fn pack(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
-    try map.put(name, Value{
-        .builtin = builtin,
-    });
+    try map.put(
+        name,
+        .{
+            .builtin = builtin,
+        },
+    );
 }
 
 // === Builtin Functions ===
@@ -28,11 +31,26 @@ const BuiltinFn = struct {
 };
 
 pub const builtin_fns = [_]BuiltinFn{
-    .{ .name = "print", .handler = fns.print },
-    .{ .name = "println", .handler = fns.println },
-    .{ .name = "len", .handler = fns.len },
-    .{ .name = "ref", .handler = fns.ref },
-    .{ .name = "range", .handler = fns.range },
+    .{
+        .name = "print",
+        .handler = fns.print,
+    },
+    .{
+        .name = "println",
+        .handler = fns.println,
+    },
+    .{
+        .name = "len",
+        .handler = fns.len,
+    },
+    .{
+        .name = "ref",
+        .handler = fns.ref,
+    },
+    .{
+        .name = "range",
+        .handler = fns.range,
+    },
 };
 
 // === Builtin Modules ===
@@ -53,13 +71,40 @@ const BuiltinModule = struct {
 };
 
 pub const builtin_modules = [_]BuiltinModule{
-    .{ .name = "fs", .loader = @import("modules/fs.zig").load },
-    .{ .name = "time", .loader = @import("modules/time.zig").load },
-    .{ .name = "math", .loader = @import("modules/math.zig").load },
-    .{ .name = "random", .loader = @import("modules/random.zig").load },
-    .{ .name = "string", .loader = @import("modules/string.zig").load },
-    .{ .name = "sys", .loader = @import("modules/sys.zig").load },
-    .{ .name = "debug", .loader = @import("modules/debug.zig").load },
-    .{ .name = "array", .loader = @import("modules/array.zig").load },
-    .{ .name = "path", .loader = @import("modules/path.zig").load },
+    .{
+        .name = "fs",
+        .loader = @import("modules/fs.zig").load,
+    },
+    .{
+        .name = "time",
+        .loader = @import("modules/time.zig").load,
+    },
+    .{
+        .name = "math",
+        .loader = @import("modules/math.zig").load,
+    },
+    .{
+        .name = "random",
+        .loader = @import("modules/random.zig").load,
+    },
+    .{
+        .name = "string",
+        .loader = @import("modules/string.zig").load,
+    },
+    .{
+        .name = "sys",
+        .loader = @import("modules/sys.zig").load,
+    },
+    .{
+        .name = "debug",
+        .loader = @import("modules/debug.zig").load,
+    },
+    .{
+        .name = "array",
+        .loader = @import("modules/array.zig").load,
+    },
+    .{
+        .name = "path",
+        .loader = @import("modules/path.zig").load,
+    },
 };

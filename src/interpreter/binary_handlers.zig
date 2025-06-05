@@ -9,19 +9,19 @@ const Value = environment.Value;
 pub fn plus(op: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .number = l + rhs.number,
             },
             else => error.TypeMismatch,
         },
         .string => |l| switch (rhs) {
-            .string => Value{
+            .string => .{
                 .string = try std.fmt.allocPrint(op.allocator, "{s}{s}", .{ l, rhs.string }),
             },
-            .number => Value{
+            .number => .{
                 .string = try std.fmt.allocPrint(op.allocator, "{s}{d}", .{ l, rhs.number }),
             },
-            .nil => Value{
+            .nil => .{
                 .string = try std.fmt.allocPrint(op.allocator, "{s}nil", .{l}),
             },
             else => error.TypeMismatch,
@@ -33,7 +33,7 @@ pub fn plus(op: Token, lhs: Value, rhs: Value) !Value {
 pub fn minus(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .number = l - rhs.number,
             },
             else => error.TypeMismatch,
@@ -45,7 +45,7 @@ pub fn minus(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn star(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .number = l * rhs.number,
             },
             else => error.TypeMismatch,
@@ -57,7 +57,7 @@ pub fn star(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn slash(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .number = l / rhs.number,
             },
             else => error.TypeMismatch,
@@ -67,13 +67,13 @@ pub fn slash(_: Token, lhs: Value, rhs: Value) !Value {
 }
 
 pub fn equal(_: Token, lhs: Value, rhs: Value) !Value {
-    return Value{
+    return .{
         .boolean = lhs.eql(rhs),
     };
 }
 
 pub fn notEqual(_: Token, lhs: Value, rhs: Value) !Value {
-    return Value{
+    return .{
         .boolean = lhs.eql(rhs) == false,
     };
 }
@@ -81,13 +81,13 @@ pub fn notEqual(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn greater(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .boolean = l > rhs.number,
             },
             else => error.TypeMismatch,
         },
         .string => |l| switch (rhs) {
-            .string => Value{
+            .string => .{
                 .boolean = std.mem.order(u8, l, rhs.string) == .gt,
             },
             else => error.TypeMismatch,
@@ -99,13 +99,13 @@ pub fn greater(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn greaterEqual(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .boolean = l >= rhs.number,
             },
             else => error.TypeMismatch,
         },
         .string => |l| switch (rhs) {
-            .string => Value{
+            .string => .{
                 .boolean = switch (std.mem.order(u8, l, rhs.string)) {
                     .gt, .eq => true,
                     else => false,
@@ -120,13 +120,13 @@ pub fn greaterEqual(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn less(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .boolean = l < rhs.number,
             },
             else => error.TypeMismatch,
         },
         .string => |l| switch (rhs) {
-            .string => Value{
+            .string => .{
                 .boolean = std.mem.order(u8, l, rhs.string) == .lt,
             },
             else => error.TypeMismatch,
@@ -138,13 +138,13 @@ pub fn less(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn lessEqual(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .boolean = l <= rhs.number,
             },
             else => error.TypeMismatch,
         },
         .string => |l| switch (rhs) {
-            .string => Value{
+            .string => .{
                 .boolean = switch (std.mem.order(u8, l, rhs.string)) {
                     .lt, .eq => true,
                     else => false,
@@ -159,7 +159,7 @@ pub fn lessEqual(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn mod(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => Value{
+            .number => .{
                 .number = if (rhs.number < 0) 0 else @mod(l, rhs.number),
             },
             else => error.TypeMismatch,
@@ -171,7 +171,7 @@ pub fn mod(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn bool_and(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .boolean => |l| switch (rhs) {
-            .boolean => Value{
+            .boolean => .{
                 .boolean = l and rhs.boolean,
             },
             else => error.TypeMismatch,
@@ -183,7 +183,7 @@ pub fn bool_and(_: Token, lhs: Value, rhs: Value) !Value {
 pub fn bool_or(_: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
         .boolean => |l| switch (rhs) {
-            .boolean => Value{
+            .boolean => .{
                 .boolean = l or rhs.boolean,
             },
             else => error.TypeMismatch,

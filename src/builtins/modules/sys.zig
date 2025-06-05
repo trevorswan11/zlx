@@ -20,7 +20,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "setenv", setenvHandler);
     try pack(&map, "unsetenv", unsetenvHandler);
 
-    return Value{
+    return .{
         .object = map,
     };
 }
@@ -29,11 +29,13 @@ fn argsHandler(allocator: std.mem.Allocator, _: []const *ast.Expr, _: *Environme
     const args = try std.process.argsAlloc(allocator);
     var array = std.ArrayList(Value).init(allocator);
     for (args) |arg| {
-        try array.append(Value{
-            .string = arg,
-        });
+        try array.append(
+            .{
+                .string = arg,
+            },
+        );
     }
-    return Value{
+    return .{
         .array = array,
     };
 }
@@ -48,7 +50,7 @@ fn getenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     }
 
     const val = sys_env.get(key.string) orelse return .nil;
-    return Value{
+    return .{
         .string = val,
     };
 }

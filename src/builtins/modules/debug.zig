@@ -16,7 +16,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "assertEqual", assertEqualHandler);
     try pack(&map, "assertNotEqual", assertNotEqualHandler);
 
-    return Value{
+    return .{
         .object = map,
     };
 }

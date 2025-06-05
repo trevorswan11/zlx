@@ -103,7 +103,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     }
 
     if (filepath) |fp| {
-        return Args{
+        return .{
             .path = try allocator.dupe(u8, fp),
             .time = time,
             .verbose = verbose,
@@ -227,6 +227,12 @@ pub fn printStmt(stmt: *ast.Stmt, allocator: std.mem.Allocator) !void {
             },
             .return_stmt => {
                 try stdout.print("Return: ", .{});
+                const str = try s.toString(allocator);
+                defer allocator.free(str);
+                try stdout.print("{s}\n", .{str});
+            },
+            .match_stmt => {
+                try stdout.print("Match: ", .{});
                 const str = try s.toString(allocator);
                 defer allocator.free(str);
                 try stdout.print("{s}\n", .{str});

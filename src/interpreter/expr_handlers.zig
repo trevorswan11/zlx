@@ -12,19 +12,19 @@ const evalExpr = @import("eval.zig").evalExpr;
 const evalStmt = @import("eval.zig").evalStmt;
 
 pub fn number(n: *ast.NumberExpr, _: *Environment) !Value {
-    return Value{
+    return .{
         .number = n.value,
     };
 }
 
 pub fn string(s: *ast.StringExpr, _: *Environment) !Value {
-    return Value{
+    return .{
         .string = s.value,
     };
 }
 
 pub fn boolean(b: bool, _: *Environment) !Value {
-    return Value{
+    return .{
         .boolean = b,
     };
 }
@@ -39,7 +39,7 @@ pub fn array(a: *ast.ArrayLiteral, env: *Environment) !Value {
         const item = try evalExpr(item_expr, env);
         try arr.append(item);
     }
-    return Value{
+    return .{
         .array = arr,
     };
 }
@@ -100,12 +100,12 @@ pub fn range(r: *ast.RangeExpr, env: *Environment) !Value {
     var arr = std.ArrayList(Value).init(env.allocator);
     var i = lower.number;
     while (i < upper.number) : (i += 1) {
-        try arr.append(Value{
+        try arr.append(.{
             .number = i,
         });
     }
 
-    return Value{
+    return .{
         .array = arr,
     };
 }
@@ -155,7 +155,7 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
             }
 
             var method_env = Environment.init(env.allocator, null);
-            try method_env.define("this", Value{
+            try method_env.define("this", .{
                 .reference = try env.allocator.create(Value),
             });
             try method_env.assign("this", bm.instance.*);
@@ -201,10 +201,10 @@ pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
 
     const right = try evalExpr(p.right, env);
     return switch (p.operator.kind) {
-        .MINUS => Value{
+        .MINUS => .{
             .number = -right.number,
         },
-        .NOT => Value{
+        .NOT => .{
             .boolean = !right.boolean,
         },
         else => error.UnsupportedPrefixOperator,
@@ -236,7 +236,7 @@ pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
         if (class_val.class.methods.get(m.property)) |method_stmt| {
             const val = try env.allocator.create(Value);
             val.* = target;
-            return Value{
+            return .{
                 .bound_method = .{
                     .instance = val,
                     .method = method_stmt,
@@ -283,7 +283,7 @@ pub fn function(f: *ast.FunctionExpr, env: *Environment) !Value {
         param_names[i] = p.name;
     }
 
-    return Value{
+    return .{
         .function = .{
             .body = f.body,
             .parameters = param_names,
@@ -304,7 +304,7 @@ pub fn new(n: *ast.NewExpr, env: *Environment) !Value {
     instance_ptr.* = Value{
         .object = std.StringHashMap(Value).init(env.allocator),
     };
-    try instance_ptr.*.object.put("__class_name", Value{
+    try instance_ptr.*.object.put("__class_name", .{
         .string = cls.name,
     });
 
@@ -314,7 +314,7 @@ pub fn new(n: *ast.NewExpr, env: *Environment) !Value {
         var ctor_env = Environment.init(env.allocator, null);
         defer ctor_env.deinit();
 
-        try ctor_env.define("this", Value{
+        try ctor_env.define("this", .{
             .reference = instance_ptr,
         });
 
@@ -344,7 +344,24 @@ pub fn object(o: *ast.ObjectExpr, env: *Environment) !Value {
         try map.put(entry.key, val);
     }
 
-    return Value{
+    return .{
         .object = map,
     };
+}
+
+pub fn match(m: *ast.Match, env: *Environment) !Value {
+    const target = try evalExpr(m.expression, env);
+
+    for (m.cases.items) |case| {
+        if (case.pattern.* == .symbol and std.mem.eql(u8, case.pattern.symbol.value, "_")) {
+            return try evalExpr(case.body.expression.expression, env);
+        }
+
+        const pattern_val = try evalExpr(case.pattern, env);
+        if (target.eql(pattern_val)) {
+            return try evalExpr(case.body.expression.expression, env);
+        }
+    }
+
+    return .nil;
 }

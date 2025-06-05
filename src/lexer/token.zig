@@ -78,6 +78,8 @@ pub const TokenKind = enum(u32) {
     BREAK,
     CONTINUE,
     RETURN,
+    MATCH,
+    ARROW,
 
     // Misc
     NUM_TOKENS,
@@ -174,6 +176,7 @@ pub const Token = struct {
         try reserved.put("in", .IN);
         try reserved.put("true", .TRUE);
         try reserved.put("false", .FALSE);
+        try reserved.put("match", .MATCH);
 
         // Built-in functions
         try reserved.put("print", .IDENTIFIER);

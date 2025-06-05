@@ -8,6 +8,7 @@ const Environment = environment.Environment;
 const Value = environment.Value;
 const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
+const loadConstants = @import("time_constants.zig").loadConstants;
 
 fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
     if (args.len != 1) {
@@ -37,7 +38,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     // Time constants!
     try loadConstants(&map);
 
-    return Value{
+    return .{
         .object = map,
     };
 }
@@ -48,7 +49,7 @@ fn nowHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) an
     }
 
     const now = std.time.timestamp();
-    return Value{
+    return .{
         .number = @floatFromInt(now),
     };
 }
@@ -60,7 +61,7 @@ fn millisHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment)
 
     const now_ns = std.time.nanoTimestamp();
     const millis = @as(f64, @floatFromInt(now_ns)) / 1_000_000.0;
-    return Value{
+    return .{
         .number = millis,
     };
 }
@@ -87,7 +88,7 @@ fn startHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) 
     }
 
     const now = std.time.nanoTimestamp();
-    return Value{
+    return .{
         .number = @floatFromInt(now),
     };
 }
@@ -98,7 +99,7 @@ fn stopHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     const t1 = std.time.nanoTimestamp();
 
     const elapsed = @as(f64, @floatFromInt(t1 - t0)) / 1_000_000.0;
-    return Value{
+    return .{
         .number = elapsed,
     };
 }
@@ -115,7 +116,7 @@ fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
     }
 
     const diff = @as(f64, @floatFromInt(@as(i64, @intFromFloat(t1.number)) - @as(i64, @intFromFloat(t0.number)))) / 1_000_000.0;
-    return Value{
+    return .{
         .number = diff,
     };
 }
@@ -126,79 +127,7 @@ fn timestampHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environme
     }
 
     const now = std.time.nanoTimestamp();
-    return Value{
+    return .{
         .number = @floatFromInt(now),
     };
-}
-
-fn loadConstants(map: *std.StringHashMap(Value)) !void {
-    try map.put("ns_per_us", Value{
-        .number = @floatFromInt(std.time.ns_per_us),
-    });
-    try map.put("ns_per_ms", Value{
-        .number = @floatFromInt(std.time.ns_per_ms),
-    });
-    try map.put("ns_per_s", Value{
-        .number = @floatFromInt(std.time.ns_per_s),
-    });
-    try map.put("ns_per_min", Value{
-        .number = @floatFromInt(std.time.ns_per_min),
-    });
-    try map.put("ns_per_hour", Value{
-        .number = @floatFromInt(std.time.ns_per_hour),
-    });
-    try map.put("ns_per_day", Value{
-        .number = @floatFromInt(std.time.ns_per_day),
-    });
-    try map.put("ns_per_week", Value{
-        .number = @floatFromInt(std.time.ns_per_week),
-    });
-
-    try map.put("us_per_ms", Value{
-        .number = @floatFromInt(std.time.us_per_ms),
-    });
-    try map.put("us_per_s", Value{
-        .number = @floatFromInt(std.time.us_per_s),
-    });
-    try map.put("us_per_min", Value{
-        .number = @floatFromInt(std.time.us_per_min),
-    });
-    try map.put("us_per_hour", Value{
-        .number = @floatFromInt(std.time.us_per_hour),
-    });
-    try map.put("us_per_day", Value{
-        .number = @floatFromInt(std.time.us_per_day),
-    });
-    try map.put("us_per_week", Value{
-        .number = @floatFromInt(std.time.us_per_week),
-    });
-
-    try map.put("ms_per_s", Value{
-        .number = @floatFromInt(std.time.ms_per_s),
-    });
-    try map.put("ms_per_min", Value{
-        .number = @floatFromInt(std.time.ms_per_min),
-    });
-    try map.put("ms_per_hour", Value{
-        .number = @floatFromInt(std.time.ms_per_hour),
-    });
-    try map.put("ms_per_day", Value{
-        .number = @floatFromInt(std.time.ms_per_day),
-    });
-    try map.put("ms_per_week", Value{
-        .number = @floatFromInt(std.time.ms_per_week),
-    });
-
-    try map.put("s_per_min", Value{
-        .number = @floatFromInt(std.time.s_per_min),
-    });
-    try map.put("s_per_hour", Value{
-        .number = @floatFromInt(std.time.s_per_hour),
-    });
-    try map.put("s_per_day", Value{
-        .number = @floatFromInt(std.time.s_per_day),
-    });
-    try map.put("s_per_week", Value{
-        .number = @floatFromInt(std.time.s_per_week),
-    });
 }
