@@ -23,10 +23,10 @@ jobs:
         run: tar -xf zig-linux-x86_64-0.14.0.tar.xz
 
       - name: Add Zig to PATH
-        run: echo "$PWD/zig-linux-x86_64-0.14.0" >> $GITHUB_PATH
+        run: echo "ZIG=$PWD/zig-linux-x86_64-0.14.0/zig" >> $GITHUB_ENV
 
       - name: Verify Zig version
-        run: zig version
+        run: $ZIG version
 
       - name: Build the project
-        run: zig build
+        run: $ZIG build

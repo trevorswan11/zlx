@@ -43,10 +43,10 @@ pub fn main() !void {
     // Parse the file
     const block = parser.parse(allocator, file_contents) catch |err| switch (err) {
         else => {
-            try stderr.print("Error parsing file: {!}\n", .{err});
+            try stderr.print("Error parsing file: {!}", .{err});
             t1 = std.time.nanoTimestamp();
             if (input.time) {
-                try stdout.print("Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+                try stdout.print("\nParsing failed in {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
             }
             return;
         },
@@ -96,8 +96,8 @@ pub fn main() !void {
             try stdout.print("\n", .{});
         }
         try stdout.print("Timing:\n", .{});
-        try stdout.print("  Parsing took:       {d} ms\n", .{ parsing });
-        try stdout.print("  Interpreting took:  {d} ms\n", .{ interpreting });
-        try stdout.print("  Process took:       {d} ms", .{ process });
+        try stdout.print("  Parsing took:       {d} ms\n", .{parsing});
+        try stdout.print("  Interpreting took:  {d} ms\n", .{interpreting});
+        try stdout.print("  Process took:       {d} ms", .{process});
     }
 }

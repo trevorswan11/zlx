@@ -241,12 +241,6 @@ pub const Environment = struct {
 
     pub fn define(self: *Self, name: []const u8, value: Value) !void {
         const stderr = std.io.getStdErr().writer();
-        var reserved_map = try token.Token.getReservedMap(self.allocator);
-        defer reserved_map.deinit();
-        if (reserved_map.get(name) != null) {
-            try stderr.print("Reserved Identifier: \"{s}\"\n", .{name});
-            return error.ReservedIdentifier;
-        }
 
         if (self.values.contains(name)) {
             try stderr.print("Duplicate Identifier: \"{s}\"\n", .{name});

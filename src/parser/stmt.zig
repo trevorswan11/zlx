@@ -54,6 +54,16 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
     const is_constant = start_token == .CONST;
     const symbol_name = try p.expectError(.IDENTIFIER, error.VarDeclStmt);
 
+    var reserved_map = try token.Token.getReservedMap(p.allocator);
+    defer reserved_map.deinit();
+    if (reserved_map.get(symbol_name.value) != null) {
+        try stderr.print("Reserved Identifier \"{s}\" used for variable declaration @ Line {d}\n", .{
+            symbol_name.value,
+            p.tokens.items[p.pos].line,
+        });
+        return error.ReservedIdentifier;
+    }
+
     if (p.currentTokenKind() == .COLON) {
         _ = try p.expect(.COLON);
         explicit_type = try types.parseType(p, binding.DEFAULT_BP);
@@ -113,6 +123,7 @@ pub const FunctionInfo = struct {
 
 pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
     _ = try p.expect(.OPEN_PAREN);
+    const stderr = std.io.getStdErr().writer();
     var function_params = std.ArrayList(*ast.Parameter).init(p.allocator);
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {
         const expected = try p.expect(.IDENTIFIER);
@@ -121,8 +132,13 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         var reserved_map = try token.Token.getReservedMap(p.allocator);
         defer reserved_map.deinit();
         if (reserved_map.get(param_name) != null) {
+            try stderr.print("Reserved Identifier \"{s}\" used for function parameter @ Line {d}\n", .{
+                param_name,
+                p.tokens.items[p.pos].line,
+            });
             return error.ReservedIdentifier;
         }
+
 
         var param_type: ast.Type = .{
             .symbol = .{
@@ -220,13 +236,27 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
 
 pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.IMPORT);
+    const stderr = std.io.getStdErr().writer();
     var import_from: []const u8 = undefined;
     const import_type = try p.expectMany(&[_]token.TokenKind{ .IDENTIFIER, .STAR });
     const import_name = import_type.value;
 
     var reserved_map = try token.Token.getReservedMap(p.allocator);
     defer reserved_map.deinit();
-    if (reserved_map.get(import_name) != null) {
+
+    const builtin_mods = @import("../builtins/builtins.zig").builtin_modules;
+    var is_builtin = false;
+    for (builtin_mods) |mod| {
+        if (std.mem.eql(u8, import_name, mod.name)) {
+            is_builtin = true;
+        }
+    }
+
+    if (!is_builtin and reserved_map.get(import_name) != null) {
+        try stderr.print("Reserved Identifier \"{s}\" used for non-builtin import @ Line {d}\n", .{
+            import_name,
+            p.tokens.items[p.pos].line,
+        });
         return error.ReservedIdentifier;
     }
 
@@ -292,10 +322,15 @@ pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
 
 pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.CLASS);
+    const stderr = std.io.getStdErr().writer();
     const class_name = (try p.expect(.IDENTIFIER)).value;
     var reserved_map = try token.Token.getReservedMap(p.allocator);
     defer reserved_map.deinit();
     if (reserved_map.get(class_name) != null) {
+        try stderr.print("Reserved Identifier \"{s}\" used for class name @ Line {d}\n", .{
+            class_name,
+            p.tokens.items[p.pos].line,
+        });
         return error.ReservedIdentifier;
     }
     const class_body = try parseBlockStmt(p);
