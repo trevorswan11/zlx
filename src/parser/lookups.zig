@@ -6,18 +6,56 @@ const token = @import("../lexer/token.zig");
 const stmts = @import("stmt.zig");
 const exprs = @import("expr.zig");
 
-pub const BindingPower = enum(u32) {
-    DEFAULT_BP = 0, // iota
-    COMMA,
-    ASSIGNMENT,
-    LOGICAL,
-    RELATIONAL,
-    ADDITIVE,
-    MULTIPLICATIVE,
-    UNARY,
-    CALL,
-    MEMBER,
-    PRIMARY,
+pub const BindingPower = struct {
+    left: u32,
+    right: u32,
+};
+
+pub const binding = struct {
+    pub const DEFAULT_BP = BindingPower{
+        .left = 0,
+        .right = 0,
+    };
+    pub const COMMA = BindingPower{
+        .left = 1,
+        .right = 2,
+    };
+    pub const ASSIGNMENT = BindingPower{
+        .left = 3,
+        .right = 2,
+    };
+    pub const LOGICAL = BindingPower{
+        .left = 5,
+        .right = 6,
+    };
+    pub const RELATIONAL = BindingPower{
+        .left = 10,
+        .right = 11,
+    };
+    pub const ADDITIVE = BindingPower{
+        .left = 20,
+        .right = 21,
+    };
+    pub const MULTIPLICATIVE = BindingPower{
+        .left = 30,
+        .right = 31,
+    };
+    pub const UNARY = BindingPower{
+        .left = 40,
+        .right = 41,
+    };
+    pub const CALL = BindingPower{
+        .left = 50,
+        .right = 51,
+    };
+    pub const MEMBER = BindingPower{
+        .left = 60,
+        .right = 61,
+    };
+    pub const PRIMARY = BindingPower{
+        .left = 70,
+        .right = 71,
+    };
 };
 
 // === Function pointer types ===
@@ -38,12 +76,12 @@ pub fn led(kind: token.TokenKind, bp: BindingPower, led_fn: LedHandler) !void {
 }
 
 pub fn nud(kind: token.TokenKind, _: BindingPower, nud_fn: NudHandler) !void {
-    _ = try bp_lu.put(kind, BindingPower.PRIMARY);
+    _ = try bp_lu.put(kind, binding.PRIMARY);
     _ = try nud_lu.put(kind, nud_fn);
 }
 
 pub fn stmt(kind: token.TokenKind, stmt_fn: StmtHandler) !void {
-    _ = try bp_lu.put(kind, BindingPower.DEFAULT_BP);
+    _ = try bp_lu.put(kind, binding.DEFAULT_BP);
     _ = try stmt_lu.put(kind, stmt_fn);
 }
 
@@ -55,61 +93,61 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     stmt_lu = std.AutoHashMap(token.TokenKind, StmtHandler).init(allocator);
 
     // Assignment
-    try led(.ASSIGNMENT, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.PLUS_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.MINUS_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.SLASH_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.STAR_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.PERCENT_EQUALS, .ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.ASSIGNMENT, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.PLUS_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.MINUS_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.SLASH_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.STAR_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.PERCENT_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
 
     // Logical
-    try led(.AND, .LOGICAL, exprs.parseBinaryExpr);
-    try led(.OR, .LOGICAL, exprs.parseBinaryExpr);
-    try led(.DOT_DOT, .LOGICAL, exprs.parseRangeExpr);
+    try led(.AND, binding.LOGICAL, exprs.parseBinaryExpr);
+    try led(.OR, binding.LOGICAL, exprs.parseBinaryExpr);
+    try led(.DOT_DOT, binding.LOGICAL, exprs.parseRangeExpr);
 
     // Relational
-    try led(.LESS, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(.LESS_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(.GREATER, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(.GREATER_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(.EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
-    try led(.NOT_EQUALS, .RELATIONAL, exprs.parseBinaryExpr);
+    try led(.LESS, binding.RELATIONAL, exprs.parseBinaryExpr);
+    try led(.LESS_EQUALS, binding.RELATIONAL, exprs.parseBinaryExpr);
+    try led(.GREATER, binding.RELATIONAL, exprs.parseBinaryExpr);
+    try led(.GREATER_EQUALS, binding.RELATIONAL, exprs.parseBinaryExpr);
+    try led(.EQUALS, binding.RELATIONAL, exprs.parseBinaryExpr);
+    try led(.NOT_EQUALS, binding.RELATIONAL, exprs.parseBinaryExpr);
 
     // Additive & Multiplicative
-    try led(.PLUS, .ADDITIVE, exprs.parseBinaryExpr);
-    try led(.MINUS, .ADDITIVE, exprs.parseBinaryExpr);
-    try nud(.MINUS_MINUS, .UNARY, exprs.parsePrefixExpr);
-    try nud(.PLUS_PLUS, .UNARY, exprs.parsePrefixExpr);
-    try led(.SLASH, .MULTIPLICATIVE, exprs.parseBinaryExpr);
-    try led(.STAR, .MULTIPLICATIVE, exprs.parseBinaryExpr);
-    try led(.PERCENT, .MULTIPLICATIVE, exprs.parseBinaryExpr);
+    try led(.PLUS, binding.ADDITIVE, exprs.parseBinaryExpr);
+    try led(.MINUS, binding.ADDITIVE, exprs.parseBinaryExpr);
+    try nud(.MINUS_MINUS, binding.UNARY, exprs.parsePrefixExpr);
+    try nud(.PLUS_PLUS, binding.UNARY, exprs.parsePrefixExpr);
+    try led(.SLASH, binding.MULTIPLICATIVE, exprs.parseBinaryExpr);
+    try led(.STAR, binding.MULTIPLICATIVE, exprs.parseBinaryExpr);
+    try led(.PERCENT, binding.MULTIPLICATIVE, exprs.parseBinaryExpr);
 
     // Literals & Symbols
-    try nud(.NUMBER, .PRIMARY, exprs.parsePrimaryExpr);
-    try nud(.STRING, .PRIMARY, exprs.parsePrimaryExpr);
-    try nud(.IDENTIFIER, .PRIMARY, exprs.parsePrimaryExpr);
+    try nud(.NUMBER, binding.PRIMARY, exprs.parsePrimaryExpr);
+    try nud(.STRING, binding.PRIMARY, exprs.parsePrimaryExpr);
+    try nud(.IDENTIFIER, binding.PRIMARY, exprs.parsePrimaryExpr);
 
     // Unary/Prefix
-    try nud(.TYPEOF, .UNARY, exprs.parsePrefixExpr);
-    try nud(.MINUS, .UNARY, exprs.parsePrefixExpr);
-    try nud(.NOT, .UNARY, exprs.parsePrefixExpr);
-    try nud(.OPEN_BRACKET, .PRIMARY, exprs.parseArrayLiteralExpr);
+    try nud(.TYPEOF, binding.UNARY, exprs.parsePrefixExpr);
+    _ = try nud_lu.put(.MINUS, exprs.parsePrefixExpr);
+    try nud(.NOT, binding.UNARY, exprs.parsePrefixExpr);
+    try nud(.OPEN_BRACKET, binding.PRIMARY, exprs.parseArrayLiteralExpr);
 
     // Object Literal
-    try nud(.OPEN_CURLY, .PRIMARY, exprs.parseObjectLiteral);
+    try nud(.OPEN_CURLY, binding.PRIMARY, exprs.parseObjectLiteral);
 
     // Member / Call
-    try led(.DOT, .MEMBER, exprs.parseMemberExpr);
-    try led(.OPEN_BRACKET, .MEMBER, exprs.parseMemberExpr);
-    try led(.OPEN_PAREN, .CALL, exprs.parseCallExpr);
+    try led(.DOT, binding.MEMBER, exprs.parseMemberExpr);
+    try led(.OPEN_BRACKET, binding.MEMBER, exprs.parseMemberExpr);
+    try led(.OPEN_PAREN, binding.CALL, exprs.parseCallExpr);
 
     // Grouping / Functions
-    try nud(.OPEN_PAREN, .DEFAULT_BP, exprs.parseGroupingExpr);
-    try nud(.FN, .DEFAULT_BP, exprs.parseFnExpr);
-    try nud(.NEW, .DEFAULT_BP, struct {
+    try nud(.OPEN_PAREN, binding.DEFAULT_BP, exprs.parseGroupingExpr);
+    try nud(.FN, binding.DEFAULT_BP, exprs.parseFnExpr);
+    try nud(.NEW, binding.DEFAULT_BP, struct {
         pub fn afn(p: *Parser) anyerror!ast.Expr {
             _ = p.advance();
-            const inst = try exprs.parseExpr(p, .DEFAULT_BP);
+            const inst = try exprs.parseExpr(p, binding.DEFAULT_BP);
             const call_expr_ptr = try p.allocator.create(ast.CallExpr);
             switch (inst) {
                 .call => |call_expr| {
@@ -126,8 +164,8 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     }.afn);
 
     // Booleans
-    try nud(.TRUE, .PRIMARY, exprs.parseBooleanLiteral);
-    try nud(.FALSE, .PRIMARY, exprs.parseBooleanLiteral);
+    try nud(.TRUE, binding.PRIMARY, exprs.parseBooleanLiteral);
+    try nud(.FALSE, binding.PRIMARY, exprs.parseBooleanLiteral);
 
     // Statements
     try stmt(.OPEN_CURLY, stmts.parseBlockStmt);

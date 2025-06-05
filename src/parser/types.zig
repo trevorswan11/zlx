@@ -1,10 +1,13 @@
 const std = @import("std");
 const token = @import("../lexer/token.zig");
 const ast = @import("ast.zig");
-const BindingPower = @import("lookups.zig").BindingPower;
+const lus = @import("lookups.zig");
 
 const TokenKind = token.TokenKind;
 const Parser = @import("parser.zig").Parser;
+
+const BindingPower = lus.BindingPower;
+const binding = lus.binding;
 
 // === Function Types ===
 const TypeNudHandler = *const fn (*Parser) anyerror!ast.Type;
@@ -22,7 +25,7 @@ pub fn typeLed(kind: TokenKind, bp: BindingPower, led_fn: TypeLedHandler) !void 
 }
 
 pub fn typeNud(kind: TokenKind, _: BindingPower, nud_fn: TypeNudHandler) !void {
-    _ = try type_bp_lu.put(kind, .PRIMARY);
+    _ = try type_bp_lu.put(kind, binding.PRIMARY);
     _ = try type_nud_lu.put(kind, nud_fn);
 }
 
@@ -33,7 +36,7 @@ pub fn createTypeTokenLookups(allocator: std.mem.Allocator) !void {
     type_led_lu = std.AutoHashMap(TokenKind, TypeLedHandler).init(allocator);
 
     // IDENTIFIER => SymbolType
-    try typeNud(.IDENTIFIER, .PRIMARY, struct {
+    try typeNud(.IDENTIFIER, binding.PRIMARY, struct {
         pub fn afn(p: *Parser) !ast.Type {
             return ast.Type{
                 .symbol = ast.SymbolType{
@@ -44,11 +47,11 @@ pub fn createTypeTokenLookups(allocator: std.mem.Allocator) !void {
     }.afn);
 
     // []number => ListType
-    try typeNud(.OPEN_BRACKET, .MEMBER, struct {
+    try typeNud(.OPEN_BRACKET, binding.MEMBER, struct {
         pub fn afn(p: *Parser) !ast.Type {
             _ = p.advance();
             _ = try p.expect(.CLOSE_BRACKET);
-            const inner_val = try parseType(p, .DEFAULT_BP);
+            const inner_val = try parseType(p, binding.DEFAULT_BP);
             const inner_ptr = try p.allocator.create(ast.Type);
             inner_ptr.* = inner_val;
 
@@ -74,7 +77,7 @@ pub fn parseType(p: *Parser, bp: BindingPower) !ast.Type {
 
     var left = try nud_fn(p);
 
-    while (@intFromEnum(type_bp_lu.get(p.currentTokenKind()) orelse .DEFAULT_BP) > @intFromEnum(bp)) {
+    while ((type_bp_lu.get(p.currentTokenKind()) orelse binding.DEFAULT_BP).left > bp.right) {
         const next_kind = p.currentTokenKind();
 
         const led_fn = type_led_lu.get(next_kind) orelse

@@ -7,6 +7,9 @@ const lus = @import("lookups.zig");
 const expr = @import("expr.zig");
 const types = @import("types.zig");
 
+const BindingPower = lus.BindingPower;
+const binding = lus.binding;
+
 fn boxStmt(p: *parser.Parser, stmt: ast.Stmt) !*ast.Stmt {
     const ptr = try p.allocator.create(ast.Stmt);
     ptr.* = stmt;
@@ -34,7 +37,7 @@ pub fn parseStmt(p: *parser.Parser) !ast.Stmt {
 }
 
 pub fn parseExpressionStmt(p: *parser.Parser) !ast.Stmt {
-    const expression = try expr.parseExpr(p, .DEFAULT_BP);
+    const expression = try expr.parseExpr(p, binding.DEFAULT_BP);
     _ = try p.expect(.SEMI_COLON);
 
     return ast.Stmt{
@@ -71,13 +74,13 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
 
     if (p.currentTokenKind() == .COLON) {
         _ = try p.expect(.COLON);
-        explicit_type = try types.parseType(p, .DEFAULT_BP);
+        explicit_type = try types.parseType(p, binding.DEFAULT_BP);
     }
 
     var assignment_value: ?ast.Expr = null;
     if (p.currentTokenKind() != .SEMI_COLON) {
         _ = try p.expect(.ASSIGNMENT);
-        assignment_value = try expr.parseExpr(p, .ASSIGNMENT);
+        assignment_value = try expr.parseExpr(p, binding.ASSIGNMENT);
     } else if (explicit_type == null) {
         try stderr.print("Missing explicit type for variable declaration at token {d}/{d} @ Line {d}\n", .{
             p.pos,
@@ -133,7 +136,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         const expected = try p.expect(.IDENTIFIER);
         const param_name = expected.value;
         _ = try p.expect(.COLON);
-        const param_type = try types.parseType(p, .DEFAULT_BP);
+        const param_type = try types.parseType(p, binding.DEFAULT_BP);
 
         const param_ptr = try p.allocator.create(ast.Parameter);
         const param = ast.Parameter{
@@ -153,7 +156,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
 
     if (p.currentTokenKind() == .COLON) {
         _ = p.advance();
-        return_type = try types.parseType(p, .DEFAULT_BP);
+        return_type = try types.parseType(p, binding.DEFAULT_BP);
     } else {
         return_type = ast.Type{ .symbol = ast.SymbolType{
             .value = "void",
@@ -186,7 +189,7 @@ pub fn parseFnDeclaration(p: *parser.Parser) !ast.Stmt {
 
 pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
     _ = p.advance();
-    const condition = try expr.parseExpr(p, .ASSIGNMENT);
+    const condition = try expr.parseExpr(p, binding.ASSIGNMENT);
     const consequent = try parseBlockStmt(p);
 
     var alternate: ?ast.Stmt = null;
@@ -253,7 +256,7 @@ pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
     }
 
     _ = try p.expect(.IN);
-    const iterable = try expr.parseExpr(p, .DEFAULT_BP);
+    const iterable = try expr.parseExpr(p, binding.DEFAULT_BP);
     const block_stmt = try parseBlockStmt(p);
     const body = block_stmt.block.body;
 
@@ -269,7 +272,7 @@ pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
 
 pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.WHILE);
-    const condition = try expr.parseExpr(p, .DEFAULT_BP);
+    const condition = try expr.parseExpr(p, binding.DEFAULT_BP);
     const block_stmt = try parseBlockStmt(p);
 
     return ast.Stmt{

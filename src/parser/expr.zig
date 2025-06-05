@@ -6,6 +6,9 @@ const ast = @import("ast.zig");
 const lus = @import("lookups.zig");
 const stmts = @import("stmt.zig");
 
+const BindingPower = lus.BindingPower;
+const binding = lus.binding;
+
 fn boxExpr(p: *parser.Parser, e: ast.Expr) !*ast.Expr {
     const ptr = try p.allocator.create(ast.Expr);
     ptr.* = e;
@@ -18,18 +21,21 @@ fn boxType(p: *parser.Parser, e: ast.Type) !*ast.Type {
     return ptr;
 }
 
-pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
+pub fn parseExpr(p: *parser.Parser, min_bp: BindingPower) !ast.Expr {
     const stderr = std.io.getStdErr().writer();
     var token_kind = p.currentTokenKind();
 
     if (lus.nud_lu.get(token_kind)) |nud_fn| {
         var left = try nud_fn(p);
 
-        while (lus.bp_lu.get(p.currentTokenKind()) != null and @intFromEnum(lus.bp_lu.get(p.currentTokenKind()).?) > @intFromEnum(bp)) {
+        while (true) {
             token_kind = p.currentTokenKind();
-            if (lus.led_lu.get(token_kind)) |led_fn| {
-                left = try led_fn(p, left, bp);
-            } else {
+
+            // stop at EOF or anything without a known binding power
+            const next_bp = lus.bp_lu.get(token_kind) orelse break;
+            if (next_bp.left < min_bp.right) break;
+
+            const led_fn = lus.led_lu.get(token_kind) orelse {
                 try stderr.print("Expr Parse Error: LED Handler expected for token {s} ({d}/{d}) @ Line {d}\n", .{
                     try token.tokenKindString(p.allocator, token_kind),
                     p.pos,
@@ -38,7 +44,9 @@ pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
                 });
                 try p.currentToken().debugRuntime();
                 return error.ExpectedLEDHandler;
-            }
+            };
+
+            left = try led_fn(p, left, next_bp);
         }
 
         return left;
@@ -49,14 +57,13 @@ pub fn parseExpr(p: *parser.Parser, bp: lus.BindingPower) !ast.Expr {
             p.tokens.items.len,
             p.tokens.items[p.pos].line,
         });
-        try p.currentToken().debugRuntime();
         return error.ExpectedNUDHandler;
     }
 }
 
 pub fn parsePrefixExpr(p: *parser.Parser) !ast.Expr {
     const operator_token = p.advance();
-    const expr = try parseExpr(p, .UNARY);
+    const expr = try parseExpr(p, binding.UNARY);
 
     return ast.Expr{
         .prefix = ast.PrefixExpr{
@@ -66,7 +73,7 @@ pub fn parsePrefixExpr(p: *parser.Parser) !ast.Expr {
     };
 }
 
-pub fn parseAssignmentExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !ast.Expr {
+pub fn parseAssignmentExpr(p: *parser.Parser, left: ast.Expr, bp: BindingPower) !ast.Expr {
     _ = p.advance();
     const rhs = try parseExpr(p, bp);
 
@@ -78,7 +85,7 @@ pub fn parseAssignmentExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPow
     };
 }
 
-pub fn parseRangeExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !ast.Expr {
+pub fn parseRangeExpr(p: *parser.Parser, left: ast.Expr, bp: BindingPower) !ast.Expr {
     _ = p.advance();
     const upper = try parseExpr(p, bp);
 
@@ -90,22 +97,12 @@ pub fn parseRangeExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !
     };
 }
 
-pub fn parseBinaryExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !ast.Expr {
-    const stderr = std.io.getStdErr().writer();
+pub fn parseBinaryExpr(p: *parser.Parser, left: ast.Expr, bp: BindingPower) !ast.Expr {
     const operator_token = p.advance();
-    const operator_bp = lus.bp_lu.get(operator_token.kind) orelse {
-        try stderr.print("No binding power associated with operator: {s} at token {d}/{d} @ Line {d}\n", .{
-            try token.tokenKindString(p.allocator, operator_token.kind),
-            p.pos,
-            p.tokens.items.len,
-            p.tokens.items[p.pos].line,
-        });
-        try p.currentToken().debugRuntime();
-        try operator_token.debugRuntime();
-        return error.BinaryExprOperator;
-    };
-    const right = try parseExpr(p, operator_bp);
-    _ = bp;
+    const right = try parseExpr(p, BindingPower{
+        .left = 0,
+        .right = bp.right,
+    });
 
     return ast.Expr{
         .binary = ast.BinaryExpr{
@@ -154,7 +151,7 @@ pub fn parsePrimaryExpr(p: *parser.Parser) !ast.Expr {
     }
 }
 
-pub fn parseMemberExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !ast.Expr {
+pub fn parseMemberExpr(p: *parser.Parser, left: ast.Expr, bp: BindingPower) !ast.Expr {
     if (p.advance().kind == .OPEN_BRACKET) {
         const rhs = try parseExpr(p, bp);
         _ = try p.expect(.CLOSE_BRACKET);
@@ -180,7 +177,7 @@ pub fn parseArrayLiteralExpr(p: *parser.Parser) !ast.Expr {
     var array_contents = try std.ArrayList(*ast.Expr).initCapacity(p.allocator, p.numTokens());
 
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_BRACKET) {
-        try array_contents.append(try boxExpr(p, try parseExpr(p, .LOGICAL)));
+        try array_contents.append(try boxExpr(p, try parseExpr(p, binding.LOGICAL)));
 
         if (!p.currentToken().isOneOfManyRuntime(&[_]token.TokenKind{ .EOF, .CLOSE_BRACKET })) {
             _ = try p.expect(.COMMA);
@@ -198,18 +195,18 @@ pub fn parseArrayLiteralExpr(p: *parser.Parser) !ast.Expr {
 
 pub fn parseGroupingExpr(p: *parser.Parser) !ast.Expr {
     _ = try p.expect(.OPEN_PAREN);
-    const expr = try parseExpr(p, .DEFAULT_BP);
+    const expr = try parseExpr(p, binding.DEFAULT_BP);
     _ = try p.expect(.CLOSE_PAREN);
     return expr;
 }
 
-pub fn parseCallExpr(p: *parser.Parser, left: ast.Expr, bp: lus.BindingPower) !ast.Expr {
+pub fn parseCallExpr(p: *parser.Parser, left: ast.Expr, bp: BindingPower) !ast.Expr {
     _ = p.advance();
     var arguments = try std.ArrayList(*ast.Expr).initCapacity(p.allocator, p.numTokens());
     _ = bp;
 
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {
-        try arguments.append(try boxExpr(p, try parseExpr(p, .ASSIGNMENT)));
+        try arguments.append(try boxExpr(p, try parseExpr(p, binding.ASSIGNMENT)));
 
         if (!p.currentToken().isOneOfManyRuntime(&[_]token.TokenKind{ .EOF, .CLOSE_PAREN })) {
             _ = try p.expect(.COMMA);
@@ -245,7 +242,7 @@ pub fn parseObjectLiteral(p: *parser.Parser) !ast.Expr {
     while (p.currentTokenKind() != .CLOSE_CURLY) {
         const key_token = try p.expect(.IDENTIFIER);
         _ = try p.expect(.COLON);
-        const value_expr = try parseExpr(p, .DEFAULT_BP);
+        const value_expr = try parseExpr(p, binding.DEFAULT_BP);
 
         const obj_ptr = try p.allocator.create(ast.ObjectEntry);
         obj_ptr.* = ast.ObjectEntry{

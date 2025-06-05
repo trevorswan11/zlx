@@ -40,6 +40,10 @@ pub const Parser = struct {
         return self.currentToken().kind;
     }
 
+    pub fn peek(self: *Self) !token.Token {
+        return if (self.pos + 1 < self.tokens.items.len) self.tokens.items[self.pos + 1] else return error.IndexOutOfBounds;
+    }
+
     pub fn match(self: *Parser, kind: token.TokenKind) bool {
         return self.currentTokenKind() == kind;
     }
