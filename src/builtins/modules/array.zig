@@ -1,11 +1,11 @@
 const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
-const environment = @import("../../interpreter/environment.zig");
-const eval = environment.eval;
+const interpreter = @import("../../interpreter/interpreter.zig");
+const eval = interpreter.eval;
 
-const Environment = environment.Environment;
-const Value = environment.Value;
+const Environment = interpreter.Environment;
+const Value = interpreter.Value;
 const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
 
@@ -176,4 +176,70 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     return .{
         .array = new_array,
     };
+}
+
+test "array.lang" {
+    const parser = @import("../../parser/parser.zig");
+
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    // Intercept stdout using a pipe buffer
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+
+    // Redirect your interpreter's stdout here (you must support pluggable writers for `println`)
+    eval.setWriter(writer);
+
+    const source =
+        \\import array;
+        \\
+        \\let a = ref([1, 2, 3]);
+        \\array.push(a, 4);
+        \\println(a);  // Expect: [1, 2, 3, 4]
+        \\println(array.pop(a));  // Expect: 4
+        \\println(a);             // Expect: [1, 2, 3]
+        \\array.insert(a, 1, 99);
+        \\println(a);  // Expect: [1, 99, 2, 3]
+        \\println(array.remove(a, 2)); // Expect: 2
+        \\println(a);                  // Expect: [1, 99, 3]
+        \\array.clear(a);
+        \\println(a);  // Expect: []
+        \\
+        \\let b = [10, 20, 30];
+        \\println(array.get(b, 1));  // Expect: 20
+        \\
+        \\let c = ref(b);
+        \\array.set(c, 1, 99);
+        \\println(c);  // Expect: [10, 99, 30]
+        \\
+        \\let d = [1, 2, 3, 4, 5];
+        \\let sub = array.slice(d, 1, 4);
+        \\println(sub);  // Expect: [2, 3, 4]
+    ;
+
+    const block = try parser.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    const expected =
+        \\References Val: ["1", "2", "3", "4"]
+        \\4
+        \\References Val: ["1", "2", "3"]
+        \\References Val: ["1", "99", "2", "3"]
+        \\2
+        \\References Val: ["1", "99", "3"]
+        \\References Val: []
+        \\20
+        \\References Val: ["10", "99", "30"]
+        \\["2", "3", "4"]
+        \\
+    ;
+
+    const actual = output_buffer.items;
+    try std.testing.expectEqualStrings(expected, actual);
 }

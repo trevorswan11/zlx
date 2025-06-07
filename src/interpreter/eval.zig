@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const ast = @import("../parser/ast.zig");
-const environment = @import("environment.zig");
+const interpreter = @import("interpreter.zig");
 const tokens = @import("../lexer/token.zig");
 const builtins = @import("../builtins/builtins.zig");
 const expr_handlers = @import("expr_handlers.zig");
@@ -9,8 +9,8 @@ const stmt_handlers = @import("stmt_handlers.zig");
 const binary_handlers = @import("binary_handlers.zig");
 
 const Token = tokens.Token;
-const Environment = environment.Environment;
-const Value = environment.Value;
+const Environment = interpreter.Environment;
+const Value = interpreter.Value;
 
 pub fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
     switch (op.kind) {
@@ -68,4 +68,14 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
         .return_stmt => |*s| return try stmt_handlers.returns(s, env),
         .match_stmt => |*m| return try stmt_handlers.match(m, env),
     }
+}
+
+pub var global_writer: ?std.io.AnyWriter = null;
+
+pub fn setWriter(w: anytype) void {
+    global_writer = w;
+}
+
+pub fn getWriter() std.io.AnyWriter {
+    return global_writer orelse std.io.getStdOut().writer().any();
 }

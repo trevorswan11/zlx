@@ -1,11 +1,11 @@
 const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
-const environment = @import("../../interpreter/environment.zig");
-const eval = environment.eval;
+const interpreter = @import("../../interpreter/interpreter.zig");
+const eval = interpreter.eval;
 
-const Environment = environment.Environment;
-const Value = environment.Value;
+const Environment = interpreter.Environment;
+const Value = interpreter.Value;
 const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
 const loadConstants = @import("time_constants.zig").loadConstants;

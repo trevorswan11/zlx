@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const parser = @import("parser/parser.zig");
-const interpreter = @import("interpreter/environment.zig");
+const interpreter = @import("interpreter/interpreter.zig");
 const syntax = @import("utils/syntax.zig");
 
 const helpers = @import("utils/driver.zig");
@@ -100,4 +100,8 @@ pub fn main() !void {
         try stdout.print("  Interpreting took:  {d} ms\n", .{interpreting});
         try stdout.print("  Process took:       {d} ms", .{process});
     }
+}
+
+test {
+    _ = @import("builtins/modules/array.zig");
 }

@@ -1,4 +1,4 @@
-# zlx [![Zig](https://img.shields.io/badge/zig-0.14.0-orange)](https://ziglang.org/) [![License](https://img.shields.io/github/license/trevorswan11/zlx)](LICENSE) [![Last commit](https://img.shields.io/github/last-commit/trevorswan11/zlx)](https://github.com/trevorswan11/zlx) [![Build](https://github.com/trevorswan11/zlx/actions/workflows/build.yml/badge.svg)](https://github.com/trevorswan11/zlx/actions/workflows/build.yml)
+# zlx [![Zig](https://img.shields.io/badge/zig-0.14.0-orange)](https://ziglang.org/) [![License](https://img.shields.io/github/license/trevorswan11/zlx)](LICENSE) [![Last commit](https://img.shields.io/github/last-commit/trevorswan11/zlx)](https://github.com/trevorswan11/zlx) [![Build](https://github.com/trevorswan11/zlx/actions/workflows/main.yml/badge.svg)](https://github.com/trevorswan11/zlx/actions/workflows/main.yml)
 
 <p align="center">
   <img src="/resources/zlx-logo-v2.png" alt="zlx logo" width="250"/>

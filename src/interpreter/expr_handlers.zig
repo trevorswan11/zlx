@@ -1,11 +1,11 @@
 const std = @import("std");
 
 const ast = @import("../parser/ast.zig");
-const environment = @import("environment.zig");
+const interpreter = @import("interpreter.zig");
 const builtins = @import("../builtins/builtins.zig");
 
-const Environment = environment.Environment;
-const Value = environment.Value;
+const Environment = interpreter.Environment;
+const Value = interpreter.Value;
 
 const evalBinary = @import("eval.zig").evalBinary;
 const evalExpr = @import("eval.zig").evalExpr;

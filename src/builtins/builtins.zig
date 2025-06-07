@@ -1,12 +1,12 @@
 const std = @import("std");
 
 const ast = @import("../parser/ast.zig");
-const environment = @import("../interpreter/environment.zig");
+const interpreter = @import("../interpreter/interpreter.zig");
 const eval = @import("../interpreter/eval.zig");
 const fns = @import("fns.zig");
 
-const Environment = environment.Environment;
-const Value = environment.Value;
+const Environment = interpreter.Environment;
+const Value = interpreter.Value;
 
 pub fn pack(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinModuleHandler) !void {
     try map.put(

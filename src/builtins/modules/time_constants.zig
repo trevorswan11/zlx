@@ -1,5 +1,5 @@
 const std = @import("std");
-const Value = @import("../../interpreter/environment.zig").Value;
+const Value = @import("../../interpreter/interpreter.zig").Value;
 
 pub fn loadConstants(map: *std.StringHashMap(Value)) !void {
     try map.put(

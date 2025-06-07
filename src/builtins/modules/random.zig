@@ -1,11 +1,11 @@
 const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
-const environment = @import("../../interpreter/environment.zig");
-const eval = environment.eval;
+const interpreter = @import("../../interpreter/interpreter.zig");
+const eval = interpreter.eval;
 
-const Environment = environment.Environment;
-const Value = environment.Value;
+const Environment = interpreter.Environment;
+const Value = interpreter.Value;
 const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
 
@@ -38,8 +38,8 @@ fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
         return error.ArgumentCountMismatch;
     }
 
-    const a = try environment.eval.evalExpr(args[0], env);
-    const b = try environment.eval.evalExpr(args[1], env);
+    const a = try interpreter.eval.evalExpr(args[0], env);
+    const b = try interpreter.eval.evalExpr(args[1], env);
     if (a != .number or b != .number) {
         return error.TypeMismatch;
     }
@@ -63,7 +63,7 @@ fn choiceHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
         return error.ArgumentCountMismatch;
     }
 
-    const val = try environment.eval.evalExpr(args[0], env);
+    const val = try interpreter.eval.evalExpr(args[0], env);
     if (val != .array) {
         return error.TypeMismatch;
     }

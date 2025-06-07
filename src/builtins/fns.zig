@@ -1,30 +1,30 @@
 const std = @import("std");
 
 const ast = @import("../parser/ast.zig");
-const environment = @import("../interpreter/environment.zig");
+const interpreter = @import("../interpreter/interpreter.zig");
 const eval = @import("../interpreter/eval.zig");
 
-const Environment = environment.Environment;
-const Value = environment.Value;
+const Environment = interpreter.Environment;
+const Value = interpreter.Value;
 
 pub fn print(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const stdout = std.io.getStdOut().writer();
+    const writer = eval.getWriter();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
         const str = try val.toString(allocator);
         defer allocator.free(str);
-        try stdout.print("{s}", .{str});
+        try writer.print("{s}", .{str});
     }
     return .nil;
 }
 
 pub fn println(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const stdout = std.io.getStdOut().writer();
+    const writer = eval.getWriter();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
         const str = try val.toString(allocator);
         defer allocator.free(str);
-        try stdout.print("{s}\n", .{str});
+        try writer.print("{s}\n", .{str});
     }
     return .nil;
 }

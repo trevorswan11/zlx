@@ -1,10 +1,10 @@
 const std = @import("std");
 
-const environment = @import("environment.zig");
+const interpreter = @import("interpreter.zig");
 const tokens = @import("../lexer/token.zig");
 
 const Token = tokens.Token;
-const Value = environment.Value;
+const Value = interpreter.Value;
 
 pub fn plus(op: Token, lhs: Value, rhs: Value) !Value {
     return switch (lhs) {
