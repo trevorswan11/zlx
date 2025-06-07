@@ -348,34 +348,33 @@ test "fs_builtin" {
     const source = try std.fmt.allocPrint(allocator,
         \\import fs;
         \\
-        \\fs.write("{s}/example.txt", "hello world");
-        \\println(fs.exists("{s}/example.txt"));
-        \\println(fs.read("{s}/example.txt"));
+        \\const p = "{s}";
         \\
-        \\fs.copy("{s}/example.txt", "{s}/example_copy.txt");
-        \\println(fs.exists("{s}/example_copy.txt"));
+        \\fs.write(p + "/example.txt", "hello world");
+        \\println(fs.exists(p + "/example.txt"));
+        \\println(fs.read(p + "/example.txt"));
         \\
-        \\fs.rename("{s}/example_copy.txt", "{s}/example_renamed.txt");
-        \\println(fs.exists("{s}/example_copy.txt"));
-        \\println(fs.exists("{s}/example_renamed.txt"));
+        \\fs.copy(p + "/example.txt", p + "/example_copy.txt");
+        \\println(fs.exists(p + "/example_copy.txt"));
         \\
-        \\fs.mkdir("{s}/test_dir");
-        \\fs.write("{s}/test_dir/file.txt", "hi");
-        \\let items = fs.list("{s}/test_dir");
+        \\fs.rename(p + "/example_copy.txt", p + "/example_renamed.txt");
+        \\println(fs.exists(p + "/example_copy.txt"));
+        \\println(fs.exists(p + "/example_renamed.txt"));
+        \\
+        \\fs.mkdir(p + "/test_dir");
+        \\fs.write(p + "/test_dir/file.txt", "hi");
+        \\let items = fs.list(p + "/test_dir");
         \\println(items);
         \\
-        \\println(fs.is_dir("{s}/test_dir"));
-        \\println(fs.is_dir("{s}/example.txt"));
+        \\println(fs.is_dir(p + "/test_dir"));
+        \\println(fs.is_dir(p + "/example.txt"));
         \\
-        \\fs.delete("{s}/example.txt");
-        \\fs.delete("{s}/example_renamed.txt");
-        \\fs.delete("{s}/test_dir/file.txt");
-        \\println(fs.exists("{s}/example.txt"));
-        \\fs.rm("{s}");
-    , .{path, path, path, path, path,
-        path, path, path, path, path,
-        path, path, path, path, path,
-        path, path, path, path, path});
+        \\fs.delete(p + "/example.txt");
+        \\fs.delete(p + "/example_renamed.txt");
+        \\fs.delete(p + "/test_dir/file.txt");
+        \\println(fs.exists(p + "/example.txt"));
+        \\fs.rm(p);
+    , .{path});
 
     const block = try parser.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
