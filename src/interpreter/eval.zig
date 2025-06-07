@@ -70,12 +70,28 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
     }
 }
 
-pub var global_writer: ?std.io.AnyWriter = null;
+// === GLOBAL WRITER PIPING ===
 
-pub fn setWriter(w: anytype) void {
-    global_writer = w;
+pub var global_writer_out: ?std.io.AnyWriter = null;
+pub var global_writer_err: ?std.io.AnyWriter = null;
+
+pub fn setWriterOut(w: anytype) void {
+    global_writer_out = w;
 }
 
-pub fn getWriter() std.io.AnyWriter {
-    return global_writer orelse std.io.getStdOut().writer().any();
+pub fn setWriterErr(w: anytype) void {
+    global_writer_err = w;
+}
+
+pub fn setWriters(w: anytype) void {
+    global_writer_out = w;
+    global_writer_err = w;
+}
+
+pub fn getWriterOut() std.io.AnyWriter {
+    return global_writer_out orelse std.io.getStdOut().writer().any();
+}
+
+pub fn getWriterErr() std.io.AnyWriter {
+    return global_writer_err orelse std.io.getStdErr().writer().any();
 }

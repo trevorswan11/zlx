@@ -57,6 +57,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "read_lines", readLinesHandler);
     try pack(&map, "touch", touchHandler);
     try pack(&map, "append", appendHandler);
+    try pack(&map, "rm", rmHandler);
     try pack(&map, "list_all_files", listAllFilesHandler);
 
     return .{
@@ -77,7 +78,12 @@ fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
 
 fn writeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectTwoStrings(args, env);
-    const file = try std.fs.cwd().createFile(parts[0], .{});
+    const full_path = parts[0];
+
+    const dir_path = std.fs.path.dirname(full_path) orelse ".";
+    try std.fs.cwd().makePath(dir_path);
+
+    const file = try std.fs.cwd().createFile(full_path, .{});
     defer file.close();
 
     try file.writeAll(parts[1]);
@@ -302,4 +308,82 @@ fn recurseDir(
             else => {},
         }
     }
+}
+
+// === TESTING ===
+
+const parser = @import("../../parser/parser.zig");
+const testing = std.testing;
+
+const expectEqual = testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
+
+test "fs_builtin" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var tmp_dir = std.testing.tmpDir(.{});
+    defer tmp_dir.cleanup();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    eval.setWriters(writer);
+
+    const path = tmp_dir.sub_path;
+
+    const source = try std.fmt.allocPrint(allocator,
+        \\import fs;
+        \\
+        \\fs.write("{s}/example.txt", "hello world");
+        \\println(fs.exists("{s}/example.txt"));
+        \\println(fs.read("{s}/example.txt"));
+        \\
+        \\fs.copy("{s}/example.txt", "{s}/example_copy.txt");
+        \\println(fs.exists("{s}/example_copy.txt"));
+        \\
+        \\fs.rename("{s}/example_copy.txt", "{s}/example_renamed.txt");
+        \\println(fs.exists("{s}/example_copy.txt"));
+        \\println(fs.exists("{s}/example_renamed.txt"));
+        \\
+        \\fs.mkdir("{s}/test_dir");
+        \\fs.write("{s}/test_dir/file.txt", "hi");
+        \\let items = fs.list("{s}/test_dir");
+        \\println(items);
+        \\
+        \\println(fs.is_dir("{s}/test_dir"));
+        \\println(fs.is_dir("{s}/example.txt"));
+        \\
+        \\fs.delete("{s}/example.txt");
+        \\fs.delete("{s}/example_renamed.txt");
+        \\fs.delete("{s}/test_dir/file.txt");
+        \\println(fs.exists("{s}/example.txt"));
+        \\fs.rm({s});
+    , .{&path, &path, &path, &path, &path,
+        &path, &path, &path, &path, &path,
+        &path, &path, &path, &path, &path,
+        &path, &path, &path, &path, &path});
+
+    const block = try parser.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    const expected = try std.fmt.allocPrint(allocator,
+        \\true
+        \\hello world
+        \\true
+        \\false
+        \\true
+        \\["file.txt"]
+        \\true
+        \\false
+        \\false
+        \\
+    , .{});
+
+    try expectEqualStrings(expected, output_buffer.items);
+    std.fs.cwd().deleteTree(&path) catch return;
 }

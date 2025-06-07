@@ -240,10 +240,10 @@ pub const Environment = struct {
     }
 
     pub fn define(self: *Self, name: []const u8, value: Value) !void {
-        const stderr = std.io.getStdErr().writer();
+        const writer = eval.getWriterErr();
 
         if (self.values.contains(name)) {
-            try stderr.print("Duplicate Identifier: \"{s}\"\n", .{name});
+            try writer.print("Duplicate Identifier: \"{s}\"\n", .{name});
             return error.DuplicateIdentifier;
         } else {
             try self.values.put(name, value);
@@ -251,7 +251,7 @@ pub const Environment = struct {
     }
 
     pub fn assign(self: *Self, name: []const u8, value: Value) !void {
-        const stderr = std.io.getStdErr().writer();
+        const writer = eval.getWriterErr();
         if (self.values.contains(name)) {
             try self.values.put(name, value);
         } else if (self.parent) |p| {
@@ -259,7 +259,7 @@ pub const Environment = struct {
         } else {
             const str = try value.toString(self.allocator);
             defer self.allocator.free(str);
-            try stderr.print("Identifier \"{s}\" is Undefined\n", .{str});
+            try writer.print("Identifier \"{s}\" is Undefined\n", .{str});
             return error.UndefinedVariable;
         }
     }

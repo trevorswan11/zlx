@@ -178,9 +178,15 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     };
 }
 
-test "array.lang" {
-    const parser = @import("../../parser/parser.zig");
+// === TESTInG ===
 
+const parser = @import("../../parser/parser.zig");
+const testing = std.testing;
+
+const expectEqual = testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
+
+test "array_builtin" {
     var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
     const allocator = arena.allocator();
     defer arena.deinit();
@@ -188,13 +194,10 @@ test "array.lang" {
     var env = Environment.init(allocator, null);
     defer env.deinit();
 
-    // Intercept stdout using a pipe buffer
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-
-    // Redirect your interpreter's stdout here (you must support pluggable writers for `println`)
-    eval.setWriter(writer);
+    eval.setWriters(writer);
 
     const source =
         \\import array;
@@ -220,7 +223,7 @@ test "array.lang" {
         \\
         \\let d = [1, 2, 3, 4, 5];
         \\let sub = array.slice(d, 1, 4);
-        \\println(sub);  // Expect: [2, 3, 4]
+        \\print(sub);  // Expect: [2, 3, 4]
     ;
 
     const block = try parser.parse(allocator, source);
@@ -237,9 +240,8 @@ test "array.lang" {
         \\20
         \\References Val: ["10", "99", "30"]
         \\["2", "3", "4"]
-        \\
     ;
 
     const actual = output_buffer.items;
-    try std.testing.expectEqualStrings(expected, actual);
+    try expectEqualStrings(expected, actual);
 }

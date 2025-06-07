@@ -8,7 +8,7 @@ const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
 pub fn print(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer = eval.getWriter();
+    const writer = eval.getWriterOut();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
         const str = try val.toString(allocator);
@@ -19,7 +19,7 @@ pub fn print(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
 }
 
 pub fn println(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer = eval.getWriter();
+    const writer = eval.getWriterOut();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
         const str = try val.toString(allocator);

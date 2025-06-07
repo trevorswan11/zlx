@@ -3,13 +3,14 @@ const std = @import("std");
 const ast = @import("../parser/ast.zig");
 const interpreter = @import("interpreter.zig");
 const builtins = @import("../builtins/builtins.zig");
+const eval = @import("eval.zig");
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const evalBinary = @import("eval.zig").evalBinary;
-const evalExpr = @import("eval.zig").evalExpr;
-const evalStmt = @import("eval.zig").evalStmt;
+const evalBinary = eval.evalBinary;
+const evalExpr = eval.evalExpr;
+const evalStmt = eval.evalStmt;
 
 pub fn variable(v: *ast.VarDeclarationStmt, env: *Environment) !Value {
     const val: Value = if (v.assigned_value) |a| try evalExpr(a, env) else .nil;
@@ -156,11 +157,11 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
     }
 
     const path = i.from;
-    const stderr = std.io.getStdErr().writer();
+    const writer = eval.getWriterErr();
 
     const file = std.fs.cwd().openFile(path, .{}) catch |err| {
-        try stderr.print("Error Opening Import: {s} from {s}\n", .{ i.name, i.from });
-        try stderr.print("{!}\n", .{err});
+        try writer.print("Error Opening Import: {s} from {s}\n", .{ i.name, i.from });
+        try writer.print("{!}\n", .{err});
         return err;
     };
     defer file.close();
