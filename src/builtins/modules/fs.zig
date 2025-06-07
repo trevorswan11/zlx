@@ -334,7 +334,16 @@ test "fs_builtin" {
     const writer = output_buffer.writer().any();
     eval.setWriters(writer);
 
-    const path = tmp_dir.sub_path;
+    const path: []const u8 = &tmp_dir.sub_path;
+    errdefer {
+        var exists = true;
+        std.fs.cwd().access(path, .{}) catch {
+            exists = false;
+        };
+        if (exists) {
+            std.fs.cwd().deleteTree(path) catch {};
+        }
+    }
 
     const source = try std.fmt.allocPrint(allocator,
         \\import fs;
@@ -362,11 +371,11 @@ test "fs_builtin" {
         \\fs.delete("{s}/example_renamed.txt");
         \\fs.delete("{s}/test_dir/file.txt");
         \\println(fs.exists("{s}/example.txt"));
-        \\fs.rm({s});
-    , .{&path, &path, &path, &path, &path,
-        &path, &path, &path, &path, &path,
-        &path, &path, &path, &path, &path,
-        &path, &path, &path, &path, &path});
+        \\fs.rm("{s}");
+    , .{path, path, path, path, path,
+        path, path, path, path, path,
+        path, path, path, path, path,
+        path, path, path, path, path});
 
     const block = try parser.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
@@ -385,5 +394,4 @@ test "fs_builtin" {
     , .{});
 
     try expectEqualStrings(expected, output_buffer.items);
-    std.fs.cwd().deleteTree(&path) catch return;
 }

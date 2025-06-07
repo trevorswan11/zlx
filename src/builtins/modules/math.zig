@@ -198,3 +198,92 @@ fn maxHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
         .number = @max(vals[0], vals[1]),
     };
 }
+
+// === TESTING ===
+
+const parser = @import("../../parser/parser.zig");
+const testing = std.testing;
+
+const expect = testing.expect;
+const expectEqual = testing.expectEqual;
+const expectApproxEqAbs = testing.expectApproxEqAbs;
+const expectEqualStrings = std.testing.expectEqualStrings;
+
+test "math_builtin" {
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    eval.setWriters(writer);
+
+    const source =
+        \\import math;
+        \\
+        \\println(math.PI);
+        \\println(math.E);
+        \\println(math.abs(-5));
+        \\println(math.sqrt(49));
+        \\println(math.sin(math.PI / 2));
+        \\println(math.cos(math.PI));
+        \\println(math.tan(0));
+        \\println(math.asin(1));
+        \\println(math.acos(1));
+        \\println(math.atan(1));
+        \\println(math.log(math.E));
+        \\println(math.log10(1000));
+        \\println(math.exp(1));
+        \\println(math.floor(3.7));
+        \\println(math.ceil(3.2));
+        \\println(math.round(3.6));
+        \\println(math.pow(2, 8));
+        \\println(math.min(3, 7));
+        \\println(math.max(3, 7));
+        \\println(math.atan2(1, 1));
+        \\println(math.sqrt(-1)); // should produce NaN
+    ;
+
+    const block = try parser.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    var lines = std.mem.tokenizeScalar(u8, output_buffer.items, '\n');
+    const epsilon = 1e-12;
+    const expected: [21]f64 = .{
+        std.math.pi,
+        std.math.e,
+        5.0,
+        7.0,
+        1.0,
+        -1.0,
+        0.0,
+        std.math.pi / 2.0,
+        0.0,
+        std.math.pi / 4.0,
+        1.0,
+        3.0,
+        std.math.e,
+        3.0,
+        4.0,
+        4.0,
+        256.0,
+        3.0,
+        7.0,
+        std.math.pi / 4.0,
+        std.math.nan(f64),
+    };
+
+    var i: usize = 0;
+    while (lines.next()) |line| : (i += 1) {
+        const actual = try std.fmt.parseFloat(f64, line);
+        if (std.math.isNan(expected[i])) {
+            try expect(std.math.isNan(actual));
+        } else {
+            try expectApproxEqAbs(expected[i], actual, epsilon);
+        }
+    }
+}

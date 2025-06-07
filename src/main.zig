@@ -106,4 +106,5 @@ test {
     _ = @import("builtins/modules/array.zig");
     _ = @import("builtins/modules/debug.zig");
     _ = @import("builtins/modules/fs.zig");
+    _ = @import("builtins/modules/math.zig");
 }

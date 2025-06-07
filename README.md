@@ -48,7 +48,7 @@ I’ve slightly altered some of the patterns used in tylerlaceby’s language, r
 - Zig is in its _very_ early stages at the time of writing this project, so you should expect that behavior may break as the language matures
 - This is a personal project, and will likely be put off to the side when I stop finding things to implement or get sick of writing documentation
     - If you find something glaringly wrong or would just like to contribute, feel free to open an issue or pull request!
-- ChatGPT was used during some parts of the development process, specifically with writing the example language 'tests', writing some redundant code in the builtin modules, and debugging some stubborn bugs. ChatGPT was also used to make the logo found at the top of this file!
+- ChatGPT was used during some parts of the development process, specifically with writing the example language 'tests', writing some redundant code/tests for the builtin modules, and debugging some stubborn bugs. ChatGPT was also used to make the logo found at the top of this file!
 
 ## Acknowledgements
 - Thank you to [tylerlaceby’s](https://www.youtube.com/@tylerlaceby) lexer playlist on YouTube, which was incredibly easy to understand and gave me a solid grasp of the building blocks needed to make a lexer and Pratt parser
