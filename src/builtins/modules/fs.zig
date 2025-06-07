@@ -57,6 +57,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "read_lines", readLinesHandler);
     try pack(&map, "touch", touchHandler);
     try pack(&map, "append", appendHandler);
+    try pack(&map, "list_all_files", listAllFilesHandler);
 
     return .{
         .object = map,
@@ -263,4 +264,42 @@ fn appendHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     defer file.close();
     try file.writeAll(parts[1]);
     return .nil;
+}
+
+fn listAllFilesHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const start_path = try expectStringArg(args, env);
+    var result = std.ArrayList(Value).init(allocator);
+
+    const cwd = std.fs.cwd();
+    try recurseDir(cwd, start_path, allocator, &result);
+
+    return .{ .array = result };
+}
+
+fn recurseDir(
+    parent_dir: std.fs.Dir,
+    path: []const u8,
+    allocator: std.mem.Allocator,
+    out_list: *std.ArrayList(Value),
+) anyerror!void {
+    var dir = try parent_dir.openDir(path, .{ .iterate = true });
+    defer dir.close();
+
+    var iter = dir.iterate();
+    while (try iter.next()) |entry| {
+        const full_path = try std.fs.path.join(allocator, &.{ path, entry.name });
+
+        switch (entry.kind) {
+            .file => {
+                try out_list.append(.{ .string = full_path });
+            },
+            .directory => {
+                if (std.mem.eql(u8, entry.name, ".") or std.mem.eql(u8, entry.name, "..")) {
+                    continue;
+                }
+                try recurseDir(parent_dir, full_path, allocator, out_list);
+            },
+            else => {},
+        }
+    }
 }

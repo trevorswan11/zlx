@@ -1,0 +1,12 @@
+import fs;
+import path;
+import string;
+
+let files = fs.list_all_files("examples");
+foreach file in files {
+    let f = path.split(file);
+    if (f[1] == "rename.zlx") {
+        continue;
+    }
+    fs.rename(file, string.replace(file, ".lang", ".zlx"));
+}
