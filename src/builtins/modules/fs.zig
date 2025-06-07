@@ -319,7 +319,7 @@ const expectEqual = testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "fs_builtin" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
     const allocator = arena.allocator();
     defer arena.deinit();
 

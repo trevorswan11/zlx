@@ -178,7 +178,7 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     };
 }
 
-// === TESTInG ===
+// === TESTING ===
 
 const parser = @import("../../parser/parser.zig");
 const testing = std.testing;
@@ -187,7 +187,7 @@ const expectEqual = testing.expectEqual;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "array_builtin" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
     const allocator = arena.allocator();
     defer arena.deinit();
 

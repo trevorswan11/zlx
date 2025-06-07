@@ -131,3 +131,60 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
         .array = list,
     };
 }
+
+// === TESTING ===
+
+const parser = @import("../../parser/parser.zig");
+const testing = std.testing;
+
+const expectEqual = testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
+
+test "path_builtin" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    eval.setWriters(writer);
+
+    const source =
+        \\import path;
+        \\
+        \\println(path.join("foo", "bar", "baz"));      // Expect: "foo/bar/baz"
+        \\println(path.basename("/usr/bin/zsh"));       // Expect: "zsh"
+        \\println(path.dirname("/usr/bin/zsh"));        // Expect: "/usr/bin"
+        \\println(path.extname("archive.tar.gz"));      // Expect: ".gz"
+        \\println(path.stem("archive.tar.gz"));         // Expect: "archive.tar"
+        \\println(path.is_absolute("/usr/bin/zsh"));    // Expect: true
+        \\println(path.is_relative("foo/bar"));         // Expect: true
+        \\println(path.normalize("foo//bar/../baz"));   // Expect: "foo/baz"
+        \\
+        \\let parts = path.split("/usr/bin/zsh");
+        \\println(parts);  // Expect: ["/usr/bin", "zsh"]
+    ;
+
+    const block = try parser.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    const expected =
+        \\foo\bar\baz
+        \\zsh
+        \\/usr/bin
+        \\.gz
+        \\archive.tar
+        \\true
+        \\true
+        \\foo\baz
+        \\["/usr/bin", "zsh"]
+        \\
+    ;
+
+    const actual = output_buffer.items;
+    try expectEqualStrings(expected, actual);
+}

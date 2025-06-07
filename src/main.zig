@@ -107,4 +107,6 @@ test {
     _ = @import("builtins/modules/debug.zig");
     _ = @import("builtins/modules/fs.zig");
     _ = @import("builtins/modules/math.zig");
+    _ = @import("builtins/modules/path.zig");
+    _ = @import("builtins/modules/random.zig");
 }

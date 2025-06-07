@@ -78,3 +78,55 @@ fn choiceHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 
     return array.items[index];
 }
+
+// === TESTING ===
+
+const parser = @import("../../parser/parser.zig");
+const testing = std.testing;
+
+const expect = testing.expect;
+const expectEqual = testing.expectEqual;
+const expectEqualStrings = std.testing.expectEqualStrings;
+
+test "random_builtin" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    eval.setWriters(writer);
+
+    const source =
+        \\import random;
+        \\
+        \\let r = random.rand();
+        \\println(r); // something like 0.73218
+        \\
+        \\let i = random.randint(1, 10);
+        \\println(i); // 1 to 10
+        \\
+        \\let val = random.choice([1, 2, 3, 4]);
+        \\println(val); // any of 1, 2, 3, 4
+    ;
+
+    const block = try parser.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    var lines = std.mem.tokenizeScalar(u8, output_buffer.items, '\n');
+    var actuals = std.ArrayList(f64).init(allocator);
+    defer actuals.deinit();
+    while (lines.next()) |line| {
+        const actual = try std.fmt.parseFloat(f64, line);
+        try actuals.append(actual);
+    }
+
+    const actual_slice = try actuals.toOwnedSlice();
+    try expect(actual_slice[0] > 0 and actual_slice[0] < 1);
+    try expect(actual_slice[1] >= 1 and actual_slice[1] <= 10);
+    try expect(actual_slice[2] == 1 or actual_slice[2] == 2 or actual_slice[2] == 3 or actual_slice[2] == 4);
+}

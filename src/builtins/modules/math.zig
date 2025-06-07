@@ -210,7 +210,7 @@ const expectApproxEqAbs = testing.expectApproxEqAbs;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "math_builtin" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
     const allocator = arena.allocator();
     defer arena.deinit();
 

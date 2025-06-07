@@ -77,7 +77,7 @@ fn assertNotEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *En
     return .nil;
 }
 
-// === TESTInG ===
+// === TESTING ====
 
 const parser = @import("../../parser/parser.zig");
 const testing = std.testing;
@@ -87,7 +87,7 @@ const expectError = testing.expectError;
 const expectEqualStrings = std.testing.expectEqualStrings;
 
 test "debug_builtin" {
-    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator);
     const allocator = arena.allocator();
     defer arena.deinit();
 
