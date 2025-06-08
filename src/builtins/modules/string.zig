@@ -30,6 +30,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "replace", replaceHandler);
     try pack(&map, "split", splitHandler);
     try pack(&map, "trim", trimHandler);
+    try pack(&map, "contains", containsHandler);
 
     return .{
         .object = map,
@@ -95,6 +96,23 @@ fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     }
 }
 
+fn containsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    if (args.len != 2) {
+        return error.ArgumentCountMismatch;
+    }
+
+    const haystack = try eval.evalExpr(args[0], env);
+    const needle = try eval.evalExpr(args[1], env);
+
+    if (haystack != .string or needle != .string) {
+        return error.TypeMismatch;
+    }
+
+    return Value{
+        .boolean = std.mem.indexOf(u8, haystack.string, needle.string) != null,
+    };
+}
+
 fn replaceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     if (args.len != 3) {
         return error.ArgumentCountMismatch;
@@ -149,4 +167,77 @@ fn trimHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     return .{
         .string = try allocator.dupe(u8, trimmed),
     };
+}
+
+// === TESTING ===
+
+const testing = @import("../../testing/testing.zig");
+
+test "string_builtin" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    eval.setWriters(writer);
+
+    const source =
+        \\import string;
+        \\
+        \\// Test slice
+        \\println(string.slice("Hello, world!", 0, 5)); // "Hello"
+        \\println(string.slice("ZigLang", 3, 7));       // "Lang"
+        \\
+        \\// Test find
+        \\println(string.find("Hello, world!", "world")); // 7
+        \\println(string.find("abcdef", "x"));            // nil
+        \\
+        \\// Test replace
+        \\println(string.replace("a-b-c", "-", ":"));     // "a:b:c"
+        \\println(string.replace("123123", "12", "X"));   // "X3X3"
+        \\
+        \\// Test split
+        \\let parts = string.split("one,two,three", ",");
+        \\println(parts); // ["one", "two", "three"]
+        \\
+        \\// Test trim
+        \\println(string.trim("   zig   ")); // "zig"
+        \\
+        \\// Test lower
+        \\println(string.lower("HeLLo")); // "hello"
+        \\
+        \\// Test upper
+        \\println(string.upper("ZigLang")); // "ZIGLANG"
+        \\
+        \\// Test contains
+        \\println(string.contains("hello world", "world")); // true
+        \\println(string.contains("zig", "Z"));             // false
+    ;
+
+    const block = try testing.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    const expected =
+        \\Hello
+        \\Lang
+        \\7
+        \\nil
+        \\a:b:c
+        \\X3X3
+        \\["one", "two", "three"]
+        \\zig
+        \\hello
+        \\ZIGLANG
+        \\true
+        \\false
+        \\
+    ;
+
+    const actual = output_buffer.items;
+    try testing.expectEqualStrings(expected, actual);
 }

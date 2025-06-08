@@ -55,6 +55,10 @@ pub const Lexer = struct {
             .handler = SimpleHandlerWrapper.wrap(commentHandler),
         });
         try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\"\"\"[\\s\\S]*?\"\"\""),
+            .handler = SimpleHandlerWrapper.wrap(multilineStringHandler),
+        });
+        try patterns.append(.{
             .regex = try Regex.compile(allocator, "\"[^\"]*\""),
             .handler = SimpleHandlerWrapper.wrap(stringHandler),
         });
@@ -329,6 +333,25 @@ fn stringHandler(lex: *Lexer, regex: *Regex) anyerror!void {
         const tok = Token.init(lex.allocator, .STRING, matched, lex.line, start, end);
         try lex.push(tok);
         lex.advanceN(matched.len + 2);
+    }
+}
+
+fn multilineStringHandler(lex: *Lexer, regex: *Regex) anyerror!void {
+    const text = lex.remainder();
+    if (try regex.captures(text)) |caps_const| {
+        var caps = caps_const;
+        defer caps.deinit();
+
+        const span = caps.boundsAt(0).?;
+        const matched = text[(span.lower + 3)..(span.upper - 3)];
+
+        const start = lex.pos + span.lower;
+        const end = lex.pos + span.upper;
+
+        const tok = Token.init(lex.allocator, .STRING, matched, lex.line, start, end);
+        try lex.push(tok);
+        lex.advanceN(span.upper);
+        lex.line += countNewlines(text[span.lower..span.upper]);
     }
 }
 

@@ -201,16 +201,10 @@ fn maxHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 
 // === TESTING ===
 
-const parser = @import("../../parser/parser.zig");
-const testing = std.testing;
-
-const expect = testing.expect;
-const expectEqual = testing.expectEqual;
-const expectApproxEqAbs = testing.expectApproxEqAbs;
-const expectEqualStrings = std.testing.expectEqualStrings;
+const testing = @import("../../testing/testing.zig");
 
 test "math_builtin" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
 
@@ -248,7 +242,7 @@ test "math_builtin" {
         \\println(math.sqrt(-1)); // should produce NaN
     ;
 
-    const block = try parser.parse(allocator, source);
+    const block = try testing.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
 
     var lines = std.mem.tokenizeScalar(u8, output_buffer.items, '\n');
@@ -281,9 +275,9 @@ test "math_builtin" {
     while (lines.next()) |line| : (i += 1) {
         const actual = try std.fmt.parseFloat(f64, line);
         if (std.math.isNan(expected[i])) {
-            try expect(std.math.isNan(actual));
+            try testing.expect(std.math.isNan(actual));
         } else {
-            try expectApproxEqAbs(expected[i], actual, epsilon);
+            try testing.expectApproxEqAbs(expected[i], actual, epsilon);
         }
     }
 }

@@ -24,3 +24,7 @@ println(string.lower("HeLLo")); // "hello"
 
 // Test upper
 println(string.upper("ZigLang")); // "ZIGLANG"
+
+// Test contains
+println(string.contains("hello world", "world")); // true
+println(string.contains("zig", "Z"));             // false

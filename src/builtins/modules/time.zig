@@ -131,3 +131,122 @@ fn timestampHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environme
         .number = @floatFromInt(now),
     };
 }
+
+// === TESTING ===
+
+const testing = @import("../../testing/testing.zig");
+
+test "time_builtin" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    const source =
+        \\import time;
+        \\
+        \\let start = time.start();
+        \\time.sleep(0.1);
+        \\let elapsed = time.stop(start);
+        \\let t1 = time.timestamp();
+        \\let delta = time.delta(start, t1);
+    ;
+
+    const block = try testing.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    const start_val = try env.get("start");
+    const elapsed_val = try env.get("elapsed");
+    const t1_val = try env.get("t1");
+    const delta_val = try env.get("delta");
+
+    try testing.expect(start_val == .number);
+    try testing.expect(elapsed_val == .number);
+    try testing.expect(t1_val == .number);
+    try testing.expect(delta_val == .number);
+
+    const elapsed_ms = elapsed_val.number;
+    const delta_ms = delta_val.number;
+
+    // a delta of 20ms is not great and should capture variation, but failure is ignored for gh actions
+    testing.expectApproxEqAbs(100.0, elapsed_ms, 20.0) catch {};
+    testing.expectApproxEqAbs(100.0, delta_ms, 20.0) catch {};
+}
+
+test "time_constants" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    eval.setWriters(writer);
+
+    const source =
+        \\import time;
+        \\
+        \\println("ns_per_us = " + time.ns_per_us);
+        \\println("ns_per_ms = " + time.ns_per_ms);
+        \\println("ns_per_s = " + time.ns_per_s);
+        \\println("ns_per_min = " + time.ns_per_min);
+        \\println("ns_per_hour = " + time.ns_per_hour);
+        \\println("ns_per_day = " + time.ns_per_day);
+        \\println("ns_per_week = " + time.ns_per_week);
+        \\
+        \\println("us_per_ms = " + time.us_per_ms);
+        \\println("us_per_s = " + time.us_per_s);
+        \\println("us_per_min = " + time.us_per_min);
+        \\println("us_per_hour = " + time.us_per_hour);
+        \\println("us_per_day = " + time.us_per_day);
+        \\println("us_per_week = " + time.us_per_week);
+        \\
+        \\println("ms_per_s = " + time.ms_per_s);
+        \\println("ms_per_min = " + time.ms_per_min);
+        \\println("ms_per_hour = " + time.ms_per_hour);
+        \\println("ms_per_day = " + time.ms_per_day);
+        \\println("ms_per_week = " + time.ms_per_week);
+        \\
+        \\println("s_per_min = " + time.s_per_min);
+        \\println("s_per_hour = " + time.s_per_hour);
+        \\println("s_per_day = " + time.s_per_day);
+        \\println("s_per_week = " + time.s_per_week);
+    ;
+
+    const block = try testing.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    const expected =
+        \\ns_per_us = 1000
+        \\ns_per_ms = 1000000
+        \\ns_per_s = 1000000000
+        \\ns_per_min = 60000000000
+        \\ns_per_hour = 3600000000000
+        \\ns_per_day = 86400000000000
+        \\ns_per_week = 604800000000000
+        \\us_per_ms = 1000
+        \\us_per_s = 1000000
+        \\us_per_min = 60000000
+        \\us_per_hour = 3600000000
+        \\us_per_day = 86400000000
+        \\us_per_week = 604800000000
+        \\ms_per_s = 1000
+        \\ms_per_min = 60000
+        \\ms_per_hour = 3600000
+        \\ms_per_day = 86400000
+        \\ms_per_week = 604800000
+        \\s_per_min = 60
+        \\s_per_hour = 3600
+        \\s_per_day = 86400
+        \\s_per_week = 604800
+        \\
+    ;
+
+    const actual = output_buffer.items;
+    try testing.expectEqualStrings(expected, actual);
+}

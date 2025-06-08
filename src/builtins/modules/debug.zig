@@ -79,15 +79,10 @@ fn assertNotEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *En
 
 // === TESTING ====
 
-const parser = @import("../../parser/parser.zig");
-const testing = std.testing;
-
-const expectEqual = testing.expectEqual;
-const expectError = testing.expectError;
-const expectEqualStrings = std.testing.expectEqualStrings;
+const testing = @import("../../testing/testing.zig");
 
 test "debug_builtin" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
 
@@ -109,9 +104,9 @@ test "debug_builtin" {
         \\debug.assert(1 > 2, "bad math");
     ;
 
-    const block = try parser.parse(allocator, source);
+    const block = try testing.parse(allocator, source);
     const result = eval.evalStmt(block, &env);
 
-    try expectError(error.AssertionFailed, result);
-    try expectEqualStrings("Assertion failed: bad math\n", output_buffer.items);
+    try testing.expectError(error.AssertionFailed, result);
+    try testing.expectEqualStrings("Assertion failed: bad math\n", output_buffer.items);
 }

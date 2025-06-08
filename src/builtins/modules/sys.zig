@@ -81,3 +81,54 @@ fn unsetenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
     sys_env.remove(key.string);
     return .nil;
 }
+
+// === TESTING ===
+
+const testing = @import("../../testing/testing.zig");
+
+test "sys_builtin" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    eval.setWriters(writer);
+
+    const source =
+        \\import sys;
+        \\
+        \\let before = sys.getenv("ZLX_TEST_ENV");
+        \\println("Before set: " + before);
+        \\
+        \\sys.setenv("ZLX_TEST_ENV", "active");
+        \\let after = sys.getenv("ZLX_TEST_ENV");
+        \\println("After set: " + after);
+        \\
+        \\sys.unsetenv("ZLX_TEST_ENV");
+        \\let removed = sys.getenv("ZLX_TEST_ENV");
+        \\println("After unset: " + removed);
+        \\
+        \\let arguments = sys.args();
+        \\println("Args:");
+        \\foreach i in 0..len(arguments) {
+        \\println(arguments[i]);
+        \\}
+    ;
+
+    const block = try testing.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    const output = output_buffer.items;
+    const output_str = try std.fmt.allocPrint(allocator, "{s}", .{output});
+
+    try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "Before set: nil"));
+    try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "After set: active"));
+    try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "After unset: nil"));
+    try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "Args:"));
+    try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "zlx"));
+}

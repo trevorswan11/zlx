@@ -180,14 +180,10 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 
 // === TESTING ===
 
-const parser = @import("../../parser/parser.zig");
-const testing = std.testing;
-
-const expectEqual = testing.expectEqual;
-const expectEqualStrings = std.testing.expectEqualStrings;
+const testing = @import("../../testing/testing.zig");
 
 test "array_builtin" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
 
@@ -223,10 +219,10 @@ test "array_builtin" {
         \\
         \\let d = [1, 2, 3, 4, 5];
         \\let sub = array.slice(d, 1, 4);
-        \\print(sub);  // Expect: [2, 3, 4]
+        \\println(sub);  // Expect: [2, 3, 4]
     ;
 
-    const block = try parser.parse(allocator, source);
+    const block = try testing.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
 
     const expected =
@@ -240,8 +236,9 @@ test "array_builtin" {
         \\20
         \\References Val: ["10", "99", "30"]
         \\["2", "3", "4"]
+        \\
     ;
 
     const actual = output_buffer.items;
-    try expectEqualStrings(expected, actual);
+    try testing.expectEqualStrings(expected, actual);
 }

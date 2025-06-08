@@ -134,14 +134,10 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 
 // === TESTING ===
 
-const parser = @import("../../parser/parser.zig");
-const testing = std.testing;
-
-const expectEqual = testing.expectEqual;
-const expectEqualStrings = std.testing.expectEqualStrings;
+const testing = @import("../../testing/testing.zig");
 
 test "path_builtin" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
 
@@ -169,7 +165,7 @@ test "path_builtin" {
         \\println(parts);  // Expect: ["/usr/bin", "zsh"]
     ;
 
-    const block = try parser.parse(allocator, source);
+    const block = try testing.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
 
     const expected =
@@ -186,5 +182,5 @@ test "path_builtin" {
     ;
 
     const actual = output_buffer.items;
-    try expectEqualStrings(expected, actual);
+    try testing.expectEqualStrings(expected, actual);
 }

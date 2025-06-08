@@ -312,14 +312,10 @@ fn recurseDir(
 
 // === TESTING ===
 
-const parser = @import("../../parser/parser.zig");
-const testing = std.testing;
-
-const expectEqual = testing.expectEqual;
-const expectEqualStrings = std.testing.expectEqualStrings;
+const testing = @import("../../testing/testing.zig");
 
 test "fs_builtin" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator);
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
 
@@ -376,7 +372,7 @@ test "fs_builtin" {
         \\fs.rm(p);
     , .{path});
 
-    const block = try parser.parse(allocator, source);
+    const block = try testing.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
 
     const expected = try std.fmt.allocPrint(allocator,
@@ -392,5 +388,5 @@ test "fs_builtin" {
         \\
     , .{});
 
-    try expectEqualStrings(expected, output_buffer.items);
+    try testing.expectEqualStrings(expected, output_buffer.items);
 }

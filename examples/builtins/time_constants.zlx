@@ -1,7 +1,5 @@
 import time;
 
-println("Printing time constants...");
-
 println("ns_per_us = " + time.ns_per_us);
 println("ns_per_ms = " + time.ns_per_ms);
 println("ns_per_s = " + time.ns_per_s);

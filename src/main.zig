@@ -103,10 +103,16 @@ pub fn main() !void {
 }
 
 test {
+    // Builtin Modules - Tests located with source code
     _ = @import("builtins/modules/array.zig");
     _ = @import("builtins/modules/debug.zig");
     _ = @import("builtins/modules/fs.zig");
     _ = @import("builtins/modules/math.zig");
     _ = @import("builtins/modules/path.zig");
     _ = @import("builtins/modules/random.zig");
+    _ = @import("builtins/modules/string.zig");
+    _ = @import("builtins/modules/sys.zig");
+    _ = @import("builtins/modules/time.zig");
+
+    // General Behavior - Tests located in `testing` directory
 }
