@@ -2,3 +2,11 @@ let foo = 45.5;
 let bar = foo * 10;
 
 const isGreater = foo > 10;
+println(isGreater);
+
+let baz = 1;
+print("baz: " + baz + " -> ");
+baz = "dynamic typing";
+println(baz);
+
+isGreater = false; // This will produce an error as isGreater is const

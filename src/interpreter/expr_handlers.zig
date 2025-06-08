@@ -207,6 +207,12 @@ pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
         .NOT => .{
             .boolean = !right.boolean,
         },
+        .TYPEOF => .{ .string = blk: switch (right) {
+            .typed_val => |t| {
+                break :blk t.type;
+            },
+            else => "any",
+        } },
         else => error.UnsupportedPrefixOperator,
     };
 }

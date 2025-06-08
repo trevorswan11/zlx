@@ -14,8 +14,11 @@ pub fn main() !void {
     var t1: i128 = undefined;
     var t2: i128 = undefined;
 
+    // Define stdout and stderr for output piping
     const stdout = std.io.getStdOut().writer();
     const stderr = std.io.getStdErr().writer();
+    interpreter.eval.setWriterOut(stdout.any());
+    interpreter.eval.setWriterErr(stderr.any());
 
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
@@ -115,4 +118,10 @@ test {
     _ = @import("builtins/modules/time.zig");
 
     // General Behavior - Tests located in `testing` directory
+    _ = @import("testing/testing.zig");
+    _ = @import("testing/classes_objects.zig");
+    _ = @import("testing/functions.zig");
+    _ = @import("testing/loops.zig");
+    _ = @import("testing/operations.zig");
+    _ = @import("testing/other.zig");
 }

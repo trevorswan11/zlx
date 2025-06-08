@@ -33,7 +33,7 @@ While I originally intended to just build the parser, I ended up going much deep
 - To interpret your own input file, pass the relative path as `zig build run -- run <path>`
 - If you're pulling the executable from the `zig-out` directory, you can use the same arguments as explained above
     - The same applies for downloads from the `releases` tags
-- Once native tests are written, you can run them with `zig build test`
+- You can run the projects tests, which mimic the code found in the `examples` folder, with `zig build test`
 
 ## External Libraries
 This project uses a single external library called [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library.

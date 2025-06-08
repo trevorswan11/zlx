@@ -14,7 +14,46 @@ const evalStmt = eval.evalStmt;
 
 pub fn variable(v: *ast.VarDeclarationStmt, env: *Environment) !Value {
     const val: Value = if (v.assigned_value) |a| try evalExpr(a, env) else .nil;
-    try env.define(v.identifier, val);
+    if (v.explicit_type) |t| {
+        const value_ptr = try env.allocator.create(Value);
+        value_ptr.* = val;
+        switch (t.*) {
+            .symbol => |s| {
+                const to_put: Value = .{
+                    .typed_val = .{
+                        .value = value_ptr,
+                        .type = s.value_type,
+                    },
+                };
+                if (v.constant) {
+                    try env.defineConstant(v.identifier, to_put);
+                } else {
+                    try env.define(v.identifier, to_put);
+                }
+                return .nil;
+            },
+            .list => |l| {
+                const type_str = try l.underlying.toString(env.allocator);
+                const to_put: Value = .{
+                    .typed_val = .{
+                        .value = value_ptr,
+                        .type = type_str,
+                    },
+                };
+                if (v.constant) {
+                    try env.defineConstant(v.identifier, to_put);
+                } else {
+                    try env.define(v.identifier, to_put);
+                }
+                return .nil;
+            },
+        }
+    }
+    if (v.constant) {
+        try env.defineConstant(v.identifier, val);
+    } else {
+        try env.define(v.identifier, val);
+    }
     return .nil;
 }
 
@@ -151,7 +190,7 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
     for (builtins.builtin_modules) |builtin| {
         if (std.mem.eql(u8, builtin.name, i.from)) {
             const module_value = try builtin.loader(allocator);
-            try env.define(i.name, module_value);
+            try env.defineConstant(i.name, module_value);
             return .nil;
         }
     }

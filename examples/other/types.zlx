@@ -1,1 +1,5 @@
-const bar: [][]number = 10;
+const foo = 10;
+println(typeof foo);
+
+const bar: number = 10;
+println(typeof bar);

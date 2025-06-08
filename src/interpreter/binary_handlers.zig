@@ -21,6 +21,9 @@ pub fn plus(op: Token, lhs: Value, rhs: Value) !Value {
             .number => .{
                 .string = try std.fmt.allocPrint(op.allocator, "{s}{d}", .{ l, rhs.number }),
             },
+            .boolean => .{
+                .string = try std.fmt.allocPrint(op.allocator, "{s}{s}", .{ l, if (rhs.boolean) "true" else "false" }),
+            },
             .nil => .{
                 .string = try std.fmt.allocPrint(op.allocator, "{s}nil", .{l}),
             },

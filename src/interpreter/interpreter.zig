@@ -36,6 +36,10 @@ pub const Value = union(enum) {
     break_signal,
     continue_signal,
     return_value: *Value,
+    typed_val: struct {
+        value: *Value,
+        type: []const u8,
+    },
     nil,
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
@@ -148,6 +152,12 @@ pub const Value = union(enum) {
         return try std.fmt.allocPrint(allocator, "Return: {s}", .{inner});
     }
 
+    fn stringTyped(return_val: *Value, type_string: []const u8, allocator: std.mem.Allocator) ![]u8 {
+        const inner = try return_val.toString(allocator);
+        defer allocator.free(inner);
+        return try std.fmt.allocPrint(allocator, "Value: {s}, Type {s}", .{ inner, type_string });
+    }
+
     pub fn toString(self: Value, allocator: std.mem.Allocator) anyerror![]u8 {
         return switch (self) {
             .number => |n| try std.fmt.allocPrint(allocator, "{d}", .{n}),
@@ -163,6 +173,7 @@ pub const Value = union(enum) {
             .break_signal => |_| try std.fmt.allocPrint(allocator, "break", .{}),
             .continue_signal => |_| try std.fmt.allocPrint(allocator, "continue", .{}),
             .return_value => |r| try stringReturn(r, allocator),
+            .typed_val => |t| try stringTyped(t.value, t.type, allocator),
             .nil => try std.fmt.allocPrint(allocator, "nil", .{}),
         };
     }
@@ -209,13 +220,7 @@ pub const Value = union(enum) {
                 break :blk true;
             } else false,
             .reference => |ref_self| other == .reference and ref_self.eql(other.reference.*),
-            .bound_method => |_| false,
-            .function => |_| false,
-            .class => |_| false,
-            .builtin => |_| false,
-            .break_signal => |_| false,
-            .continue_signal => |_| false,
-            .return_value => |_| false,
+            else => false,
         };
     }
 };
@@ -224,12 +229,14 @@ pub const Environment = struct {
     const Self = @This();
 
     values: std.StringHashMap(Value),
+    constants: std.StringHashMap(void),
     allocator: std.mem.Allocator,
     parent: ?*Environment,
 
     pub fn init(allocator: std.mem.Allocator, parent: ?*Environment) Self {
         return Environment{
             .values = std.StringHashMap(Value).init(allocator),
+            .constants = std.StringHashMap(void).init(allocator),
             .allocator = allocator,
             .parent = parent,
         };
@@ -237,6 +244,7 @@ pub const Environment = struct {
 
     pub fn deinit(self: *Self) void {
         self.values.deinit();
+        self.constants.deinit();
     }
 
     pub fn define(self: *Self, name: []const u8, value: Value) !void {
@@ -250,8 +258,28 @@ pub const Environment = struct {
         }
     }
 
+    pub fn defineConstant(self: *Self, name: []const u8, value: Value) !void {
+        const writer = eval.getWriterErr();
+
+        if (self.values.contains(name)) {
+            try writer.print("Duplicate Identifier: \"{s}\"\n", .{name});
+            return error.DuplicateIdentifier;
+        } else {
+            try self.values.put(name, value);
+            try self.constants.put(name, {});
+        }
+    }
+
     pub fn assign(self: *Self, name: []const u8, value: Value) !void {
         const writer = eval.getWriterErr();
+
+        if (self.constants.contains(name)) {
+            const str = try value.toString(self.allocator);
+            defer self.allocator.free(str);
+            try writer.print("Identifier \"{s}\" is Constant\n", .{name});
+            return error.ReassignmentToConstantVariable;
+        }
+
         if (self.values.contains(name)) {
             try self.values.put(name, value);
         } else if (self.parent) |p| {

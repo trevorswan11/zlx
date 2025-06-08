@@ -10,3 +10,6 @@ println(a);
 
 println("nested:");
 println(++a);
+
+println("Not true: " + !true);
+println("Not false: " + !false);

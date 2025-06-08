@@ -1,0 +1,7 @@
+let obj1 = { foo: 123 };
+println(obj1.foo);
+
+let obj2 = { 
+    foo: 456
+};
+println(obj2["foo"]);

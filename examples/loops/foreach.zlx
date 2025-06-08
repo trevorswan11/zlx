@@ -1,4 +1,8 @@
 let nums = [1, 2, 3];
 foreach val in nums {
-    val;
+    println(val);
+}
+
+foreach val, i in nums {
+    println("" + (val + 1) + " @ index " + i);
 }
