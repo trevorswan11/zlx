@@ -274,8 +274,6 @@ pub const Environment = struct {
         const writer = eval.getWriterErr();
 
         if (self.constants.contains(name)) {
-            const str = try value.toString(self.allocator);
-            defer self.allocator.free(str);
             try writer.print("Identifier \"{s}\" is Constant\n", .{name});
             return error.ReassignmentToConstantVariable;
         }
@@ -285,10 +283,34 @@ pub const Environment = struct {
         } else if (self.parent) |p| {
             try p.assign(name, value);
         } else {
-            const str = try value.toString(self.allocator);
-            defer self.allocator.free(str);
-            try writer.print("Identifier \"{s}\" is Undefined\n", .{str});
+            try writer.print("Identifier \"{s}\" is Undefined\n", .{name});
             return error.UndefinedVariable;
+        }
+    }
+
+    pub fn makeConstant(self: *Self, name: []const u8) !void {
+        const writer = eval.getWriterErr();
+
+        if (!self.values.contains(name)) {
+            try writer.print("Identifier \"{s}\" is Undefined\n", .{name});
+            return error.UndefinedVariable;
+        }
+
+        if (!self.constants.contains(name)) {
+            try self.constants.put(name, {});
+        }
+    }
+
+    pub fn stripConstant(self: *Self, name: []const u8) !void {
+        const writer = eval.getWriterErr();
+
+        if (!self.values.contains(name)) {
+            try writer.print("Identifier \"{s}\" is Undefined\n", .{name});
+            return error.UndefinedVariable;
+        }
+
+        if (self.constants.contains(name)) {
+            _ = self.constants.remove(name, {});
         }
     }
 

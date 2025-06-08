@@ -3,3 +3,6 @@ fn add(a: int, b: int): int {
     res;
 }
 println(add(5, 10));
+
+let x = 2;
+let y = 54;

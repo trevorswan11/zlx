@@ -213,7 +213,72 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
 
     const ast_block = try parse(allocator, contents);
 
-    return try evalStmt(ast_block, env);
+    // Tracks seen identifiers to check for invalid import requests
+    var decl_names = std.StringHashMap(void).init(allocator);
+    defer decl_names.deinit();
+    var recursive_flag = false; // Errors should be recursively bubbled up as decl_names is not shared between scopes
+
+    // For now, functions, variables, classes, and recursive imports will be included
+    for (ast_block.block.body.items) |stmt| {
+        switch (stmt.*) {
+            .var_decl => |*var_decl| {
+                const decl_name = var_decl.identifier;
+                try decl_names.put(decl_name, {});
+                if (std.mem.eql(u8, i.name, "*") or std.mem.eql(u8, i.name, decl_name)) {
+                    _ = try variable(var_decl, env);
+                    try env.makeConstant(decl_name); // Defines the variable in the env
+                }
+
+                // End the loop early if the requested identifier was found
+                if (std.mem.eql(u8, i.name, decl_name)) {
+                    break;
+                }
+            },
+            .function_decl => |*func_decl| {
+                const decl_name = func_decl.name;
+                try decl_names.put(decl_name, {});
+                if (std.mem.eql(u8, i.name, "*") or std.mem.eql(u8, i.name, decl_name)) {
+                    _ = try function(func_decl, env); // Defines the function in the env
+                    try env.makeConstant(decl_name);
+                }
+
+                // End the loop early if the requested identifier was found
+                if (std.mem.eql(u8, i.name, decl_name)) {
+                    break;
+                }
+            },
+            .class_decl => |*class_decl| {
+                const decl_name = class_decl.name;
+                try decl_names.put(decl_name, {});
+                if (std.mem.eql(u8, i.name, "*") or std.mem.eql(u8, i.name, decl_name)) {
+                    _ = try class(class_decl, env); // Defines the class in the env
+                    try env.makeConstant(decl_name);
+                }
+
+                // End the loop early if the requested identifier was found
+                if (std.mem.eql(u8, i.name, decl_name)) {
+                    break;
+                }
+            },
+            .import_stmt => |*import_stmt| {
+                const decl_name = import_stmt.name;
+                try decl_names.put(decl_name, {});
+                recursive_flag = true;
+                _ = try import(import_stmt, env); // Defines the import in the env
+                if (!std.mem.eql(u8, decl_name, "*")) {
+                    try env.makeConstant(decl_name);
+                }
+            },
+            else => {},
+        }
+    }
+
+    if (!recursive_flag and !std.mem.eql(u8, i.name, "*") and !decl_names.contains(i.name)) {
+        try writer.print("Identifier \"{s}\" is undefined in the requested input file.\n", .{i.name});
+        return error.UndefinedIdentifier;
+    }
+
+    return .nil;
 }
 
 pub fn returns(r: *ast.ReturnStmt, env: *Environment) !Value {

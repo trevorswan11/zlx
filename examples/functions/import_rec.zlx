@@ -1,0 +1,3 @@
+import * from "examples/functions/import_wildcard.zlx";
+
+println(add(-92, 26));

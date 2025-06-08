@@ -1,0 +1,4 @@
+import * from "examples/functions/fn.zlx";
+println(add(30, -3)); // 27
+println(x); // 2
+println(y); // 54
