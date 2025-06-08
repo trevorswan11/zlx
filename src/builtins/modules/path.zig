@@ -168,8 +168,10 @@ test "path_builtin" {
     const block = try testing.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
 
-    const expected =
-        \\foo\bar\baz
+    const tmp_path = try std.fs.path.join(allocator, &[_][]const u8{"foo", "bar", "baz"});
+    defer allocator.free(tmp_path);
+    const expected = try std.fmt.allocPrint(allocator,
+        \\{s}
         \\zsh
         \\/usr/bin
         \\.gz
@@ -179,7 +181,8 @@ test "path_builtin" {
         \\foo\baz
         \\["/usr/bin", "zsh"]
         \\
-    ;
+        , .{tmp_path});
+    defer allocator.free(expected);
 
     const actual = output_buffer.items;
     try testing.expectEqualStrings(expected, actual);
