@@ -168,8 +168,10 @@ test "path_builtin" {
     const block = try testing.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
 
-    const tmp_path = try std.fs.path.join(allocator, &[_][]const u8{"foo", "bar", "baz"});
-    defer allocator.free(tmp_path);
+    const tmp_path_one = try std.fs.path.join(allocator, &[_][]const u8{"foo", "bar", "baz"});
+    defer allocator.free(tmp_path_one);
+    const tmp_path_two = try std.fs.path.join(allocator, &[_][]const u8{"foo", "baz"});
+    defer allocator.free(tmp_path_two);
     const expected = try std.fmt.allocPrint(allocator,
         \\{s}
         \\zsh
@@ -178,10 +180,10 @@ test "path_builtin" {
         \\archive.tar
         \\true
         \\true
-        \\foo\baz
+        \\{s}
         \\["/usr/bin", "zsh"]
         \\
-        , .{tmp_path});
+        , .{tmp_path_one, tmp_path_two});
     defer allocator.free(expected);
 
     const actual = output_buffer.items;
