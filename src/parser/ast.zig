@@ -103,6 +103,7 @@ pub const Expr = union(enum) {
     new_expr: NewExpr,
     object: ObjectExpr,
     match_expr: Match,
+    nil: void,
 
     pub fn toString(self: *Expr, allocator: std.mem.Allocator) ![]const u8 {
         var buffer = std.ArrayList(u8).init(allocator);
@@ -234,6 +235,10 @@ pub const Expr = union(enum) {
                     try writer.print("Body:\n", .{});
                     try stmt.body.writeTo(writer, indent_level + 3);
                 }
+            },
+            .nil => {
+                try indent(writer, indent_level);
+                try writer.print("nil\n", .{});
             },
         }
     }

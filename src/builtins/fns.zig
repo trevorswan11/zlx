@@ -168,6 +168,32 @@ pub fn to_number(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     };
 }
 
+pub fn to_bool(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
+
+    if (args.len != 1) {
+        try writer.print("to_bool(...) expects exactly 1 argument, got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const val = try eval.evalExpr(args[0], env);
+    return .{
+        .boolean = coerceBool(val),
+    };
+}
+
+fn coerceBool(val: Value) bool {
+    return switch (val) {
+        .boolean => val.boolean,
+        .number => val.number > 0,
+        .string => val.string.len != 0,
+        .array => val.array.items.len != 0,
+        .reference => coerceBool(val.reference.*),
+        .nil => false,
+        else => true, // objects, references, functions, etc. will be considered 'truthy'
+    };
+}
+
 // === TESTING ===
 
 const testing = @import("../testing/testing.zig");
@@ -211,6 +237,17 @@ test "core_builtins" {
         \\println(to_string(42));        // "42"
         \\println(to_string("hi"));      // "hi"
         \\println(to_number("3.1415"));  // 3.1415
+        \\
+        \\// Test boolean coercion
+        \\println(to_bool(false));         // false
+        \\println(to_bool(true));          // true
+        \\println(to_bool(0));             // false
+        \\println(to_bool(1));             // true
+        \\println(to_bool(""));            // false
+        \\println(to_bool("hi"));          // true
+        \\println(to_bool([]));            // false
+        \\println(to_bool([1]));           // true
+        \\println(to_bool(nil));           // false
     ;
 
     const block = try testing.parse(allocator, source);
@@ -228,6 +265,15 @@ test "core_builtins" {
         \\42
         \\hi
         \\3.1415
+        \\false
+        \\true
+        \\false
+        \\true
+        \\false
+        \\true
+        \\false
+        \\true
+        \\false
         \\
     ;
 

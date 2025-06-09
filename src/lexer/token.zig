@@ -3,7 +3,7 @@ const std = @import("std");
 // TokenKind
 pub const TokenKind = enum(u32) {
     EOF = 0, // iota
-    NULL,
+    NIL,
     TRUE,
     FALSE,
     NUMBER,
@@ -50,7 +50,6 @@ pub const TokenKind = enum(u32) {
     SLASH_EQUALS,
     STAR_EQUALS,
     PERCENT_EQUALS,
-    NULLISH_ASSIGNMENT, // ??=
 
     //Math
     PLUS,
@@ -72,7 +71,6 @@ pub const TokenKind = enum(u32) {
     FOREACH,
     WHILE,
     FOR,
-    EXPORT,
     TYPEOF,
     IN,
     BREAK,
@@ -80,9 +78,6 @@ pub const TokenKind = enum(u32) {
     RETURN,
     MATCH,
     ARROW,
-
-    // Misc
-    NUM_TOKENS,
 };
 
 // Token
@@ -171,12 +166,12 @@ pub const Token = struct {
         try reserved.put("return", .RETURN);
         try reserved.put("break", .BREAK);
         try reserved.put("continue", .CONTINUE);
-        try reserved.put("export", .EXPORT);
         try reserved.put("typeof", .TYPEOF);
         try reserved.put("in", .IN);
         try reserved.put("true", .TRUE);
         try reserved.put("false", .FALSE);
         try reserved.put("match", .MATCH);
+        try reserved.put("nil", .NIL);
 
         // Built-in functions
         try reserved.put("print", .IDENTIFIER);
@@ -186,6 +181,7 @@ pub const Token = struct {
         try reserved.put("range", .IDENTIFIER);
         try reserved.put("to_string", .IDENTIFIER);
         try reserved.put("to_number", .IDENTIFIER);
+        try reserved.put("to_bool", .IDENTIFIER);
 
         // Built-in modules
         try reserved.put("array", .IDENTIFIER);

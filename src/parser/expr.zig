@@ -300,3 +300,10 @@ pub fn parseMatchExpr(p: *parser.Parser) !ast.Expr {
         },
     };
 }
+
+pub fn parseNilExpr(p: *parser.Parser) !ast.Expr {
+    _ = try p.expect(.NIL);
+    return .{
+        .nil = {},
+    };
+}

@@ -156,10 +156,6 @@ pub const Lexer = struct {
             .handler = try defaultHandler(allocator, .COLON, ":"),
         });
         try patterns.append(.{
-            .regex = try Regex.compile(allocator, "\\?\\?="),
-            .handler = try defaultHandler(allocator, .NULLISH_ASSIGNMENT, "??="),
-        });
-        try patterns.append(.{
             .regex = try Regex.compile(allocator, "\\?"),
             .handler = try defaultHandler(allocator, .QUESTION, "?"),
         });

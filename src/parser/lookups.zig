@@ -126,6 +126,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try nud(.NUMBER, binding.PRIMARY, exprs.parsePrimaryExpr);
     try nud(.STRING, binding.PRIMARY, exprs.parsePrimaryExpr);
     try nud(.IDENTIFIER, binding.PRIMARY, exprs.parsePrimaryExpr);
+    _ = try nud_lu.put(.NIL, exprs.parseNilExpr);
 
     // Unary/Prefix
     try nud(.TYPEOF, binding.UNARY, exprs.parsePrefixExpr);

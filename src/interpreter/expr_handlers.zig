@@ -371,3 +371,7 @@ pub fn match(m: *ast.Match, env: *Environment) !Value {
 
     return .nil;
 }
+
+pub fn nil(_: void, _: *Environment) !Value {
+    return .nil;
+}

@@ -22,12 +22,12 @@ fn colorForKind(kind: TokenKind) []const u8 {
     return switch (kind) {
         // Core keywords
         .IF, .ELSE, .WHILE, .FOR, .FOREACH, .BREAK, .CONTINUE => colors.keyword,
-        .IMPORT, .FROM, .EXPORT, .TYPEOF => colors.keyword,
+        .IMPORT, .FROM, .TYPEOF => colors.keyword,
         .LET, .CONST, .FN, .CLASS, .NEW, .IN, .RETURN, .MATCH => colors.keyword,
 
         // Literals
         .TRUE, .FALSE => colors.boolean,
-        .NULL => colors.nullish,
+        .NIL => colors.nullish,
         .NUMBER => colors.number,
         .STRING => colors.string,
 
@@ -55,7 +55,6 @@ fn colorForKind(kind: TokenKind) []const u8 {
         .STAR_EQUALS,
         .SLASH_EQUALS,
         .PERCENT_EQUALS,
-        .NULLISH_ASSIGNMENT,
         .PLUS_PLUS,
         .MINUS_MINUS,
         .ARROW,
@@ -77,7 +76,7 @@ fn colorForKind(kind: TokenKind) []const u8 {
         => colors.punctuation,
 
         // MISC (enforces exhaustive switching)
-        .EOF, .NUM_TOKENS => colors.identifier,
+        .EOF => colors.identifier,
     };
 }
 

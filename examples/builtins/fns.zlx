@@ -21,3 +21,14 @@ print("no newline"); print(" +"); println("print"); // no newline +print\n
 println(to_string(42));        // "42"
 println(to_string("hi"));      // "hi"
 println(to_number("3.1415"));  // 3.1415
+
+// Test boolean coercion
+println(to_bool(false));         // false
+println(to_bool(true));          // true
+println(to_bool(0));             // false
+println(to_bool(1));             // true
+println(to_bool(""));            // false
+println(to_bool("hi"));          // true
+println(to_bool([]));            // false
+println(to_bool([1]));           // true
+println(to_bool(nil));           // false
