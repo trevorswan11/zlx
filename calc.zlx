@@ -1,0 +1,6 @@
+let weeks = 10;
+let days = weeks * 7;
+days = days - 5;
+let cost_per_day = 3.85;
+
+println(cost_per_day * days);

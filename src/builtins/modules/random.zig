@@ -22,7 +22,9 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn randHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len != 0) {
+        try writer.print("random.rand(...) expects 0 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -34,13 +36,19 @@ fn randHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) !
 }
 
 fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("random.randint(...) expects 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const a = try interpreter.eval.evalExpr(args[0], env);
     const b = try interpreter.eval.evalExpr(args[1], env);
+
     if (a != .number or b != .number) {
+        try writer.print("random.randint(...) expects number arguments\n", .{});
+        try writer.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+        try writer.print("  Right: {s}\n", .{try b.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -48,6 +56,7 @@ fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
     const max: i64 = @intFromFloat(b.number);
 
     if (min >= max) {
+        try writer.print("random.randint(...) requires min < max, but got min = {d}, max = {d}\n", .{ min, max });
         return error.InvalidRange;
     }
 
@@ -59,17 +68,22 @@ fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
 }
 
 fn choiceHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len != 1) {
+        try writer.print("random.choice(...) expects 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try interpreter.eval.evalExpr(args[0], env);
     if (val != .array) {
+        try writer.print("random.choice(...) expects an array argument\n", .{});
+        try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
     const array = val.array;
     if (array.items.len == 0) {
+        try writer.print("random.choice(...) cannot select from an empty array\n", .{});
         return error.OutOfBounds;
     }
 

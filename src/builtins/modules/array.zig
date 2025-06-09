@@ -10,12 +10,16 @@ const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
 
 fn expectArrayRef(args: []const *ast.Expr, env: *Environment) !*std.ArrayList(Value) {
+    const writer = eval.getWriterErr();
     if (args.len < 1) {
+        try writer.print("array module: expected at least one argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .reference or val.reference.* != .array) {
+        try writer.print("array module: expression evaluation returned a value that is not a reference to an array\n", .{});
+        try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -40,8 +44,10 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn pushHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     var array = try expectArrayRef(args, env);
     if (args.len != 2) {
+        try writer.print("array.push(...) expects exactly two arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -51,8 +57,10 @@ fn pushHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 }
 
 fn popHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     var array = try expectArrayRef(args, env);
     if (array.items.len == 0) {
+        try writer.print("array.pop(...) requires the input array to have at least one item\n", .{});
         return error.OutOfBounds;
     }
 
@@ -60,19 +68,24 @@ fn popHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 }
 
 fn insertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     var array = try expectArrayRef(args, env);
     if (args.len != 3) {
+        try writer.print("array.insert(...) expects exactly three arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const index_val = try eval.evalExpr(args[1], env);
     const value = try eval.evalExpr(args[2], env);
     if (index_val != .number) {
+        try writer.print("Array index value must be a number\n", .{});
+        try writer.print("  Found: {s}\n", .{try index_val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
     const index: usize = @intFromFloat(index_val.number);
     if (index > array.items.len) {
+        try writer.print("Index {d} is out of bounds for array of length {d}\n", .{ index, array.items.len });
         return error.OutOfBounds;
     }
 
@@ -81,16 +94,23 @@ fn insertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 }
 
 fn removeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     var array = try expectArrayRef(args, env);
     if (args.len != 2) {
+        try writer.print("array.remove(...) expects exactly two arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const index_val = try eval.evalExpr(args[1], env);
-    if (index_val != .number) return error.TypeMismatch;
+    if (index_val != .number) {
+        try writer.print("Array index value must be a number\n", .{});
+        try writer.print("  Found: {s}\n", .{try index_val.toString(env.allocator)});
+        return error.TypeMismatch;
+    }
 
     const index: usize = @intFromFloat(index_val.number);
     if (index >= array.items.len) {
+        try writer.print("Index {d} is out of bounds for array of length {d}\n", .{ index, array.items.len });
         return error.OutOfBounds;
     }
 
@@ -104,21 +124,29 @@ fn clearHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
 }
 
 fn getHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("array.get(...) expects exactly two arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .array) {
+
+    var val = try eval.evalExpr(args[0], env);
+    if (val != .array or (val == .reference and val.reference.* != .array)) {
+        try writer.print("array.get(...) requires the first argument to be an array or a reference to one\n", .{});
         return error.TypeMismatch;
     }
+    val = if (val == .reference) val.deref() else val;
 
     const index_val = try eval.evalExpr(args[1], env);
     if (index_val != .number) {
+        try writer.print("Array index value must be a number\n", .{});
+        try writer.print("  Found: {s}\n", .{try index_val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
     const index: usize = @intFromFloat(index_val.number);
     if (index >= val.array.items.len) {
+        try writer.print("Index {d} is out of bounds for array of length {d}\n", .{ index, val.array.items.len });
         return error.OutOfBounds;
     }
 
@@ -126,16 +154,23 @@ fn getHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 }
 
 fn setHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len != 3) {
+        try writer.print("array.set(...) expects exactly two arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const ref_val = try eval.evalExpr(args[0], env);
     if (ref_val != .reference or ref_val.reference.* != .array) {
+        try writer.print("Expression evaluation returned a value that is not a reference to an array\n", .{});
+        try writer.print("  Found: {s}\n", .{try ref_val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
     const index_val = try eval.evalExpr(args[1], env);
     if (index_val != .number) {
+        try writer.print("Array index value must be a number\n", .{});
+        try writer.print("  Found: {s}\n", .{try index_val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -144,6 +179,7 @@ fn setHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 
     var array = &ref_val.reference.*.array;
     if (index >= array.items.len) {
+        try writer.print("Index {d} is out of bounds for array of length {d}\n", .{ index, array.items.len });
         return error.OutOfBounds;
     }
 
@@ -152,19 +188,25 @@ fn setHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 }
 
 fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len < 2 or args.len > 3) {
+        try writer.print("array.slice(...) expects between two and three arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .array) {
+    var val = try eval.evalExpr(args[0], env);
+    if (val != .array or (val == .reference and val.reference.* != .array)) {
+        try writer.print("array.alice(...) requires the first argument to be an array or a reference to one\n", .{});
+        try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
+    val = if (val == .reference) val.deref() else val;
 
     const start: usize = @intFromFloat((try eval.evalExpr(args[1], env)).number);
     const end: usize = if (args.len == 3) @intFromFloat((try eval.evalExpr(args[2], env)).number) else val.array.items.len;
 
     if (start < 0 or end > val.array.items.len or start > end) {
+        try writer.print("Index out of bounds for array of length {d}\n", .{val.array.items.len});
         return error.OutOfBounds;
     }
 

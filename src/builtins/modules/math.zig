@@ -10,25 +10,38 @@ const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
 
 fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
+    const writer = eval.getWriterErr();
     if (args.len != 1) {
+        try writer.print("math module: expected 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const val = try eval.evalExpr(args[0], env);
     if (val != .number) {
+        try writer.print("math module: expected a number\n", .{});
+        try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
+
     return val.number;
 }
 
 fn expectTwoNumbers(args: []const *ast.Expr, env: *Environment) !struct { f64, f64 } {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("math module: expected 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const lhs = try eval.evalExpr(args[0], env);
     const rhs = try eval.evalExpr(args[1], env);
     if (lhs != .number or rhs != .number) {
+        try writer.print("math module: expected both arguments to be numbers\n", .{});
+        try writer.print("  Left: {s}\n", .{try lhs.toString(env.allocator)});
+        try writer.print("  Right: {s}\n", .{try rhs.toString(env.allocator)});
         return error.TypeMismatch;
     }
+
     return .{
         lhs.number,
         rhs.number,
@@ -120,19 +133,9 @@ fn expHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 }
 
 fn powHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    if (args.len != 2) {
-        return error.ArgumentCountMismatch;
-    }
-
-    const base = try eval.evalExpr(args[0], env);
-    const exponent = try eval.evalExpr(args[1], env);
-
-    if (base != .number or exponent != .number) {
-        return error.TypeMismatch;
-    }
-
+    const vals = try expectTwoNumbers(args, env);
     return .{
-        .number = std.math.pow(f64, base.number, exponent.number),
+        .number = std.math.pow(f64, vals[0], vals[1]),
     };
 }
 

@@ -41,11 +41,16 @@ fn argsHandler(allocator: std.mem.Allocator, _: []const *ast.Expr, _: *Environme
 }
 
 fn getenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len != 1) {
+        try writer.print("sys.getenv(...) expects 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const key = try eval.evalExpr(args[0], env);
     if (key != .string) {
+        try writer.print("sys.getenv(...) expects a string argument\n", .{});
+        try writer.print("  Found: {s}\n", .{try key.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -56,12 +61,19 @@ fn getenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 }
 
 fn setenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("sys.setenv(...) expects 2 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const key = try eval.evalExpr(args[0], env);
     const val = try eval.evalExpr(args[1], env);
+
     if (key != .string or val != .string) {
+        try writer.print("sys.setenv(...) expects two string arguments\n", .{});
+        try writer.print("  Key: {s}\n", .{try key.toString(env.allocator)});
+        try writer.print("  Value: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -70,11 +82,16 @@ fn setenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 }
 
 fn unsetenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     if (args.len != 1) {
+        try writer.print("sys.unsetenv(...) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const key = try eval.evalExpr(args[0], env);
     if (key != .string) {
+        try writer.print("sys.unsetenv(...) expects a string argument\n", .{});
+        try writer.print("  Found: {s}\n", .{try key.toString(env.allocator)});
         return error.TypeMismatch;
     }
 

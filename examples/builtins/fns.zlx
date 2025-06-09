@@ -1,0 +1,23 @@
+let s = "hello";
+let a = [1, 2, 3, 4];
+
+// Test len on string and array
+println(len(s)); // 5
+println(len(a)); // 4
+
+// Test ref
+let r = ref([9, 8]);
+println(r); // References Val: ["9", "8"]
+
+// Test range
+println(range(0, 5, 1));    // [0, 1, 2, 3, 4]
+println(range(5, 0, -2));   // [5, 3, 1]
+println(range(0, 1, 3));    // [0]
+
+// Test print vs println
+print("no newline"); print(" +"); println("print"); // no newline +print\n
+
+// Test to_string and to_number
+println(to_string(42));        // "42"
+println(to_string("hi"));      // "hi"
+println(to_number("3.1415"));  // 3.1415

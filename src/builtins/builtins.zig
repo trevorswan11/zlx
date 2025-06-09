@@ -51,6 +51,14 @@ pub const builtin_fns = [_]BuiltinFn{
         .name = "range",
         .handler = fns.range,
     },
+    .{
+        .name = "to_string",
+        .handler = fns.to_string,
+    },
+    .{
+        .name = "to_number",
+        .handler = fns.to_number,
+    },
 };
 
 // === Builtin Modules ===

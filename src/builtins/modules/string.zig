@@ -10,13 +10,19 @@ const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
 
 fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
+    const writer = eval.getWriterErr();
     if (args.len != 1) {
+        try writer.print("string module: expected 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const val = try eval.evalExpr(args[0], env);
     if (val != .string) {
+        try writer.print("string module: expected a string\n", .{});
+        try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
+
     return val.string;
 }
 
@@ -54,7 +60,9 @@ fn lowerHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 }
 
 fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 3) {
+        try writer.print("string.slice(...) expects 3 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -63,6 +71,12 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     const end = try eval.evalExpr(args[2], env);
 
     if (str != .string or start != .number or end != .number) {
+        try writer.print("string.slice(...) requires a string and two numbers\n", .{});
+        try writer.print("  Got: str = {s}, start = {s}, end = {s}\n", .{
+            try str.toString(env.allocator),
+            try start.toString(env.allocator),
+            try end.toString(env.allocator),
+        });
         return error.TypeMismatch;
     }
 
@@ -76,7 +90,9 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 }
 
 fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("string.find(...) expects 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -84,6 +100,9 @@ fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     const needle = try eval.evalExpr(args[1], env);
 
     if (haystack != .string or needle != .string) {
+        try writer.print("string.find(...) expects two strings\n", .{});
+        try writer.print("  Left: {s}\n", .{try haystack.toString(env.allocator)});
+        try writer.print("  Right: {s}\n", .{try needle.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -97,7 +116,9 @@ fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 }
 
 fn containsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("string.contains(...) expects 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -105,6 +126,9 @@ fn containsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
     const needle = try eval.evalExpr(args[1], env);
 
     if (haystack != .string or needle != .string) {
+        try writer.print("string.contains(...) expects two strings\n", .{});
+        try writer.print("  Left: {s}\n", .{try haystack.toString(env.allocator)});
+        try writer.print("  Right: {s}\n", .{try needle.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -114,7 +138,9 @@ fn containsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
 }
 
 fn replaceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 3) {
+        try writer.print("string.replace(...) expects 3 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -123,6 +149,10 @@ fn replaceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
     const replacement = try eval.evalExpr(args[2], env);
 
     if (haystack != .string or needle != .string or replacement != .string) {
+        try writer.print("string.replace(...) expects three string arguments\n", .{});
+        try writer.print("  Haystack: {s}\n", .{try haystack.toString(env.allocator)});
+        try writer.print("  Needle: {s}\n", .{try needle.toString(env.allocator)});
+        try writer.print("  Replacement: {s}\n", .{try replacement.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -133,7 +163,9 @@ fn replaceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
 }
 
 fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("string.split(...) expects 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -141,6 +173,9 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     const delim = try eval.evalExpr(args[1], env);
 
     if (input != .string or delim != .string) {
+        try writer.print("string.split(...) expects two string arguments\n", .{});
+        try writer.print("  Input: {s}\n", .{try input.toString(env.allocator)});
+        try writer.print("  Delimiter: {s}\n", .{try delim.toString(env.allocator)});
         return error.TypeMismatch;
     }
 

@@ -9,8 +9,16 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
 
-fn expectStringArgs(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment, count: usize) ![]const []const u8 {
+fn expectStringArgs(
+    allocator: std.mem.Allocator,
+    args: []const *ast.Expr,
+    env: *Environment,
+    count: usize,
+) ![]const []const u8 {
+    const writer = eval.getWriterErr();
+
     if (args.len != count) {
+        try writer.print("path module: expected {d} argument(s), got {d}\n", .{ count, args.len });
         return error.ArgumentCountMismatch;
     }
 
@@ -20,6 +28,8 @@ fn expectStringArgs(allocator: std.mem.Allocator, args: []const *ast.Expr, env: 
     for (args) |arg| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
+            try writer.print("path module: expected a string\n", .{});
+            try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
             return error.TypeMismatch;
         }
         try result.append(val.string);
@@ -47,11 +57,14 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer = eval.getWriterErr();
     var parts = std.ArrayList([]const u8).init(allocator);
     defer parts.deinit();
     for (args) |arg| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
+            try writer.print("path.join(...) expects only string arguments\n", .{});
+            try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
             return error.TypeMismatch;
         }
         try parts.append(val.string);

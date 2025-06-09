@@ -10,12 +10,15 @@ const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
 const pack = @import("../builtins.zig").pack;
 
 fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
+    const writer = eval.getWriterErr();
     if (args.len != 1) {
+        try writer.print("fs module: expected 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .string) {
+        try writer.print("fs module: expected a string argument but got: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -23,7 +26,9 @@ fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
 }
 
 fn expectTwoStrings(args: []const *ast.Expr, env: *Environment) !struct { []const u8, []const u8 } {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("fs module: expected 2 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -31,6 +36,9 @@ fn expectTwoStrings(args: []const *ast.Expr, env: *Environment) !struct { []cons
     const b = try eval.evalExpr(args[1], env);
 
     if (a != .string or b != .string) {
+        try writer.print("fs module: both arguments must be strings\n", .{});
+        try writer.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+        try writer.print("  Right: {s}\n", .{try b.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -279,7 +287,9 @@ fn listAllFilesHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, en
     const cwd = std.fs.cwd();
     try recurseDir(cwd, start_path, allocator, &result);
 
-    return .{ .array = result };
+    return .{
+        .array = result,
+    };
 }
 
 fn recurseDir(

@@ -107,6 +107,7 @@ pub fn main() !void {
 
 test {
     // Builtin Modules - Tests located with source code
+    _ = @import("builtins/fns.zig");
     _ = @import("builtins/modules/array.zig");
     _ = @import("builtins/modules/debug.zig");
     _ = @import("builtins/modules/fs.zig");

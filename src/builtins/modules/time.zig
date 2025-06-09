@@ -11,12 +11,15 @@ const pack = @import("../builtins.zig").pack;
 const loadConstants = @import("time_constants.zig").loadConstants;
 
 fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
+    const writer = eval.getWriterErr();
     if (args.len != 1) {
+        try writer.print("time module: expected 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .number) {
+        try writer.print("time module: expected a number but got: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -44,7 +47,9 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn nowHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 0) {
+        try writer.print("time.now(...) expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -55,7 +60,9 @@ fn nowHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) an
 }
 
 fn millisHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 0) {
+        try writer.print("time.millis(...) expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -83,7 +90,9 @@ fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
 }
 
 fn startHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 0) {
+        try writer.print("time.start(...) expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -94,6 +103,12 @@ fn startHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) 
 }
 
 fn stopHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    if (args.len == 0) {
+        return .{
+            .number = @as(f64, @floatFromInt(std.time.nanoTimestamp())) / 1_000_000.0,
+        };
+    }
+
     const start = try expectNumberArg(args, env);
     const t0: u64 = @intFromFloat(start);
     const t1 = std.time.nanoTimestamp();
@@ -105,7 +120,9 @@ fn stopHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 }
 
 fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 2) {
+        try writer.print("time.delta(...) expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -122,7 +139,9 @@ fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
 }
 
 fn timestampHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
+    const writer = eval.getWriterErr();
     if (args.len != 0) {
+        try writer.print("time.timestamp(...) expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 

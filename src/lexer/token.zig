@@ -116,7 +116,7 @@ pub const Token = struct {
 
     pub fn debug(self: *Self) !void {
         const stdout = std.io.getStdOut().writer();
-        try stdout.print("Token Line  #: {d}\n", .{self.line});
+        try stdout.print("Token Line #: {d}\n", .{self.line});
         if (self.isOneOfMany(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING })) {
             try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
         } else {
@@ -126,7 +126,7 @@ pub const Token = struct {
 
     pub fn debugRuntime(self: *const Self) !void {
         const stdout = std.io.getStdOut().writer();
-        try stdout.print("Tokenization Error Near Line: {d}\n", .{self.line});
+        try stdout.print("Token Line #: {d}\n", .{self.line});
         if (self.isOneOfManyRuntime(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING })) {
             try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
         } else {
@@ -184,6 +184,8 @@ pub const Token = struct {
         try reserved.put("len", .IDENTIFIER);
         try reserved.put("ref", .IDENTIFIER);
         try reserved.put("range", .IDENTIFIER);
+        try reserved.put("to_string", .IDENTIFIER);
+        try reserved.put("to_number", .IDENTIFIER);
 
         // Built-in modules
         try reserved.put("array", .IDENTIFIER);
