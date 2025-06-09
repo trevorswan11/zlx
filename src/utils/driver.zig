@@ -20,11 +20,12 @@ pub fn readFile(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
 }
 
 const Args = struct {
-    path: []const u8,
-    time: bool,
+    path: []const u8 = "",
+    time: bool = false,
     verbose: bool = false,
-    run: bool,
-    dump: bool,
+    run: bool = true,
+    dump: bool = false,
+    repl: bool = false,
 };
 
 /// Handles parsing the command line arguments for the process
@@ -47,7 +48,13 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     // The first arg can specify either run or ast, defaulting to run
     const raw_args = try std.process.argsAlloc(allocator);
     defer allocator.free(raw_args);
-    if (raw_args.len >= 3) optional_arg: {
+
+    if (std.mem.eql(u8, raw_args[1], "repl")) {
+        return .{
+            .repl = true,
+        };
+    } else if (raw_args.len >= 3) optional_arg: {
+
         if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run") and !std.mem.eql(u8, raw_args[1], "dump")) {
             break :optional_arg;
         }
@@ -237,6 +244,58 @@ pub fn printStmt(stmt: *ast.Stmt, allocator: std.mem.Allocator) !void {
                 defer allocator.free(str);
                 try stdout.print("{s}\n", .{str});
             },
+        }
+    }
+}
+
+pub fn startRepl(allocator: std.mem.Allocator) !void {
+    const eval = @import("../interpreter/eval.zig");
+    const Environment = @import("../interpreter/interpreter.zig").Environment;
+
+    const stdin = std.io.getStdIn().reader();
+    const stdout = eval.getWriterOut();
+    const stderr = eval.getWriterErr();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    try stdout.print("Welcome to ZLX REPL! Type 'exit' to quit.\n", .{});
+    eval.setWriterOut(stdout);
+    eval.setWriterErr(stderr);
+
+    while (true) {
+        try stdout.print(">> ", .{});
+        var line_buf = std.ArrayList(u8).init(env.allocator);
+        defer line_buf.clearRetainingCapacity();
+
+        // Read one line
+        const line = try stdin.readUntilDelimiterOrEofAlloc(env.allocator, '\n', 1024) orelse {
+            try stderr.print("Input error!\n", .{});
+            continue;
+        };
+
+        const trimmed = std.mem.trim(u8, line, " \t\r\n");
+        if (std.mem.eql(u8, trimmed, "exit")) {
+            break;
+        }
+        if (trimmed.len == 0) {
+            continue;
+        }
+
+        const parser = @import("../parser/parser.zig");
+        const block = parser.parse(env.allocator, trimmed) catch |err| {
+            try stderr.print("Parse Error: {!}\n", .{err});
+            continue;
+        };
+
+        const result = eval.evalStmt(block, &env) catch |err| {
+            try stderr.print("Evaluation Error: {!}\n", .{err});
+            continue;
+        };
+
+        if (result != .nil) {
+            const result_str = try result.toString(env.allocator);
+            try stdout.print("{s}\n", .{result_str});
         }
     }
 }

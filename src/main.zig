@@ -4,10 +4,10 @@ const parser = @import("parser/parser.zig");
 const interpreter = @import("interpreter/interpreter.zig");
 const syntax = @import("utils/syntax.zig");
 
-const helpers = @import("utils/driver.zig");
-const getArgs = helpers.getArgs;
-const readFile = helpers.readFile;
-const printStmt = helpers.printStmt;
+const driver = @import("utils/driver.zig");
+const getArgs = driver.getArgs;
+const readFile = driver.readFile;
+const printStmt = driver.printStmt;
 
 pub fn main() !void {
     const t0 = std.time.nanoTimestamp();
@@ -31,6 +31,11 @@ pub fn main() !void {
         },
         else => return,
     };
+
+    // Enter repl mode if requested
+    if (input.repl) {
+        return try driver.startRepl(allocator);
+    }
 
     // Gather the file contents
     const file_contents = readFile(allocator, input.path) catch |err| {
