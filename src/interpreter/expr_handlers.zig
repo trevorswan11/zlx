@@ -3,13 +3,14 @@ const std = @import("std");
 const ast = @import("../parser/ast.zig");
 const interpreter = @import("interpreter.zig");
 const builtins = @import("../builtins/builtins.zig");
+const eval = @import("eval.zig");
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const evalBinary = @import("eval.zig").evalBinary;
-const evalExpr = @import("eval.zig").evalExpr;
-const evalStmt = @import("eval.zig").evalStmt;
+const evalBinary = eval.evalBinary;
+const evalExpr = eval.evalExpr;
+const evalStmt = eval.evalStmt;
 
 pub fn number(n: *ast.NumberExpr, _: *Environment) !Value {
     return .{
@@ -52,6 +53,7 @@ pub fn binary(b: *ast.BinaryExpr, env: *Environment) !Value {
 
 pub fn assignment(a: *ast.AssignmentExpr, env: *Environment) !Value {
     const value = try evalExpr(a.assigned_value, env);
+    const writer = eval.getWriterErr();
 
     switch (a.assignee.*) {
         .symbol => |s| {
@@ -61,14 +63,16 @@ pub fn assignment(a: *ast.AssignmentExpr, env: *Environment) !Value {
         .member => |m| {
             var obj_val = try evalExpr(m.member, env);
             if (obj_val == .reference) {
-                const ptr = obj_val.reference;
-                if (ptr.* != .object) {
+                obj_val = obj_val.deref();
+                if (obj_val != .object) {
+                    try writer.print("Expected assignee to be an object but found {s}\n", .{@tagName(obj_val)});
                     return error.TypeMismatch;
                 }
-                try ptr.object.put(m.property, value);
+                try obj_val.object.put(m.property, value);
             } else if (obj_val == .object) {
                 try obj_val.object.put(m.property, value);
             } else {
+                try writer.print("Expected assignee to be an object or reference to an object but found {s}\n", .{@tagName(obj_val)});
                 return error.TypeMismatch;
             }
             return value;
@@ -79,13 +83,16 @@ pub fn assignment(a: *ast.AssignmentExpr, env: *Environment) !Value {
             const key_val = try evalExpr(c.property, env);
 
             if (obj_val != .object or key_val != .string) {
-                return error.TypeMismatch;
+                try writer.print("Computed expressions require an object value and string key but found pair: ({s}, {s})\n", .{@tagName(obj_val), @tagName(key_val)});
             }
 
             try obj_val.object.put(key_val.string, value);
             return value;
         },
-        else => return error.InvalidAssignmentTarget,
+        else => {
+            try writer.print("Assignment expressions work only on symbol, member and computed exprs; found {s}\n", .{@tagName(a.assignee.*)});
+            return error.InvalidAssignmentTarget;
+        },
     }
 }
 

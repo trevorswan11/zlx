@@ -54,7 +54,6 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .repl = true,
         };
     } else if (raw_args.len >= 3) optional_arg: {
-
         if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run") and !std.mem.eql(u8, raw_args[1], "dump")) {
             break :optional_arg;
         }

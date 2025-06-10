@@ -20,7 +20,11 @@ pub fn parseStmt(p: *parser.Parser) !ast.Stmt {
 
 pub fn parseExpressionStmt(p: *parser.Parser) !ast.Stmt {
     const expression = try expr.parseExpr(p, binding.DEFAULT_BP);
-    if (!p.repl) {_ = try p.expect(.SEMI_COLON);} else {_ = p.advance();}
+    if (!p.repl) {
+        _ = try p.expect(.SEMI_COLON);
+    } else {
+        _ = p.advance();
+    }
 
     return .{
         .expression = .{
@@ -83,7 +87,11 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
         return error.ExplicitVarDeclParse;
     }
 
-    if (!p.repl) {_ = try p.expect(.SEMI_COLON);} else {_ = p.advance();}
+    if (!p.repl) {
+        _ = try p.expect(.SEMI_COLON);
+    } else {
+        _ = p.advance();
+    }
 
     if (is_constant and assignment_value == null) {
         try stderr.print("Cannot define constant variable without providing default value at token {d}/{d} @ Line {d}\n", .{
@@ -269,7 +277,11 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
         import_from = import_name;
     }
 
-    if (!p.repl) {_ = try p.expect(.SEMI_COLON);} else {_ = p.advance();}
+    if (!p.repl) {
+        _ = try p.expect(.SEMI_COLON);
+    } else {
+        _ = p.advance();
+    }
     return .{
         .import_stmt = .{
             .name = import_name,

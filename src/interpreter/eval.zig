@@ -13,6 +13,7 @@ const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
 pub fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
+    const writer = getWriterErr();
     switch (op.kind) {
         .PLUS => return try binary_handlers.plus(op, lhs, rhs),
         .MINUS => return try binary_handlers.minus(op, lhs, rhs),
@@ -27,7 +28,10 @@ pub fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
         .PERCENT => return try binary_handlers.mod(op, lhs, rhs),
         .AND => return try binary_handlers.bool_and(op, lhs, rhs),
         .OR => return try binary_handlers.bool_or(op, lhs, rhs),
-        else => return error.UnknownBinaryOperator,
+        else => {
+            try writer.print("Operator {s} is not a valid binary operator\n", .{@tagName(op.kind)});
+            return error.UnknownBinaryOperator;
+        },
     }
 }
 
