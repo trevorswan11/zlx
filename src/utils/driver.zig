@@ -49,7 +49,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     const raw_args = try std.process.argsAlloc(allocator);
     defer allocator.free(raw_args);
 
-    if (std.mem.eql(u8, raw_args[1], "repl")) {
+    if (raw_args.len == 1) {
         return .{
             .repl = true,
         };
@@ -283,7 +283,7 @@ pub fn startRepl(allocator: std.mem.Allocator) !void {
         }
 
         const parser = @import("../parser/parser.zig");
-        const block = parser.parse(env.allocator, trimmed) catch |err| {
+        const block = parser.parseREPL(env.allocator, trimmed) catch |err| {
             try stderr.print("Parse Error: {!}\n", .{err});
             continue;
         };

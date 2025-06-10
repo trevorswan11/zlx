@@ -13,14 +13,16 @@ pub const Parser = struct {
     tokens: std.ArrayList(token.Token),
     pos: usize,
     allocator: std.mem.Allocator,
+    repl: bool = false,
 
-    pub fn init(allocator: std.mem.Allocator, tokens: std.ArrayList(token.Token)) !Self {
+    pub fn init(allocator: std.mem.Allocator, tokens: std.ArrayList(token.Token), repl: bool) !Self {
         try lus.createTokenLookups(allocator);
         try types.createTypeTokenLookups(allocator);
         return Self{
             .tokens = tokens,
             .pos = 0,
             .allocator = allocator,
+            .repl = repl,
         };
     }
 
@@ -129,7 +131,31 @@ pub fn parse(allocator: std.mem.Allocator, source: []const u8) !*ast.Stmt {
     const parseStmt = @import("stmt.zig").parseStmt;
     var body = std.ArrayList(*ast.Stmt).init(allocator);
     const tokens = try tokenizer.tokenize(allocator, source);
-    var parser = try Parser.init(allocator, tokens);
+    var parser = try Parser.init(allocator, tokens, false);
+    defer parser.deinit();
+
+    while (parser.hasTokens()) {
+        const stmt = try parseStmt(&parser);
+        const stmt_box = try allocator.create(ast.Stmt);
+        stmt_box.* = stmt;
+        try body.append(stmt_box);
+    }
+
+    const stmt_ptr = try allocator.create(ast.Stmt);
+    const block: ast.Stmt = .{
+        .block = .{
+            .body = body,
+        },
+    };
+    stmt_ptr.* = block;
+    return stmt_ptr;
+}
+
+pub fn parseREPL(allocator: std.mem.Allocator, source: []const u8) !*ast.Stmt {
+    const parseStmt = @import("stmt.zig").parseStmt;
+    var body = std.ArrayList(*ast.Stmt).init(allocator);
+    const tokens = try tokenizer.tokenize(allocator, source);
+    var parser = try Parser.init(allocator, tokens, true);
     defer parser.deinit();
 
     while (parser.hasTokens()) {
