@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
@@ -12,16 +13,17 @@ const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
 
-var sys_env: std.process.EnvMap = undefined;
+var process_env: std.process.EnvMap = undefined;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
-    sys_env = std.process.EnvMap.init(allocator);
+    process_env = std.process.EnvMap.init(allocator);
 
     try pack(&map, "args", argsHandler);
     try pack(&map, "getenv", getenvHandler);
     try pack(&map, "setenv", setenvHandler);
     try pack(&map, "unsetenv", unsetenvHandler);
+    try pack(&map, "run", runHandler);
 
     return .{
         .object = map,
@@ -52,12 +54,11 @@ fn getenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 
     const key = try eval.evalExpr(args[0], env);
     if (key != .string) {
-        try writer_err.print("sys.getenv(key) expects a string argument\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try key.toString(env.allocator)});
+        try writer_err.print("sys.getenv(key) expects a string argument, got a(n) {s}\n", .{@tagName(key)});
         return error.TypeMismatch;
     }
 
-    const val = sys_env.get(key.string) orelse return .nil;
+    const val = process_env.get(key.string) orelse return .nil;
     return .{
         .string = val,
     };
@@ -80,7 +81,7 @@ fn setenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
         return error.TypeMismatch;
     }
 
-    try sys_env.put(key.string, val.string);
+    try process_env.put(key.string, val.string);
     return .nil;
 }
 
@@ -93,13 +94,86 @@ fn unsetenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
 
     const key = try eval.evalExpr(args[0], env);
     if (key != .string) {
-        try writer_err.print("sys.unsetenv(key) expects a string argument\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try key.toString(env.allocator)});
+        try writer_err.print("sys.unsetenv(key) expects a string argument, got a(n) {s}\n", .{@tagName(key)});
         return error.TypeMismatch;
     }
 
-    sys_env.remove(key.string);
+    process_env.remove(key.string);
     return .nil;
+}
+
+fn runHandler(
+    allocator: std.mem.Allocator,
+    args: []const *ast.Expr,
+    env: *interpreter.Environment,
+) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("sys.run(arr) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const list_val = try eval.evalExpr(args[0], env);
+    if (list_val != .array) {
+        try writer_err.print("sys.run(arr) expects an array argument, got {s}\n", .{@tagName(list_val)});
+        return error.TypeMismatch;
+    }
+
+    const argv = list_val.array;
+    var arg_list = std.ArrayList([]const u8).init(allocator);
+
+    // Get the users shell and prepend to args
+    const shell = if (builtin.os.tag == .windows)
+        &[_][]const u8{ "cmd.exe", "/C" }
+    else
+        &[_][]const u8{ "sh", "-c" };
+    for (shell) |preprocess| {
+        try arg_list.append(preprocess);
+    }
+
+    // Append the rest of the args
+    for (argv.items, 0..) |item, idx| {
+        if (item != .string) {
+            try writer_err.print("sys.run(arr) expects an array with all string arguments, got {s} @ index {d}\n", .{ @tagName(list_val), idx });
+            return error.TypeMismatch;
+        }
+        try arg_list.append(item.string);
+    }
+
+    var stdout_buf = std.ArrayList(u8).init(allocator);
+    var stderr_buf = std.ArrayList(u8).init(allocator);
+
+    // Combine the system and local environments to run the command
+    var process_env_itr= process_env.iterator();
+    const system_env = try std.process.getEnvMap(allocator);
+    var system_env_itr = system_env.iterator();
+
+    var tmp_env = std.process.EnvMap.init(allocator);
+    while (process_env_itr.next()) |next| {
+        try tmp_env.put(next.key_ptr.*, next.value_ptr.*);
+    }
+    while (system_env_itr.next()) |next| {
+        try tmp_env.put(next.key_ptr.*, next.value_ptr.*);
+    }
+
+    const result = std.process.Child.run(.{
+        .allocator = allocator,
+        .argv = arg_list.items,
+        .env_map = &tmp_env,
+    }) catch |err| {
+        try writer_err.print("Failed to run subprocess: {!}\n", .{err});
+        return .nil;
+    };
+
+    try stdout_buf.appendSlice(result.stdout);
+    try stderr_buf.appendSlice(result.stderr);
+
+    var map = std.StringHashMap(Value).init(allocator);
+    try map.put("exit_code", .{ .number = @floatFromInt(result.term.Exited) });
+    try map.put("stdout", .{ .string = try stdout_buf.toOwnedSlice() });
+    try map.put("stderr", .{ .string = try stderr_buf.toOwnedSlice() });
+
+    return Value{ .object = map, };
 }
 
 // === TESTING ===

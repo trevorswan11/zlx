@@ -31,8 +31,7 @@ fn expectStringArgs(
     for (args) |arg| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
-            try writer_err.print("path module: expected a string\n", .{});
-            try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+            try writer_err.print("path module: expected a string, got a {s}\n", .{@tagName(val)});
             return error.TypeMismatch;
         }
         try result.append(val.string);
@@ -66,8 +65,7 @@ fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     for (args) |arg| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
-            try writer_err.print("path.join(str, str) expects only string arguments\n", .{});
-            try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+            try writer_err.print("path.join(str, str) expects only string arguments, got a(n) {s}\n", .{@tagName(val)});
             return error.TypeMismatch;
         }
         try parts.append(val.string);

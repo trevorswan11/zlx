@@ -22,7 +22,8 @@ fn expectArrayRef(args: []const *ast.Expr, env: *Environment) !*std.ArrayList(Va
     const val = try eval.evalExpr(args[0], env);
     if (val != .reference or val.reference.* != .array) {
         try writer_err.print("array module: expression evaluation returned a value that is not a reference to an array\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        if (val == .reference) {try writer_err.print("  Found a reference to a(n) {s}\n", .{@tagName(val)});}
+        else {try writer_err.print("  Found a(n) {s}\n", .{@tagName(val.deref())});}
         return error.TypeMismatch;
     }
 
@@ -81,8 +82,7 @@ fn insertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     const index_val = try eval.evalExpr(args[1], env);
     const value = try eval.evalExpr(args[2], env);
     if (index_val != .number) {
-        try writer_err.print("Array index value must be a number\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try index_val.toString(env.allocator)});
+        try writer_err.print("Array index value must be a number, got a(n) {s}\n", .{@tagName(index_val)});
         return error.TypeMismatch;
     }
 
@@ -106,8 +106,7 @@ fn removeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 
     const index_val = try eval.evalExpr(args[1], env);
     if (index_val != .number) {
-        try writer_err.print("Array index value must be a number\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try index_val.toString(env.allocator)});
+        try writer_err.print("Array index value must be a number, got a(n) {s}\n", .{@tagName(index_val)});
         return error.TypeMismatch;
     }
 
@@ -142,8 +141,7 @@ fn getHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 
     const index_val = try eval.evalExpr(args[1], env);
     if (index_val != .number) {
-        try writer_err.print("Array index value must be a number\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try index_val.toString(env.allocator)});
+        try writer_err.print("Array index value must be a number, got a(n) {s}\n", .{@tagName(index_val)});
         return error.TypeMismatch;
     }
 
@@ -165,15 +163,13 @@ fn setHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 
     const ref_val = try eval.evalExpr(args[0], env);
     if (ref_val != .reference or ref_val.reference.* != .array) {
-        try writer_err.print("Expression evaluation returned a value that is not a reference to an array\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try ref_val.toString(env.allocator)});
+        try writer_err.print("Expression evaluation returned a value that is not a reference to an array, got a(n) {s}\n", .{@tagName(ref_val)});
         return error.TypeMismatch;
     }
 
     const index_val = try eval.evalExpr(args[1], env);
     if (index_val != .number) {
-        try writer_err.print("Array index value must be a number\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try index_val.toString(env.allocator)});
+        try writer_err.print("Array index value must be a number, got a(n) {s}\n", .{@tagName(index_val)});
         return error.TypeMismatch;
     }
 
@@ -199,8 +195,7 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 
     var val = try eval.evalExpr(args[0], env);
     if (val != .array or (val == .reference and val.reference.* != .array)) {
-        try writer_err.print("array.alice(...) requires the first argument to be an array or a reference to one\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("array.alice(...) requires the first argument to be an array or a reference to one, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
     val = if (val == .reference) val.deref() else val;

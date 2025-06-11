@@ -21,8 +21,7 @@ fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .number) {
-        try writer_err.print("math module: expected a number\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("math module: expected a number, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 

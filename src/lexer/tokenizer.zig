@@ -271,7 +271,7 @@ pub fn tokenize(allocator: std.mem.Allocator, source: []const u8) !std.ArrayList
         }
 
         if (!matched) {
-            try writer_err.print("Slice {c}.. at position {d} was not recognized as a valid token\n", .{ lex.source[lex.pos], lex.pos });
+            try writer_err.print("Character {c} at position {d} was not recognized as a valid token @ Line {d}\n", .{ lex.source[lex.pos], lex.pos, lex.line });
             return error.UnrecognizedToken;
         }
     }

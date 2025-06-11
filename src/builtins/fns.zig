@@ -49,8 +49,7 @@ pub fn len(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Va
             .number = @floatFromInt(s.len),
         },
         else => {
-            try writer_err.print("len(...): only operates on strings and arrays\n", .{});
-            try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+            try writer_err.print("len(...): only operates on strings and arrays, got a(n) {s}\n", .{@tagName(val)});
             return error.TypeMismatch;
         },
     };
@@ -154,8 +153,7 @@ pub fn to_number(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .string) {
-        try writer_err.print("to_number(...) expects a string argument\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("to_number(...) expects a string argument, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 

@@ -21,8 +21,7 @@ fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .string) {
-        try writer_err.print("string module: expected a string\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("string module: expected a string, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 

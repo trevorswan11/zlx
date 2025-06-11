@@ -79,8 +79,7 @@ fn choiceHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 
     const val = try interpreter.eval.evalExpr(args[0], env);
     if (val != .array) {
-        try writer_err.print("random.choice(arr) expects an array argument\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("random.choice(arr) expects an array argument, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 

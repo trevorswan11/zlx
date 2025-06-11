@@ -21,8 +21,7 @@ fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .string) {
-        try writer_err.print("debug module: expected a string\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("debug module: expected a string, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 
@@ -51,8 +50,7 @@ fn assertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 
     const condition_val = try eval.evalExpr(args[0], env);
     if (condition_val != .boolean) {
-        try writer_err.print("debug.assert(condition, optional_message) expects a boolean condition as the first argument\n", .{});
-        try writer_err.print("  Found: {s}\n", .{try condition_val.toString(env.allocator)});
+        try writer_err.print("debug.assert(condition, optional_message) expects a boolean condition as the first argument, got a(n) {s}\n", .{@tagName(condition_val)});
         return error.TypeMismatch;
     }
 
@@ -60,8 +58,7 @@ fn assertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
         if (args.len == 2) {
             const msg_val = try eval.evalExpr(args[1], env);
             if (msg_val != .string) {
-                try writer_err.print("debug.assert(condition, message) expects a string as the second argument\n", .{});
-                try writer_err.print("  Found: {s}\n", .{@tagName(msg_val)});
+                try writer_err.print("debug.assert(condition, message) expects a string as the second argument, got a(n) {s}\n", .{@tagName(msg_val)});
                 return error.TypeMismatch;
             }
             try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
@@ -88,8 +85,7 @@ fn assertEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
         if (args.len == 3) {
             const msg_val = try eval.evalExpr(args[2], env);
             if (msg_val != .string) {
-                try writer_err.print("debug.assert(value_1, value_2, message) expects a string as the third argument\n", .{});
-                try writer_err.print("  Found: {s}\n", .{@tagName(msg_val)});
+                try writer_err.print("debug.assert(value_1, value_2, message) expects a string as the third argument, got a(n) {s}\n", .{@tagName(msg_val)});
                 return error.TypeMismatch;
             }
             try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
