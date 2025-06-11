@@ -2,10 +2,11 @@ const std = @import("std");
 const token = @import("../lexer/token.zig");
 const ast = @import("ast.zig");
 const lus = @import("lookups.zig");
+const parser = @import("parser.zig");
+const driver = @import("../utils/driver.zig");
 
 const TokenKind = token.TokenKind;
-const Parser = @import("parser.zig").Parser;
-
+const Parser = parser.Parser;
 const BindingPower = lus.BindingPower;
 const binding = lus.binding;
 
@@ -67,26 +68,29 @@ pub fn createTypeTokenLookups(allocator: std.mem.Allocator) !void {
 // === Type Parser ===
 pub fn parseType(p: *Parser, bp: BindingPower) !ast.Type {
     const token_kind = p.currentTokenKind();
+    const writer_err = driver.getWriterErr();
 
-    const nud_fn = type_nud_lu.get(token_kind) orelse
-        @panic(std.fmt.allocPrintZ(p.allocator, "Type Parse Error: NUD Handler expected for token {s} ({d}/{d})\n", .{
+    const nud_fn = type_nud_lu.get(token_kind) orelse {
+        try writer_err.print("Type Parse Error: NUD Handler expected for token {s} ({d}/{d})\n", .{
             try token.tokenKindString(p.allocator, token_kind),
             p.pos,
             p.tokens.items.len,
-        }) catch unreachable);
-
+        });
+        return error.ExpectedNUDHandler;
+    };
     var left = try nud_fn(p);
 
     while ((type_bp_lu.get(p.currentTokenKind()) orelse binding.DEFAULT_BP).left > bp.right) {
         const next_kind = p.currentTokenKind();
 
-        const led_fn = type_led_lu.get(next_kind) orelse
-            @panic(std.fmt.allocPrintZ(p.allocator, "Type Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
+        const led_fn = type_led_lu.get(next_kind) orelse {
+            try writer_err.print("Type Parse Error: LED Handler expected for token {s} ({d}/{d})\n", .{
                 try token.tokenKindString(p.allocator, next_kind),
                 p.pos,
                 p.tokens.items.len,
-            }) catch unreachable);
-
+            });
+            return error.ExpectedLEDHandler;
+        };
         left = try led_fn(p, left, bp);
     }
 

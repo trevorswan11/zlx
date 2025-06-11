@@ -1,6 +1,9 @@
 const std = @import("std");
 
-const TokenKind = @import("../lexer/token.zig").TokenKind;
+const token = @import("../lexer/token.zig");
+const driver = @import("driver.zig");
+
+const TokenKind = token.TokenKind;
 
 const colors = struct {
     pub const reset = "\x1b[0m";
@@ -45,6 +48,9 @@ fn colorForKind(kind: TokenKind) []const u8 {
         .GREATER_EQUALS,
         .AND,
         .OR,
+        .BITWISE_AND,
+        .BITWISE_OR,
+        .BITWISE_XOR,
         .PLUS,
         .MINUS,
         .STAR,
@@ -83,7 +89,7 @@ fn colorForKind(kind: TokenKind) []const u8 {
 pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
     const tokenize = @import("../lexer/tokenizer.zig").tokenize;
     const tokens = try tokenize(allocator, source);
-    const stdout = std.io.getStdOut().writer();
+    const writer_out = driver.getWriterOut();
 
     var i: usize = 0;
     var last: usize = 0;
@@ -94,7 +100,7 @@ pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
 
         // Print skipped characters between tokens
         if (tok.start > last) {
-            try stdout.writeAll(source[last..tok.start]);
+            try writer_out.writeAll(source[last..tok.start]);
         }
 
         // Lookahead to check if identifier part of a function call
@@ -103,7 +109,7 @@ pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
 
         const color = if (is_function_call) colors.function else colorForKind(tok.kind);
 
-        try stdout.print("{s}{s}{s}", .{
+        try writer_out.print("{s}{s}{s}", .{
             color,
             source[tok.start..tok.end],
             colors.reset,
@@ -114,6 +120,6 @@ pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
 
     // Print any remaining trailing source
     if (last < source.len) {
-        try stdout.writeAll(source[last..]);
+        try writer_out.writeAll(source[last..]);
     }
 }

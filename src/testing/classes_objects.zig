@@ -14,7 +14,7 @@ test "methods" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\class Greeter {
@@ -61,7 +61,7 @@ test "objects" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let obj1 = { foo: 123 };

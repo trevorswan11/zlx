@@ -14,7 +14,7 @@ test "types" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\const foo = 10;
@@ -46,7 +46,7 @@ test "assignment" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     // Good use of constants and variable declarations
     var env_pass = testing.Environment.init(allocator, null);
@@ -104,7 +104,7 @@ test "multiline_string" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let s = """This is
@@ -139,7 +139,7 @@ test "match_stmt" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let x = 3;
@@ -180,7 +180,7 @@ test "match_expr" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let x = 3;

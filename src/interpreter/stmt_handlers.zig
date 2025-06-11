@@ -4,6 +4,7 @@ const ast = @import("../parser/ast.zig");
 const interpreter = @import("interpreter.zig");
 const builtins = @import("../builtins/builtins.zig");
 const eval = @import("eval.zig");
+const driver = @import("../utils/driver.zig");
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
@@ -26,7 +27,7 @@ pub fn variable(v: *ast.VarDeclarationStmt, env: *Environment) !Value {
                     },
                 };
                 if (v.constant) {
-                    try env.defineConstant(v.identifier, to_put);
+                    try env.declareConstant(v.identifier, to_put);
                 } else {
                     try env.define(v.identifier, to_put);
                 }
@@ -41,7 +42,7 @@ pub fn variable(v: *ast.VarDeclarationStmt, env: *Environment) !Value {
                     },
                 };
                 if (v.constant) {
-                    try env.defineConstant(v.identifier, to_put);
+                    try env.declareConstant(v.identifier, to_put);
                 } else {
                     try env.define(v.identifier, to_put);
                 }
@@ -50,7 +51,7 @@ pub fn variable(v: *ast.VarDeclarationStmt, env: *Environment) !Value {
         }
     }
     if (v.constant) {
-        try env.defineConstant(v.identifier, val);
+        try env.declareConstant(v.identifier, val);
     } else {
         try env.define(v.identifier, val);
     }
@@ -74,7 +75,9 @@ pub fn block(b: *ast.BlockStmt, env: *Environment) !Value {
 
 pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
     const cond = try evalExpr(i.condition, env);
+    const writer_err = driver.getWriterErr();
     if (cond != .boolean) {
+        try writer_err.print("Conditional statement requires a boolean condition, got {s}\n", .{@tagName(cond)});
         return error.TypeMismatch;
     }
 
@@ -89,7 +92,9 @@ pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
 
 pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
     const iterable = try evalExpr(f.iterable, env);
+    const writer_err = driver.getWriterErr();
     if (iterable != .array) {
+        try writer_err.print("Can only iterate over array values, got {s}\n", .{@tagName(iterable)});
         return error.TypeMismatch;
     }
 
@@ -117,9 +122,11 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
 }
 
 pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
     while (true) {
         const cond = try evalExpr(w.condition, env);
         if (cond != .boolean) {
+            try writer_err.print("While loop requires a boolean condition, got {s}\n", .{@tagName(cond)});
             return error.TypeMismatch;
         }
         if (!cond.boolean) {
@@ -190,17 +197,17 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
     for (builtins.builtin_modules) |builtin| {
         if (std.mem.eql(u8, builtin.name, i.from)) {
             const module_value = try builtin.loader(allocator);
-            try env.defineConstant(i.name, module_value);
+            try env.declareConstant(i.name, module_value);
             return .nil;
         }
     }
 
     const path = i.from;
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
 
     const file = std.fs.cwd().openFile(path, .{}) catch |err| {
-        try writer.print("Error Opening Import: {s} from {s}\n", .{ i.name, i.from });
-        try writer.print("{!}\n", .{err});
+        try writer_err.print("Error Opening Import: {s} from {s}\n", .{ i.name, i.from });
+        try writer_err.print("{!}\n", .{err});
         return err;
     };
     defer file.close();
@@ -274,7 +281,7 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
     }
 
     if (!recursive_flag and !std.mem.eql(u8, i.name, "*") and !decl_names.contains(i.name)) {
-        try writer.print("Identifier \"{s}\" is undefined in the requested input file.\n", .{i.name});
+        try writer_err.print("Identifier \"{s}\" is undefined in the requested input file.\n", .{i.name});
         return error.UndefinedIdentifier;
     }
 

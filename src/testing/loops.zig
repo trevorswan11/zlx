@@ -14,7 +14,7 @@ test "foreach" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let nums = [1, 2, 3];
@@ -56,7 +56,7 @@ test "while" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let i = 0;
@@ -92,7 +92,7 @@ test "break" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let i = 0;
@@ -131,7 +131,7 @@ test "continue" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let i = 0;

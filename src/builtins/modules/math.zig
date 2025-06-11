@@ -2,24 +2,27 @@ const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
+const driver = @import("../../utils/driver.zig");
+const builtins = @import("../builtins.zig");
 const eval = interpreter.eval;
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
-const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
-const pack = @import("../builtins.zig").pack;
+const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
+
+const pack = builtins.pack;
 
 fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 1) {
-        try writer.print("math module: expected 1 argument but got {d}\n", .{args.len});
+        try writer_err.print("math module: expected 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .number) {
-        try writer.print("math module: expected a number\n", .{});
-        try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("math module: expected a number\n", .{});
+        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -27,18 +30,18 @@ fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
 }
 
 fn expectTwoNumbers(args: []const *ast.Expr, env: *Environment) !struct { f64, f64 } {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 2) {
-        try writer.print("math module: expected 2 arguments, got {d}\n", .{args.len});
+        try writer_err.print("math module: expected 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const lhs = try eval.evalExpr(args[0], env);
     const rhs = try eval.evalExpr(args[1], env);
     if (lhs != .number or rhs != .number) {
-        try writer.print("math module: expected both arguments to be numbers\n", .{});
-        try writer.print("  Left: {s}\n", .{try lhs.toString(env.allocator)});
-        try writer.print("  Right: {s}\n", .{try rhs.toString(env.allocator)});
+        try writer_err.print("math module: expected both arguments to be numbers\n", .{});
+        try writer_err.print("  Left: {s}\n", .{try lhs.toString(env.allocator)});
+        try writer_err.print("  Right: {s}\n", .{try rhs.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -217,7 +220,7 @@ test "math_builtin" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    eval.setWriters(writer);
+    driver.setWriters(writer);
 
     const source =
         \\import math;

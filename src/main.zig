@@ -10,15 +10,18 @@ const readFile = driver.readFile;
 const printStmt = driver.printStmt;
 
 pub fn main() !void {
-    const t0 = std.time.nanoTimestamp();
-    var t1: i128 = undefined;
-    var t2: i128 = undefined;
+    const start = std.time.nanoTimestamp();
+    var args: i128 = undefined;
+    var parse: i128 = undefined;
+    var work: i128 = undefined;
 
     // Define stdout and stderr for output piping
     const stdout = std.io.getStdOut().writer();
     const stderr = std.io.getStdErr().writer();
-    interpreter.eval.setWriterOut(stdout.any());
-    interpreter.eval.setWriterErr(stderr.any());
+    driver.setWriterOut(stdout.any());
+    driver.setWriterErr(stderr.any());
+    const writer_out = driver.getWriterOut();
+    const writer_err = driver.getWriterErr();
 
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     const allocator = arena.allocator();
@@ -26,87 +29,100 @@ pub fn main() !void {
 
     const input = getArgs(allocator) catch |err| switch (err) {
         error.MalformedArgs => {
-            try stderr.print("Usage: zlx <run|ast|dump> <filepath> <time?> <-v?>\n", .{});
+            try writer_err.print("Usage: zlx <run|ast|dump> <filepath> <time?> <-v?>\n", .{});
             return;
         },
-        else => return,
+        else => {
+            try writer_err.print("Error parsing command line args: {!}\n", .{err});
+            return;
+        },
     };
 
     // Enter repl mode if requested
     if (input.repl) {
-        return try driver.startRepl(allocator);
+        return try driver.repl(allocator);
     }
 
     // Gather the file contents
     const file_contents = readFile(allocator, input.path) catch |err| {
-        try stderr.print("Error reading file contents: {!}\n", .{err});
-        t1 = std.time.nanoTimestamp();
+        try writer_err.print("Error reading file contents: {!}\n", .{err});
+        parse = std.time.nanoTimestamp();
         if (input.time) {
-            try stdout.print("Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+            try writer_out.print("Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(parse - start)) / 1_000_000.0});
         }
         return;
     };
     defer allocator.free(file_contents);
+    args = std.time.nanoTimestamp();
 
     // Parse the file
     const block = parser.parse(allocator, file_contents) catch |err| switch (err) {
         else => {
-            try stderr.print("Error parsing file: {!}", .{err});
-            t1 = std.time.nanoTimestamp();
+            try writer_err.print("Error parsing file: {!}", .{err});
+            parse = std.time.nanoTimestamp();
             if (input.time) {
-                try stdout.print("\nParsing failed in {d} ms", .{@as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0});
+                try writer_out.print("\nParsing failed in {d} ms", .{@as(f128, @floatFromInt(parse - start)) / 1_000_000.0});
             }
             return;
         },
     };
     defer allocator.destroy(block);
-
-    var env = interpreter.Environment.init(allocator, null);
-    defer env.deinit();
+    parse = std.time.nanoTimestamp();
 
     if (input.verbose) {
         if (input.dump) {
-            try stdout.print("Dumping AST...\n", .{});
+            try writer_out.print("Dumping AST...\n", .{});
         }
         printStmt(block, allocator) catch |err| {
-            try stderr.print("Error parsing main block statement: {!}\n", .{err});
+            try writer_err.print("Error parsing main block statement: {!}\n", .{err});
         };
     }
-    t1 = std.time.nanoTimestamp();
 
     // Successful parsing
+    var env = interpreter.Environment.init(allocator, null);
+    defer env.deinit();
+
     if (input.run) {
         if (input.verbose) {
-            try stdout.print("Parsing completed without error\n", .{});
-            try stdout.print("Evaluating target...\n", .{});
+            try writer_out.print("Parsing completed without error\n", .{});
+            try writer_out.print("Evaluating target...\n", .{});
         }
         const number = interpreter.evalStmt(block, &env) catch |err| blk: {
-            try stderr.print("Statement Evaluation Error: {!}\n", .{err});
+            try writer_err.print("Statement Evaluation Error: {!}\n", .{err});
             break :blk .nil;
         };
         if (number != .nil) {
-            try stdout.print("Statement Evaluation Yielded: {s}\n", .{try number.toString(allocator)});
+            try writer_out.print("Statement Evaluation Yielded: {s}\n", .{try number.toString(allocator)});
         }
     } else if (input.dump) {
         if (input.verbose) {
-            try stdout.print("Dumping file contents...\n", .{});
+            try writer_out.print("Dumping file contents...\n", .{});
         }
         try syntax.highlight(allocator, file_contents);
     } else {
-        try stdout.print("Parsing completed without error", .{});
+        try writer_out.print("Parsing completed without error", .{});
     }
-    t2 = std.time.nanoTimestamp();
+    work = std.time.nanoTimestamp();
     if (input.time) {
-        const parsing = @as(f128, @floatFromInt(t1 - t0)) / 1_000_000.0;
-        const interpreting = @as(f128, @floatFromInt(t2 - t1)) / 1_000_000.0;
-        const process = @as(f128, @floatFromInt(t2 - t0)) / 1_000_000.0;
+        const arguments = @as(f128, @floatFromInt(args - start)) / 1_000_000.0;
+        const parsing = @as(f128, @floatFromInt(parse - args)) / 1_000_000.0;
+        const working = @as(f128, @floatFromInt(work - parse)) / 1_000_000.0;
+        const process = @as(f128, @floatFromInt(work - start)) / 1_000_000.0;
         if (input.run or input.dump) {
-            try stdout.print("\n", .{});
+            try writer_out.print("\n", .{});
         }
-        try stdout.print("Timing:\n", .{});
-        try stdout.print("  Parsing took:       {d} ms\n", .{parsing});
-        try stdout.print("  Interpreting took:  {d} ms\n", .{interpreting});
-        try stdout.print("  Process took:       {d} ms", .{process});
+        try writer_out.print("Timing:\n", .{});
+        try writer_out.print("  Args Parsing took:   {d} ms\n", .{arguments});
+        try writer_out.print("  File Parsing took:   {d} ms\n", .{parsing});
+        if (input.run) {
+            try writer_out.print("  Interpreting took:   {d} ms\n", .{working});
+        }
+        if (input.verbose) {
+            try writer_out.print("  Verbose dump took:   {d} ms\n", .{working});
+        } else if (input.dump) {
+            try writer_out.print("  Syntax dump took:    {d} ms\n", .{working});
+        }
+        try writer_out.print("  Full Process took:   {d} ms", .{process});
     }
 }
 

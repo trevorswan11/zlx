@@ -1,14 +1,14 @@
 const std = @import("std");
+pub const testing = std.testing;
 
 pub const parser = @import("../parser/parser.zig");
 pub const ast = @import("../parser/ast.zig");
 pub const interpreter = @import("../interpreter/interpreter.zig");
+pub const driver = @import("../utils/driver.zig");
 
 pub const eval = interpreter.eval;
 pub const Environment = interpreter.Environment;
 pub const Value = interpreter.Value;
-
-pub const testing = std.testing;
 
 pub const expect = testing.expect;
 pub const expectEqual = testing.expectEqual;
@@ -39,7 +39,7 @@ test "ast_check" {
     var output_buffer = std.ArrayList(u8).init(alloc);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    eval.setWriters(writer);
+    driver.setWriters(writer);
 
     const source =
         \\import fs;

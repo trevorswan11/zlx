@@ -2,24 +2,27 @@ const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
+const driver = @import("../../utils/driver.zig");
+const builtins = @import("../builtins.zig");
 const eval = interpreter.eval;
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
-const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
-const pack = @import("../builtins.zig").pack;
+const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
+
+const pack = builtins.pack;
 
 fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 1) {
-        try writer.print("debug module: expected 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("debug module: expected 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .string) {
-        try writer.print("debug module: expected a string\n", .{});
-        try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("debug module: expected a string\n", .{});
+        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -40,16 +43,16 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn assertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len == 0 or args.len > 2) {
-        try writer.print("debug.assert(...) expects 1 or 2 arguments, got {d}\n", .{args.len});
+        try writer_err.print("debug.assert(condition, optional_message) expects 1 or 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const condition_val = try eval.evalExpr(args[0], env);
     if (condition_val != .boolean) {
-        try writer.print("debug.assert(...) expects a boolean condition as the first argument\n", .{});
-        try writer.print("  Found: {s}\n", .{try condition_val.toString(env.allocator)});
+        try writer_err.print("debug.assert(condition, optional_message) expects a boolean condition as the first argument\n", .{});
+        try writer_err.print("  Found: {s}\n", .{try condition_val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -57,13 +60,13 @@ fn assertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
         if (args.len == 2) {
             const msg_val = try eval.evalExpr(args[1], env);
             if (msg_val != .string) {
-                try writer.print("debug.assert(...) expects a string as the second argument\n", .{});
-                try writer.print("  Found: {s}\n", .{try msg_val.toString(env.allocator)});
+                try writer_err.print("debug.assert(condition, message) expects a string as the second argument\n", .{});
+                try writer_err.print("  Found: {s}\n", .{@tagName(msg_val)});
                 return error.TypeMismatch;
             }
-            try writer.print("Assertion failed: {s}\n", .{msg_val.string});
+            try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
         } else {
-            try writer.print("Assertion failed.\n", .{});
+            try writer_err.print("Assertion failed.\n", .{});
         }
         return error.AssertionFailed;
     }
@@ -72,9 +75,9 @@ fn assertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 }
 
 fn assertEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
-    if (args.len != 2) {
-        try writer.print("debug.assertEqual(...) expects exactly 2 arguments, got {d}\n", .{args.len});
+    const writer_err = driver.getWriterErr();
+    if (args.len == 0 or args.len > 3) {
+        try writer_err.print("debug.assertEqual(value_1, value_2, optional_message) expects 2 or 3 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -82,9 +85,21 @@ fn assertEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
     const b = try eval.evalExpr(args[1], env);
 
     if (!a.eql(b)) {
-        try writer.print("Assertion failed: values not equal.\n", .{});
-        try writer.print("  Left: {}\n", .{a});
-        try writer.print("  Right: {}\n", .{b});
+        if (args.len == 3) {
+            const msg_val = try eval.evalExpr(args[2], env);
+            if (msg_val != .string) {
+                try writer_err.print("debug.assert(value_1, value_2, message) expects a string as the third argument\n", .{});
+                try writer_err.print("  Found: {s}\n", .{@tagName(msg_val)});
+                return error.TypeMismatch;
+            }
+            try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
+            try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+            try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
+        } else {
+            try writer_err.print("Assertion failed.\n", .{});
+            try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+            try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
+        }
         return error.AssertionFailed;
     }
 
@@ -92,9 +107,9 @@ fn assertEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
 }
 
 fn assertNotEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 2) {
-        try writer.print("debug.assertNotEqual(...) expects exactly 2 arguments, got {d}\n", .{args.len});
+        try writer_err.print("debug.assertNotEqual(...) expects exactly 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -102,8 +117,8 @@ fn assertNotEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *En
     const b = try eval.evalExpr(args[1], env);
 
     if (a.eql(b)) {
-        try writer.print("Assertion failed: values unexpectedly equal.\n", .{});
-        try writer.print("  Value: {}\n", .{a});
+        try writer_err.print("Assertion failed: values unexpectedly equal.\n", .{});
+        try writer_err.print("  Value: {s}\n", .{try a.toString(env.allocator)});
         return error.AssertionFailed;
     }
 
@@ -111,15 +126,15 @@ fn assertNotEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *En
 }
 
 fn failHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 0 or args.len != 1) {
-        try writer.print("debug.fail(...) expects either 1 or 2 arguments, got {d}\n", .{args.len});
+        try writer_err.print("debug.fail(...) expects either 1 or 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     if (args.len == 1) {
         const message = try expectStringArg(args, env);
-        try writer.print("{s}\n", .{message});
+        try writer_err.print("{s}\n", .{message});
     }
     return error.Fail;
 }
@@ -139,7 +154,7 @@ test "debug_builtin" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    eval.setWriters(writer);
+    driver.setWriters(writer);
 
     const source =
         \\import debug;

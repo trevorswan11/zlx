@@ -5,6 +5,7 @@ const ast = @import("ast.zig");
 const token = @import("../lexer/token.zig");
 const stmts = @import("stmt.zig");
 const exprs = @import("expr.zig");
+const driver = @import("../utils/driver.zig");
 
 pub const BindingPower = struct {
     left: u32,
@@ -103,6 +104,9 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     // Logical
     try led(.AND, binding.LOGICAL, exprs.parseBinaryExpr);
     try led(.OR, binding.LOGICAL, exprs.parseBinaryExpr);
+    try led(.BITWISE_AND, binding.LOGICAL, exprs.parseBinaryExpr);
+    try led(.BITWISE_OR, binding.LOGICAL, exprs.parseBinaryExpr);
+    try led(.BITWISE_XOR, binding.LOGICAL, exprs.parseBinaryExpr);
     try led(.DOT_DOT, binding.LOGICAL, exprs.parseRangeExpr);
 
     // Relational
@@ -160,7 +164,11 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
                         },
                     };
                 },
-                else => return error.ExpectedCallExpr,
+                else => {
+                    const writer_err = driver.getWriterErr();
+                    try writer_err.print("Expected call expression with new keyword but found expression: {s}\n", .{@tagName(inst)});
+                    return error.ExpectedCallExpr;
+                },
             }
         }
     }.afn);

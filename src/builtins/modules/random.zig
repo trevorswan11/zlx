@@ -2,12 +2,15 @@ const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
+const driver = @import("../../utils/driver.zig");
+const builtins = @import("../builtins.zig");
 const eval = interpreter.eval;
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
-const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
-const pack = @import("../builtins.zig").pack;
+const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
+
+const pack = builtins.pack;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -22,9 +25,9 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn randHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 0) {
-        try writer.print("random.rand(...) expects 0 arguments, got {d}\n", .{args.len});
+        try writer_err.print("random.rand() expects 0 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -36,9 +39,9 @@ fn randHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) !
 }
 
 fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 2) {
-        try writer.print("random.randint(...) expects 2 arguments, got {d}\n", .{args.len});
+        try writer_err.print("random.randint(start_inclusive, end_inclusive) expects 2 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -46,9 +49,9 @@ fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
     const b = try interpreter.eval.evalExpr(args[1], env);
 
     if (a != .number or b != .number) {
-        try writer.print("random.randint(...) expects number arguments\n", .{});
-        try writer.print("  Left: {s}\n", .{try a.toString(env.allocator)});
-        try writer.print("  Right: {s}\n", .{try b.toString(env.allocator)});
+        try writer_err.print("random.randint(start_inclusive, end_inclusive) expects number arguments\n", .{});
+        try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+        try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -56,7 +59,7 @@ fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
     const max: i64 = @intFromFloat(b.number);
 
     if (min >= max) {
-        try writer.print("random.randint(...) requires min < max, but got min = {d}, max = {d}\n", .{ min, max });
+        try writer_err.print("random.randint(start_inclusive, end_inclusive) requires min < max, but got min = {d}, max = {d}\n", .{ min, max });
         return error.InvalidRange;
     }
 
@@ -68,22 +71,22 @@ fn randintHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
 }
 
 fn choiceHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 1) {
-        try writer.print("random.choice(...) expects 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("random.choice(arr) expects 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try interpreter.eval.evalExpr(args[0], env);
     if (val != .array) {
-        try writer.print("random.choice(...) expects an array argument\n", .{});
-        try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("random.choice(arr) expects an array argument\n", .{});
+        try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
     const array = val.array;
     if (array.items.len == 0) {
-        try writer.print("random.choice(...) cannot select from an empty array\n", .{});
+        try writer_err.print("random.choice(arr) cannot select from an empty array\n", .{});
         return error.OutOfBounds;
     }
 
@@ -105,7 +108,7 @@ test "random_builtin" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    eval.setWriters(writer);
+    driver.setWriters(writer);
 
     for (0..10) |_| {
         var env = Environment.init(allocator, null);

@@ -5,11 +5,11 @@ const tokenizer = @import("../lexer/tokenizer.zig");
 const ast = @import("ast.zig");
 const lus = @import("lookups.zig");
 const types = @import("types.zig");
+const driver = @import("../utils/driver.zig");
 
 pub const Parser = struct {
     const Self = @This();
 
-    // errors: []error{},
     tokens: std.ArrayList(token.Token),
     pos: usize,
     allocator: std.mem.Allocator,
@@ -65,12 +65,12 @@ pub const Parser = struct {
     }
 
     pub fn expectError(self: *Self, expected_kind: token.TokenKind, err: ?anyerror) !token.Token {
-        const stderr = std.io.getStdErr().writer();
+        const writer_err = driver.getWriterErr();
         const tok = self.currentToken();
         const kind = tok.kind;
 
         if (kind != expected_kind) {
-            try stderr.print("Expected {s} but received {s} instead at token {d}/{d} @ Line {d}\n", .{
+            try writer_err.print("Expected {s} but received {s} instead at token {d}/{d} @ Line {d}\n", .{
                 try token.tokenKindString(self.allocator, expected_kind),
                 try token.tokenKindString(self.allocator, kind),
                 self.pos,
@@ -93,7 +93,7 @@ pub const Parser = struct {
     }
 
     pub fn expectManyError(self: *Self, expected_kinds: []const token.TokenKind, err: ?anyerror) !token.Token {
-        const stderr = std.io.getStdErr().writer();
+        const writer_err = driver.getWriterErr();
         const tok = self.currentToken();
         const kind = tok.kind;
 
@@ -103,14 +103,14 @@ pub const Parser = struct {
             }
         }
 
-        try stderr.print("Expected one of: ", .{});
+        try writer_err.print("Expected one of: ", .{});
         for (expected_kinds, 0..) |expected_kind, i| {
-            try stderr.print("{s}{s}", .{
+            try writer_err.print("{s}{s}", .{
                 if (i > 0) ", " else "",
                 try token.tokenKindString(self.allocator, expected_kind),
             });
         }
-        try stderr.print(" but received {s} instead at token {d}/{d} @ Line {d}\n", .{
+        try writer_err.print(" but received {s} instead at token {d}/{d} @ Line {d}\n", .{
             try token.tokenKindString(self.allocator, kind),
             self.pos,
             self.tokens.items.len,

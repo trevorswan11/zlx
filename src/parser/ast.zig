@@ -1,5 +1,5 @@
 const std = @import("std");
-const tokens = @import("../lexer/token.zig");
+const token = @import("../lexer/token.zig");
 
 // === Shared Types ===
 
@@ -29,12 +29,12 @@ pub const SymbolExpr = struct {
 
 pub const BinaryExpr = struct {
     left: *Expr,
-    operator: tokens.Token,
+    operator: token.Token,
     right: *Expr,
 };
 
 pub const PrefixExpr = struct {
-    operator: tokens.Token,
+    operator: token.Token,
     right: *Expr,
 };
 
@@ -133,14 +133,14 @@ pub const Expr = union(enum) {
             .prefix => |p| {
                 try indent(writer, indent_level);
                 try writer.print("PrefixExpr: operator = {s}\n", .{
-                    try tokens.tokenKindString(p.operator.allocator, p.operator.kind),
+                    try token.tokenKindString(p.operator.allocator, p.operator.kind),
                 });
                 try p.right.writeTo(writer, indent_level + 1);
             },
             .binary => |b| {
                 try indent(writer, indent_level);
                 try writer.print("BinaryExpr: operator = {s}\n", .{
-                    try tokens.tokenKindString(b.operator.allocator, b.operator.kind),
+                    try token.tokenKindString(b.operator.allocator, b.operator.kind),
                 });
                 try b.left.writeTo(writer, indent_level + 1);
                 try b.right.writeTo(writer, indent_level + 1);

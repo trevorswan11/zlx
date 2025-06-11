@@ -2,12 +2,15 @@ const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
+const driver = @import("../../utils/driver.zig");
+const builtins = @import("../builtins.zig");
 const eval = interpreter.eval;
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
-const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
-const pack = @import("../builtins.zig").pack;
+const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
+
+const pack = builtins.pack;
 
 fn expectStringArgs(
     allocator: std.mem.Allocator,
@@ -15,10 +18,10 @@ fn expectStringArgs(
     env: *Environment,
     count: usize,
 ) ![]const []const u8 {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
 
     if (args.len != count) {
-        try writer.print("path module: expected {d} argument(s), got {d}\n", .{ count, args.len });
+        try writer_err.print("path module: expected {d} argument(s), got {d}\n", .{ count, args.len });
         return error.ArgumentCountMismatch;
     }
 
@@ -28,8 +31,8 @@ fn expectStringArgs(
     for (args) |arg| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
-            try writer.print("path module: expected a string\n", .{});
-            try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+            try writer_err.print("path module: expected a string\n", .{});
+            try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
             return error.TypeMismatch;
         }
         try result.append(val.string);
@@ -57,14 +60,14 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     var parts = std.ArrayList([]const u8).init(allocator);
     defer parts.deinit();
     for (args) |arg| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
-            try writer.print("path.join(...) expects only string arguments\n", .{});
-            try writer.print("  Found: {s}\n", .{try val.toString(env.allocator)});
+            try writer_err.print("path.join(str, str) expects only string arguments\n", .{});
+            try writer_err.print("  Found: {s}\n", .{try val.toString(env.allocator)});
             return error.TypeMismatch;
         }
         try parts.append(val.string);
@@ -160,7 +163,7 @@ test "path_builtin" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    eval.setWriters(writer);
+    driver.setWriters(writer);
 
     const source =
         \\import path;

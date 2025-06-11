@@ -4,6 +4,8 @@ const ast = @import("../parser/ast.zig");
 const interpreter = @import("interpreter.zig");
 const builtins = @import("../builtins/builtins.zig");
 const eval = @import("eval.zig");
+const token = @import("../lexer/token.zig");
+const driver = @import("../utils/driver.zig");
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
@@ -53,7 +55,7 @@ pub fn binary(b: *ast.BinaryExpr, env: *Environment) !Value {
 
 pub fn assignment(a: *ast.AssignmentExpr, env: *Environment) !Value {
     const value = try evalExpr(a.assigned_value, env);
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
 
     switch (a.assignee.*) {
         .symbol => |s| {
@@ -65,14 +67,14 @@ pub fn assignment(a: *ast.AssignmentExpr, env: *Environment) !Value {
             if (obj_val == .reference) {
                 obj_val = obj_val.deref();
                 if (obj_val != .object) {
-                    try writer.print("Expected assignee to be an object but found {s}\n", .{@tagName(obj_val)});
+                    try writer_err.print("Expected assignee to be an object but found {s}\n", .{@tagName(obj_val)});
                     return error.TypeMismatch;
                 }
                 try obj_val.object.put(m.property, value);
             } else if (obj_val == .object) {
                 try obj_val.object.put(m.property, value);
             } else {
-                try writer.print("Expected assignee to be an object or reference to an object but found {s}\n", .{@tagName(obj_val)});
+                try writer_err.print("Expected assignee to be an object or reference to an object but found {s}\n", .{@tagName(obj_val)});
                 return error.TypeMismatch;
             }
             return value;
@@ -83,14 +85,14 @@ pub fn assignment(a: *ast.AssignmentExpr, env: *Environment) !Value {
             const key_val = try evalExpr(c.property, env);
 
             if (obj_val != .object or key_val != .string) {
-                try writer.print("Computed expressions require an object value and string key but found pair: ({s}, {s})\n", .{@tagName(obj_val), @tagName(key_val)});
+                try writer_err.print("Computed expressions require an object value and string key but found pair: ({s}, {s})\n", .{ @tagName(obj_val), @tagName(key_val) });
             }
 
             try obj_val.object.put(key_val.string, value);
             return value;
         },
         else => {
-            try writer.print("Assignment expressions work only on symbol, member and computed exprs; found {s}\n", .{@tagName(a.assignee.*)});
+            try writer_err.print("Assignment expressions work only on symbol, member and computed exprs; found {s}\n", .{@tagName(a.assignee.*)});
             return error.InvalidAssignmentTarget;
         },
     }
@@ -100,7 +102,9 @@ pub fn range(r: *ast.RangeExpr, env: *Environment) !Value {
     const lower = try evalExpr(r.lower, env);
     const upper = try evalExpr(r.upper, env);
 
+    const writer_err = driver.getWriterErr();
     if (lower != .number or upper != .number) {
+        try writer_err.print("Cannot make range between types {s} and {s}; Two numbers are required\n", .{ @tagName(lower), @tagName(upper) });
         return error.TypeMismatch;
     }
 
@@ -129,12 +133,14 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
     }
 
     const callee_val = try evalExpr(c.method, env);
+    const writer_err = driver.getWriterErr();
     switch (callee_val) {
         .builtin => |handler| {
             return try handler(env.allocator, c.arguments.items, env);
         },
         .function => |func| {
             if (func.parameters.len != c.arguments.items.len) {
+                try writer_err.print("Function expected {d} parameters, but {d} were given\n", .{ func.parameters.len, c.arguments.items.len });
                 return error.ArityMismatch;
             }
 
@@ -158,6 +164,7 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
             const fn_decl = bm.method.function_decl;
 
             if (fn_decl.parameters.items.len != c.arguments.items.len) {
+                try writer_err.print("Function expected {d} parameters, but {d} were given\n", .{ fn_decl.parameters.items.len, c.arguments.items.len });
                 return error.ArityMismatch;
             }
 
@@ -179,13 +186,18 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
 
             return result;
         },
-        else => return error.InvalidCallTarget,
+        else => {
+            try writer_err.print("Cannot invoke call on type {s}\n", .{@tagName(callee_val)});
+            return error.InvalidCallTarget;
+        },
     }
 }
 
 pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
     if (p.operator.kind == .PLUS_PLUS or p.operator.kind == .MINUS_MINUS) {
         if (p.right.* != .symbol) {
+            try writer_err.print("Cannot invoke '++' or '--' prefix operator on type {s}\n", .{@tagName(p.right.*)});
             return error.InvalidPrefixTarget;
         }
 
@@ -193,6 +205,7 @@ pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
         var val = try env.get(name);
 
         if (val != .number) {
+            try writer_err.print("Cannot invoke '++' or '--' prefix operator on a non-number, got {s}\n", .{@tagName(p.right.*)});
             return error.UnsupportedPrefixOperand;
         }
 
@@ -207,28 +220,37 @@ pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
     }
 
     const right = try evalExpr(p.right, env);
-    return switch (p.operator.kind) {
-        .MINUS => .{
+    switch (p.operator.kind) {
+        .MINUS => return .{
             .number = -right.number,
         },
-        .NOT => .{
+        .NOT => return .{
             .boolean = !right.boolean,
         },
-        .TYPEOF => .{ .string = blk: switch (right) {
-            .typed_val => |t| {
-                break :blk t.type;
+        .TYPEOF => return .{
+            .string = blk: switch (right) {
+                .typed_val => |t| {
+                    break :blk t.type;
+                },
+                else => "any",
             },
-            else => "any",
-        } },
-        else => error.UnsupportedPrefixOperator,
-    };
+        },
+        else => {
+            const operator_kind_str = try token.tokenKindString(env.allocator, p.operator.kind);
+            defer env.allocator.free(operator_kind_str);
+            try writer_err.print("Operator {s} is not a valid prefix operator\n", .{operator_kind_str});
+            return error.UnsupportedPrefixOperator;
+        },
+    }
 }
 
 pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
     var target = try evalExpr(m.member, env);
+    const writer_err = driver.getWriterErr();
     target = target.deref();
 
     if (target != .object) {
+        try writer_err.print("Member expression expects object target, got {s}\n", .{@tagName(target)});
         return error.TypeMismatch;
     }
 
@@ -238,11 +260,13 @@ pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
         return val;
     } else if (map.get("__class_name")) |cls_name_val| {
         if (cls_name_val != .string) {
+            try writer_err.print("Class name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
             return error.InvalidClassRef;
         }
 
         const class_val = try env.get(cls_name_val.string);
         if (class_val != .class) {
+            try writer_err.print("Class name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
             return error.InvalidClassRef;
         }
 
@@ -257,36 +281,45 @@ pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
             };
         }
     }
+    try writer_err.print("Could not evaluate member expression as property {s} was not found\n", .{m.property});
     return error.PropertyNotFound;
 }
 
 pub fn computed(c: *ast.ComputedExpr, env: *Environment) !Value {
     var target = try evalExpr(c.member, env);
-    target = target.deref();
     const key = try evalExpr(c.property, env);
+    const writer_err = driver.getWriterErr();
+    target = target.deref();
 
     switch (target) {
         .array => |arr| {
             if (key != .number) {
+                try writer_err.print("Can only perform compute expression on an array with a number key, got {s}\n", .{@tagName(key)});
                 return error.TypeMismatch;
             }
             const index: usize = @intFromFloat(key.number);
             if (index >= arr.items.len) {
+                try writer_err.print("Index {d} is out of bounds for array of length {d}\n", .{ index, arr.items.len });
                 return error.IndexOutOfBounds;
             }
             return arr.items[index];
         },
         .object => |map| {
             if (key != .string) {
+                try writer_err.print("Can only perform compute expression on an object with a string key, got {s}\n", .{@tagName(key)});
                 return error.TypeMismatch;
             }
             if (map.get(key.string)) |val| {
                 return val;
             } else {
+                try writer_err.print("Could not evaluate compute expression as property {s} was not found\n", .{key.string});
                 return error.PropertyNotFound;
             }
         },
-        else => return error.InvalidAccess,
+        else => {
+            try writer_err.print("Target type {d} does not support computed expressions\n", .{@tagName(target)});
+            return error.InvalidAccess;
+        },
     }
 }
 
@@ -307,7 +340,9 @@ pub fn function(f: *ast.FunctionExpr, env: *Environment) !Value {
 
 pub fn new(n: *ast.NewExpr, env: *Environment) !Value {
     const class_val = try evalExpr(n.instantiation.method, env);
+    const writer_err = driver.getWriterErr();
     if (class_val != .class) {
+        try writer_err.print("The 'new' keyword can only be used when creating a class, got {s}\n", .{@tagName(class_val)});
         return error.TypeMismatch;
     }
 
@@ -333,7 +368,8 @@ pub fn new(n: *ast.NewExpr, env: *Environment) !Value {
 
         const fn_decl = ctor_stmt.function_decl;
         if (args.len != fn_decl.parameters.items.len) {
-            return error.InvalidConstructor;
+            try writer_err.print("Constructor expected {d} parameters, but {d} were given\n", .{ fn_decl.parameters.items.len, args.len });
+            return error.InvalidConstructorArity;
         }
 
         for (args, fn_decl.parameters.items) |arg_expr, param| {

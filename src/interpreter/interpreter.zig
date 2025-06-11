@@ -2,9 +2,11 @@ const std = @import("std");
 
 const ast = @import("../parser/ast.zig");
 pub const eval = @import("eval.zig");
+const token = @import("../lexer/token.zig");
+const driver = @import("../utils/driver.zig");
+
 pub const evalExpr = eval.evalExpr;
 pub const evalStmt = eval.evalStmt;
-const token = @import("../lexer/token.zig");
 
 pub const Value = union(enum) {
     number: f64,
@@ -248,33 +250,34 @@ pub const Environment = struct {
     }
 
     pub fn define(self: *Self, name: []const u8, value: Value) !void {
-        const writer = eval.getWriterErr();
+        const writer_err = driver.getWriterErr();
 
         if (self.values.contains(name)) {
-            try writer.print("Duplicate Identifier: \"{s}\"\n", .{name});
+            try writer_err.print("Duplicate Identifier: \"{s}\"\n", .{name});
             return error.DuplicateIdentifier;
         } else {
             try self.values.put(name, value);
         }
     }
 
-    pub fn defineConstant(self: *Self, name: []const u8, value: Value) !void {
-        const writer = eval.getWriterErr();
+    pub fn declareConstant(self: *Self, name: []const u8, value: Value) !void {
+        const writer_err = driver.getWriterErr();
 
         if (self.values.contains(name)) {
-            try writer.print("Duplicate Identifier: \"{s}\"\n", .{name});
+            try writer_err.print("Duplicate Identifier: \"{s}\"\n", .{name});
             return error.DuplicateIdentifier;
         } else {
             try self.values.put(name, value);
+            try self.assign(name, value);
             try self.constants.put(name, {});
         }
     }
 
     pub fn assign(self: *Self, name: []const u8, value: Value) !void {
-        const writer = eval.getWriterErr();
+        const writer_err = driver.getWriterErr();
 
         if (self.constants.contains(name)) {
-            try writer.print("Identifier \"{s}\" is Constant\n", .{name});
+            try writer_err.print("Identifier \"{s}\" is Constant\n", .{name});
             return error.ReassignmentToConstantVariable;
         }
 
@@ -283,17 +286,17 @@ pub const Environment = struct {
         } else if (self.parent) |p| {
             try p.assign(name, value);
         } else {
-            try writer.print("Identifier \"{s}\" is Undefined\n", .{name});
-            return error.UndefinedVariable;
+            try writer_err.print("Identifier \"{s}\" is Undefined\n", .{name});
+            return error.UndefinedValue;
         }
     }
 
     pub fn makeConstant(self: *Self, name: []const u8) !void {
-        const writer = eval.getWriterErr();
+        const writer_err = driver.getWriterErr();
 
         if (!self.values.contains(name)) {
-            try writer.print("Identifier \"{s}\" is Undefined\n", .{name});
-            return error.UndefinedVariable;
+            try writer_err.print("Identifier \"{s}\" is Undefined\n", .{name});
+            return error.UndefinedValue;
         }
 
         if (!self.constants.contains(name)) {
@@ -302,11 +305,11 @@ pub const Environment = struct {
     }
 
     pub fn stripConstant(self: *Self, name: []const u8) !void {
-        const writer = eval.getWriterErr();
+        const writer_err = driver.getWriterErr();
 
         if (!self.values.contains(name)) {
-            try writer.print("Identifier \"{s}\" is Undefined\n", .{name});
-            return error.UndefinedVariable;
+            try writer_err.print("Identifier \"{s}\" is Undefined\n", .{name});
+            return error.UndefinedValue;
         }
 
         if (self.constants.contains(name)) {
@@ -315,12 +318,19 @@ pub const Environment = struct {
     }
 
     pub fn get(self: *Self, name: []const u8) !Value {
+        const writer_err = driver.getWriterErr();
+
         if (self.values.get(name)) |val| {
             return val;
         } else if (self.parent) |p| {
             return p.get(name);
         } else {
+            try writer_err.print("Identifier \"{s}\" is Undefined\n", .{name});
             return error.UndefinedValue;
         }
+    }
+
+    pub fn clear(self: *Self) void {
+        self.values.clearRetainingCapacity();
     }
 };

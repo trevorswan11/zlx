@@ -2,24 +2,28 @@ const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
+const driver = @import("../../utils/driver.zig");
+const builtins = @import("../builtins.zig");
+const time_constants = @import("time_constants.zig");
 const eval = interpreter.eval;
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
-const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
-const pack = @import("../builtins.zig").pack;
-const loadConstants = @import("time_constants.zig").loadConstants;
+const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
+
+const pack = builtins.pack;
+const loadConstants = time_constants.loadConstants;
 
 fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 1) {
-        try writer.print("time module: expected 1 argument but got {d}\n", .{args.len});
+        try writer_err.print("time module: expected 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .number) {
-        try writer.print("time module: expected a number but got: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("time module: expected a number but got: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -47,9 +51,9 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn nowHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 0) {
-        try writer.print("time.now(...) expects 0 arguments but got {d}\n", .{args.len});
+        try writer_err.print("time.now() expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -60,9 +64,9 @@ fn nowHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) an
 }
 
 fn millisHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 0) {
-        try writer.print("time.millis(...) expects 0 arguments but got {d}\n", .{args.len});
+        try writer_err.print("time.millis() expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -90,9 +94,9 @@ fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
 }
 
 fn startHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 0) {
-        try writer.print("time.start(...) expects 0 arguments but got {d}\n", .{args.len});
+        try writer_err.print("time.start() expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -120,9 +124,9 @@ fn stopHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 }
 
 fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 2) {
-        try writer.print("time.delta(...) expects 0 arguments but got {d}\n", .{args.len});
+        try writer_err.print("time.delta() expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -139,9 +143,9 @@ fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
 }
 
 fn timestampHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 0) {
-        try writer.print("time.timestamp(...) expects 0 arguments but got {d}\n", .{args.len});
+        try writer_err.print("time.timestamp() expects 0 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -205,7 +209,7 @@ test "time_constants" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    eval.setWriters(writer);
+    driver.setWriters(writer);
 
     const source =
         \\import time;

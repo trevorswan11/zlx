@@ -2,18 +2,19 @@ const std = @import("std");
 
 const ast = @import("../parser/ast.zig");
 const interpreter = @import("interpreter.zig");
-const tokens = @import("../lexer/token.zig");
+const token = @import("../lexer/token.zig");
 const builtins = @import("../builtins/builtins.zig");
 const expr_handlers = @import("expr_handlers.zig");
 const stmt_handlers = @import("stmt_handlers.zig");
 const binary_handlers = @import("binary_handlers.zig");
+const driver = @import("../utils/driver.zig");
 
-const Token = tokens.Token;
+const Token = token.Token;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
 pub fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
-    const writer = getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (op.kind) {
         .PLUS => return try binary_handlers.plus(op, lhs, rhs),
         .MINUS => return try binary_handlers.minus(op, lhs, rhs),
@@ -26,10 +27,13 @@ pub fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
         .LESS => return try binary_handlers.less(op, lhs, rhs),
         .LESS_EQUALS => return try binary_handlers.lessEqual(op, lhs, rhs),
         .PERCENT => return try binary_handlers.mod(op, lhs, rhs),
-        .AND => return try binary_handlers.bool_and(op, lhs, rhs),
-        .OR => return try binary_handlers.bool_or(op, lhs, rhs),
+        .AND => return try binary_handlers.boolAnd(op, lhs, rhs),
+        .OR => return try binary_handlers.boolOr(op, lhs, rhs),
+        .BITWISE_AND => return try binary_handlers.bitwiseAnd(op, lhs, rhs),
+        .BITWISE_OR => return try binary_handlers.bitwiseOr(op, lhs, rhs),
+        .BITWISE_XOR => return try binary_handlers.bitwiseXor(op, lhs, rhs),
         else => {
-            try writer.print("Operator {s} is not a valid binary operator\n", .{@tagName(op.kind)});
+            try writer_err.print("Operator {s} is not a valid binary operator\n", .{@tagName(op.kind)});
             return error.UnknownBinaryOperator;
         },
     }
@@ -73,30 +77,4 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
         .return_stmt => |*s| return try stmt_handlers.returns(s, env),
         .match_stmt => |*m| return try stmt_handlers.match(m, env),
     }
-}
-
-// === GLOBAL WRITER PIPING ===
-
-pub var global_writer_out: ?std.io.AnyWriter = null;
-pub var global_writer_err: ?std.io.AnyWriter = null;
-
-pub fn setWriterOut(w: anytype) void {
-    global_writer_out = w;
-}
-
-pub fn setWriterErr(w: anytype) void {
-    global_writer_err = w;
-}
-
-pub fn setWriters(w: anytype) void {
-    global_writer_out = w;
-    global_writer_err = w;
-}
-
-pub fn getWriterOut() std.io.AnyWriter {
-    return global_writer_out orelse std.io.getStdOut().writer().any();
-}
-
-pub fn getWriterErr() std.io.AnyWriter {
-    return global_writer_err orelse std.io.getStdErr().writer().any();
 }

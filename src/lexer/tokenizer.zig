@@ -1,9 +1,11 @@
 const std = @import("std");
 const regxp = @import("regxp");
 
-const tokens = @import("token.zig");
-const Token = tokens.Token;
-const TokenKind = tokens.TokenKind;
+const token = @import("token.zig");
+const driver = @import("../utils/driver.zig");
+
+const Token = token.Token;
+const TokenKind = token.TokenKind;
 const Regex = regxp.Regex;
 
 pub var reserved_map: std.StringHashMap(TokenKind) = undefined;
@@ -136,8 +138,20 @@ pub const Lexer = struct {
             .handler = try defaultHandler(allocator, .OR, "||"),
         });
         try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\|"),
+            .handler = try defaultHandler(allocator, .BITWISE_OR, "|"),
+        });
+        try patterns.append(.{
             .regex = try Regex.compile(allocator, "&&"),
             .handler = try defaultHandler(allocator, .AND, "&&"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "&"),
+            .handler = try defaultHandler(allocator, .BITWISE_AND, "&"),
+        });
+        try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\^"),
+            .handler = try defaultHandler(allocator, .BITWISE_XOR, "^"),
         });
         try patterns.append(.{
             .regex = try Regex.compile(allocator, "\\.\\."),
@@ -224,8 +238,8 @@ pub const Lexer = struct {
         self.pos += n;
     }
 
-    pub fn push(self: *Self, token: Token) !void {
-        try self.tokens.append(token);
+    pub fn push(self: *Self, tok: Token) !void {
+        try self.tokens.append(tok);
     }
 
     pub fn at(self: *Self) u8 {
@@ -243,19 +257,21 @@ pub const Lexer = struct {
 
 pub fn tokenize(allocator: std.mem.Allocator, source: []const u8) !std.ArrayList(Token) {
     var lex = try Lexer.init(allocator, source);
+    const writer_err = driver.getWriterErr();
 
     while (!lex.atEOF()) {
         var matched = false;
         for (lex.patterns.items) |pattern_const| {
             var pattern = pattern_const;
             if (try pattern.regex.match(lex.remainder())) {
-                try pattern.handler.func(pattern.handler.ctx, &lex, &pattern.regex);
+                try pattern.handler.func(pattern.handler.ctx, &lex, &pattern.regex); // This must advance the lexer's position
                 matched = true;
                 break;
             }
         }
 
         if (!matched) {
+            try writer_err.print("Slice {c}.. at position {d} was not recognized as a valid token\n", .{ lex.source[lex.pos], lex.pos });
             return error.UnrecognizedToken;
         }
     }

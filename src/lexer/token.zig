@@ -1,5 +1,9 @@
 const std = @import("std");
 
+const driver = @import("../utils/driver.zig");
+const getWriterOut = driver.getWriterOut;
+const getWriterErr = driver.getWriterErr;
+
 // TokenKind
 pub const TokenKind = enum(u32) {
     EOF = 0, // iota
@@ -33,6 +37,9 @@ pub const TokenKind = enum(u32) {
     // Logical
     OR,
     AND,
+    BITWISE_OR,
+    BITWISE_AND,
+    BITWISE_XOR,
 
     // Symbols
     DOT,
@@ -110,22 +117,22 @@ pub const Token = struct {
     }
 
     pub fn debug(self: *Self) !void {
-        const stdout = std.io.getStdOut().writer();
-        try stdout.print("Token Line #: {d}\n", .{self.line});
+        const writer_out = getWriterOut();
+        try writer_out.print("Token Line #: {d}\n", .{self.line});
         if (self.isOneOfMany(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING })) {
-            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
+            try writer_out.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
         } else {
-            try stdout.print("{s} ()\n", .{try tokenKindString(self.allocator, self.kind)});
+            try writer_out.print("{s} ()\n", .{try tokenKindString(self.allocator, self.kind)});
         }
     }
 
     pub fn debugRuntime(self: *const Self) !void {
-        const stdout = std.io.getStdOut().writer();
-        try stdout.print("Token Line #: {d}\n", .{self.line});
+        const writer_out = getWriterOut();
+        try writer_out.print("Token Line #: {d}\n", .{self.line});
         if (self.isOneOfManyRuntime(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING })) {
-            try stdout.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
+            try writer_out.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
         } else {
-            try stdout.print("{s} ()\n", .{try tokenKindString(self.allocator, self.kind)});
+            try writer_out.print("{s} ()\n", .{try tokenKindString(self.allocator, self.kind)});
         }
     }
 

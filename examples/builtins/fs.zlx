@@ -28,3 +28,4 @@ fs.delete("example.txt");
 fs.delete("example_renamed.txt");
 fs.delete("test_dir/file.txt");
 println(fs.exists("example.txt"));        // false
+fs.rm("test_dir");

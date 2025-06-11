@@ -2,13 +2,17 @@ const std = @import("std");
 
 const interpreter = @import("interpreter.zig");
 const eval = @import("eval.zig");
-const tokens = @import("../lexer/token.zig");
+const token = @import("../lexer/token.zig");
+const driver = @import("../utils/driver.zig");
+const fns = @import("../builtins/fns.zig");
 
-const Token = tokens.Token;
+const Token = token.Token;
 const Value = interpreter.Value;
 
+const coerceBool = fns.coerceBool;
+
 pub fn plus(op: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
             .number => return .{
@@ -18,7 +22,7 @@ pub fn plus(op: Token, lhs: Value, rhs: Value) !Value {
                 .string = try std.fmt.allocPrint(op.allocator, "{d}{s}", .{ l, rhs.string }),
             },
             else => {
-                try writer.print("Cannot add type {s} to type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
+                try writer_err.print("Cannot add type {s} to type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
                 return error.TypeMismatch;
             },
         },
@@ -36,116 +40,156 @@ pub fn plus(op: Token, lhs: Value, rhs: Value) !Value {
                 .string = try std.fmt.allocPrint(op.allocator, "{s}nil", .{l}),
             },
             else => {
-                try writer.print("Cannot add type {s} to type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
+                try writer_err.print("Cannot add type {s} to type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot add type {s} to type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
+            try writer_err.print("Cannot add type {s} to type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
             return error.TypeMismatch;
         },
     }
 }
 
 pub fn minus(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
             .number => return .{
                 .number = l - rhs.number,
             },
             else => {
-                try writer.print("Cannot subtract type {s} from type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
+                try writer_err.print("Cannot subtract type {s} from type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot subtract type {s} from type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
+            try writer_err.print("Cannot subtract type {s} from type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
             return error.TypeMismatch;
         },
     }
 }
 
 pub fn star(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => return .{ .number = l * rhs.number },
+            .number => return .{
+                .number = l * rhs.number,
+            },
             else => {
-                try writer.print("Cannot multiply type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot multiply type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot multiply type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot multiply type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }
 }
 
 pub fn slash(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => return .{ .number = l / rhs.number },
+            .number => return .{
+                .number = l / rhs.number,
+            },
             else => {
-                try writer.print("Cannot divide type {s} by type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot divide type {s} by type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot divide type {s} by type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot divide type {s} by type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }
 }
 
 pub fn mod(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => return .{ .number = if (rhs.number < 0) 0 else @mod(l, rhs.number) },
+            .number => return .{
+                .number = if (rhs.number < 0) 0 else @mod(l, rhs.number),
+            },
             else => {
-                try writer.print("Cannot mod type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot mod type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot mod type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot mod type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }
 }
 
-pub fn bool_and(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+pub fn boolAnd(_: Token, lhs: Value, rhs: Value) !Value {
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .boolean => |l| switch (rhs) {
-            .boolean => return .{ .boolean = l and rhs.boolean },
+            .boolean => return .{
+                .boolean = l and rhs.boolean,
+            },
+            .number => return .{
+                .boolean = l and coerceBool(.{ .number = rhs.number }),
+            },
             else => {
-                try writer.print("Cannot apply 'and' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot apply 'and' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
+        .number => |l| switch (rhs) {
+            .boolean => return .{
+                .boolean = coerceBool(.{ .number = l }) and rhs.boolean,
+            },
+            else => {
+                try writer_err.print("Cannot apply 'and' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                return error.TypeMismatch;
+            },
+            .number => return .{
+                .boolean = coerceBool(.{ .number = l }) and coerceBool(.{ .number = rhs.number }),
+            },
+        },
         else => {
-            try writer.print("Cannot apply 'and' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot apply 'and' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }
 }
 
-pub fn bool_or(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+pub fn boolOr(_: Token, lhs: Value, rhs: Value) !Value {
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .boolean => |l| switch (rhs) {
-            .boolean => return .{ .boolean = l or rhs.boolean },
+            .boolean => return .{
+                .boolean = l or rhs.boolean,
+            },
+            .number => return .{
+                .boolean = l or coerceBool(.{ .number = rhs.number }),
+            },
             else => {
-                try writer.print("Cannot apply 'or' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot apply 'or' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
+        .number => |l| switch (rhs) {
+            .boolean => return .{
+                .boolean = coerceBool(.{ .number = l }) or rhs.boolean,
+            },
+            else => {
+                try writer_err.print("Cannot apply 'or' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                return error.TypeMismatch;
+            },
+            .number => return .{
+                .boolean = coerceBool(.{ .number = l }) or coerceBool(.{ .number = rhs.number }),
+            },
+        },
         else => {
-            try writer.print("Cannot apply 'or' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot apply 'or' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }
@@ -164,36 +208,42 @@ pub fn notEqual(_: Token, lhs: Value, rhs: Value) !Value {
 }
 
 pub fn greater(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => return .{ .boolean = l > rhs.number },
+            .number => return .{
+                .boolean = l > rhs.number,
+            },
             else => {
-                try writer.print("Cannot compare (>) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot compare (>) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         .string => |l| switch (rhs) {
-            .string => return .{ .boolean = std.mem.order(u8, l, rhs.string) == .gt },
+            .string => return .{
+                .boolean = std.mem.order(u8, l, rhs.string) == .gt,
+            },
             else => {
-                try writer.print("Cannot compare (>) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot compare (>) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot compare (>) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot compare (>) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }
 }
 
 pub fn greaterEqual(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
-            .number => return .{ .boolean = l >= rhs.number },
+            .number => return .{
+                .boolean = l >= rhs.number,
+            },
             else => {
-                try writer.print("Cannot compare (>=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot compare (>=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
@@ -205,48 +255,48 @@ pub fn greaterEqual(_: Token, lhs: Value, rhs: Value) !Value {
                 },
             },
             else => {
-                try writer.print("Cannot compare (>=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot compare (>=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot compare (>=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot compare (>=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }
 }
 
 pub fn less(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
             .number => return .{ .boolean = l < rhs.number },
             else => {
-                try writer.print("Cannot compare (<) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot compare (<) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         .string => |l| switch (rhs) {
             .string => return .{ .boolean = std.mem.order(u8, l, rhs.string) == .lt },
             else => {
-                try writer.print("Cannot compare (<) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot compare (<) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot compare (<) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot compare (<) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }
 }
 
 pub fn lessEqual(_: Token, lhs: Value, rhs: Value) !Value {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
             .number => return .{ .boolean = l <= rhs.number },
             else => {
-                try writer.print("Cannot compare (<=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot compare (<=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
@@ -258,12 +308,69 @@ pub fn lessEqual(_: Token, lhs: Value, rhs: Value) !Value {
                 },
             },
             else => {
-                try writer.print("Cannot compare (<=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                try writer_err.print("Cannot compare (<=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
         },
         else => {
-            try writer.print("Cannot compare (<=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            try writer_err.print("Cannot compare (<=) type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            return error.TypeMismatch;
+        },
+    }
+}
+
+pub fn bitwiseAnd(_: Token, lhs: Value, rhs: Value) !Value {
+    const writer_err = driver.getWriterErr();
+    switch (lhs) {
+        .number => |l| switch (rhs) {
+            .number => return .{
+                .number = @floatFromInt(@as(i64, @intFromFloat(l)) & @as(i64, @intFromFloat(rhs.number))),
+            },
+            else => {
+                try writer_err.print("Cannot apply '&' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                return error.TypeMismatch;
+            },
+        },
+        else => {
+            try writer_err.print("Cannot apply '&' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            return error.TypeMismatch;
+        },
+    }
+}
+
+pub fn bitwiseOr(_: Token, lhs: Value, rhs: Value) !Value {
+    const writer_err = driver.getWriterErr();
+    switch (lhs) {
+        .number => |l| switch (rhs) {
+            .number => return .{
+                .number = @floatFromInt(@as(i64, @intFromFloat(l)) | @as(i64, @intFromFloat(rhs.number))),
+            },
+            else => {
+                try writer_err.print("Cannot apply '|' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                return error.TypeMismatch;
+            },
+        },
+        else => {
+            try writer_err.print("Cannot apply '|' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            return error.TypeMismatch;
+        },
+    }
+}
+
+pub fn bitwiseXor(_: Token, lhs: Value, rhs: Value) !Value {
+    const writer_err = driver.getWriterErr();
+    switch (lhs) {
+        .number => |l| switch (rhs) {
+            .number => return .{
+                .number = @floatFromInt(@as(i64, @intFromFloat(l)) ^ @as(i64, @intFromFloat(rhs.number))),
+            },
+            else => {
+                try writer_err.print("Cannot apply '^' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                return error.TypeMismatch;
+            },
+        },
+        else => {
+            try writer_err.print("Cannot apply '^' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }

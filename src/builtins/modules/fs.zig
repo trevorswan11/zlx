@@ -2,23 +2,26 @@ const std = @import("std");
 
 const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
+const driver = @import("../../utils/driver.zig");
+const builtins = @import("../builtins.zig");
 const eval = interpreter.eval;
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
-const BuiltinModuleHandler = @import("../builtins.zig").BuiltinModuleHandler;
-const pack = @import("../builtins.zig").pack;
+const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
+
+const pack = builtins.pack;
 
 fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 1) {
-        try writer.print("fs module: expected 1 argument but got {d}\n", .{args.len});
+        try writer_err.print("fs module: expected 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .string) {
-        try writer.print("fs module: expected a string argument but got: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("fs module: expected a string argument but got: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -26,9 +29,9 @@ fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
 }
 
 fn expectTwoStrings(args: []const *ast.Expr, env: *Environment) !struct { []const u8, []const u8 } {
-    const writer = eval.getWriterErr();
+    const writer_err = driver.getWriterErr();
     if (args.len != 2) {
-        try writer.print("fs module: expected 2 arguments but got {d}\n", .{args.len});
+        try writer_err.print("fs module: expected 2 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -36,9 +39,9 @@ fn expectTwoStrings(args: []const *ast.Expr, env: *Environment) !struct { []cons
     const b = try eval.evalExpr(args[1], env);
 
     if (a != .string or b != .string) {
-        try writer.print("fs module: both arguments must be strings\n", .{});
-        try writer.print("  Left: {s}\n", .{try a.toString(env.allocator)});
-        try writer.print("  Right: {s}\n", .{try b.toString(env.allocator)});
+        try writer_err.print("fs module: both arguments must be strings\n", .{});
+        try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+        try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -338,7 +341,7 @@ test "fs_builtin" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    eval.setWriters(writer);
+    driver.setWriters(writer);
 
     const path: []const u8 = &tmp_dir.sub_path;
     errdefer {

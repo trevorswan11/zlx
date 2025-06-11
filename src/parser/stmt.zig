@@ -6,6 +6,7 @@ const ast = @import("ast.zig");
 const lus = @import("lookups.zig");
 const expr = @import("expr.zig");
 const types = @import("types.zig");
+const driver = @import("../utils/driver.zig");
 
 const BindingPower = lus.BindingPower;
 const binding = lus.binding;
@@ -52,7 +53,7 @@ pub fn parseBlockStmt(p: *parser.Parser) !ast.Stmt {
 }
 
 pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
-    const stderr = std.io.getStdErr().writer();
+    const writer_err = driver.getWriterErr();
     var explicit_type: ?ast.Type = null;
     const start_token = p.advance().kind;
     const is_constant = start_token == .CONST;
@@ -61,7 +62,7 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
     var reserved_map = try token.Token.getReservedMap(p.allocator);
     defer reserved_map.deinit();
     if (reserved_map.get(symbol_name.value) != null) {
-        try stderr.print("Reserved Identifier \"{s}\" used for variable declaration @ Line {d}\n", .{
+        try writer_err.print("Reserved Identifier \"{s}\" used for variable declaration @ Line {d}\n", .{
             symbol_name.value,
             p.tokens.items[p.pos].line,
         });
@@ -78,7 +79,7 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
         _ = try p.expect(.ASSIGNMENT);
         assignment_value = try expr.parseExpr(p, binding.ASSIGNMENT);
     } else if (explicit_type == null) {
-        try stderr.print("Missing explicit type for variable declaration at token {d}/{d} @ Line {d}\n", .{
+        try writer_err.print("Missing explicit type for variable declaration at token {d}/{d} @ Line {d}\n", .{
             p.pos,
             p.tokens.items.len,
             p.tokens.items[p.pos].line,
@@ -94,7 +95,7 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
     }
 
     if (is_constant and assignment_value == null) {
-        try stderr.print("Cannot define constant variable without providing default value at token {d}/{d} @ Line {d}\n", .{
+        try writer_err.print("Cannot define constant variable without providing default value at token {d}/{d} @ Line {d}\n", .{
             p.pos,
             p.tokens.items.len,
             p.tokens.items[p.pos].line,
@@ -131,7 +132,7 @@ pub const FunctionInfo = struct {
 
 pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
     _ = try p.expect(.OPEN_PAREN);
-    const stderr = std.io.getStdErr().writer();
+    const writer_err = driver.getWriterErr();
     var function_params = std.ArrayList(*ast.Parameter).init(p.allocator);
     while (p.hasTokens() and p.currentTokenKind() != .CLOSE_PAREN) {
         const expected = try p.expect(.IDENTIFIER);
@@ -140,7 +141,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         var reserved_map = try token.Token.getReservedMap(p.allocator);
         defer reserved_map.deinit();
         if (reserved_map.get(param_name) != null) {
-            try stderr.print("Reserved Identifier \"{s}\" used for function parameter @ Line {d}\n", .{
+            try writer_err.print("Reserved Identifier \"{s}\" used for function parameter @ Line {d}\n", .{
                 param_name,
                 p.tokens.items[p.pos].line,
             });
@@ -243,7 +244,7 @@ pub fn parseIfStmt(p: *parser.Parser) !ast.Stmt {
 
 pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.IMPORT);
-    const stderr = std.io.getStdErr().writer();
+    const writer_err = driver.getWriterErr();
     var import_from: []const u8 = undefined;
     const import_type = try p.expectMany(&[_]token.TokenKind{ .IDENTIFIER, .STAR });
     const import_name = import_type.value;
@@ -260,7 +261,7 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     }
 
     if (!is_builtin and reserved_map.get(import_name) != null) {
-        try stderr.print("Reserved Identifier \"{s}\" used for non-builtin import @ Line {d}\n", .{
+        try writer_err.print("Reserved Identifier \"{s}\" used for non-builtin import @ Line {d}\n", .{
             import_name,
             p.tokens.items[p.pos].line,
         });
@@ -272,6 +273,7 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
         import_from = (try p.expect(.STRING)).value;
     } else {
         if (std.mem.eql(u8, import_name, "*")) {
+            try writer_err.print("Wildcard input requires a filename but one was not given\n", .{});
             return error.MissingWildcardFile;
         }
         import_from = import_name;
@@ -282,6 +284,7 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     } else {
         _ = p.advance();
     }
+
     return .{
         .import_stmt = .{
             .name = import_name,
@@ -333,12 +336,12 @@ pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
 
 pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.CLASS);
-    const stderr = std.io.getStdErr().writer();
+    const writer_err = driver.getWriterErr();
     const class_name = (try p.expect(.IDENTIFIER)).value;
     var reserved_map = try token.Token.getReservedMap(p.allocator);
     defer reserved_map.deinit();
     if (reserved_map.get(class_name) != null) {
-        try stderr.print("Reserved Identifier \"{s}\" used for class name @ Line {d}\n", .{
+        try writer_err.print("Reserved Identifier \"{s}\" used for class name @ Line {d}\n", .{
             class_name,
             p.tokens.items[p.pos].line,
         });

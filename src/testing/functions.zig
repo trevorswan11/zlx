@@ -14,7 +14,7 @@ test "fn" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\fn add(a: int, b: int): int {
@@ -48,7 +48,7 @@ test "any_param" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\fn no_type(num) {
@@ -81,7 +81,7 @@ test "bound" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\class Greeter {
@@ -125,7 +125,7 @@ test "first_class" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\class Greeter {
@@ -176,7 +176,7 @@ test "class" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\class Person {
@@ -214,7 +214,7 @@ test "return" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\fn test(): number {
@@ -256,7 +256,7 @@ test "import_single" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     // Good use of selective import statement
     var env_pass = testing.Environment.init(allocator, null);
@@ -317,7 +317,7 @@ test "import_wildcard" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     // Good use of wildcard import statement
     var env_pass = testing.Environment.init(allocator, null);
@@ -370,7 +370,7 @@ test "import_recursive" {
     var output_buffer_single = std.ArrayList(u8).init(allocator);
     defer output_buffer_single.deinit();
     const writer_single = output_buffer_single.writer().any();
-    testing.eval.setWriters(writer_single);
+    testing.driver.setWriters(writer_single);
 
     var env_single = testing.Environment.init(allocator, null);
     defer env_single.deinit();
@@ -396,7 +396,7 @@ test "import_recursive" {
     var output_buffer_wildcard = std.ArrayList(u8).init(allocator);
     defer output_buffer_wildcard.deinit();
     const writer_wildcard = output_buffer_wildcard.writer().any();
-    testing.eval.setWriters(writer_wildcard);
+    testing.driver.setWriters(writer_wildcard);
 
     var env_wildcard = testing.Environment.init(allocator, null);
     defer env_wildcard.deinit();

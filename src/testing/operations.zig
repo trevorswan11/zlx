@@ -14,7 +14,7 @@ test "binary_one" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source = "println(45.2 + 5 * 4);";
 
@@ -42,7 +42,7 @@ test "binary_two" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source = "println(10 * -2 + (2.4 - -2));";
 
@@ -70,7 +70,7 @@ test "binary_three" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\println(-5 + 3);    // Expect: -2
@@ -104,7 +104,7 @@ test "binary_four" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\println(3 + 4 * 5);            // Expect 23
@@ -163,7 +163,7 @@ test "prefix" {
     var output_buffer = std.ArrayList(u8).init(allocator);
     defer output_buffer.deinit();
     const writer = output_buffer.writer().any();
-    testing.eval.setWriters(writer);
+    testing.driver.setWriters(writer);
 
     const source =
         \\let a = 5;
