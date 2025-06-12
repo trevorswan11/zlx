@@ -60,6 +60,13 @@
             text-decoration: underline;
         }
 
+        .logo {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
         button.theme-toggle {
             margin-top: 1rem;
             padding: 0.5rem 1rem;
@@ -89,7 +96,7 @@
 
         code {
             background: var(--code-bg);
-            padding: 0.2em 0.4em;
+            padding: 0em 0.4em;
             border-radius: 4px;
             font-family: monospace;
         }
@@ -100,14 +107,30 @@
             overflow-x: auto;
             border-radius: 4px;
         }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        td {
+            border: 1px solid var(--border);
+            padding: 0.5rem;
+            text-align: center;
+            background: var(--code-bg);
+            font-family: monospace;
+        }
     </style>
 </head>
 
 <body>
     <nav>
-        <h2>Docs</h2>
+        <img src="../resources/zlx-logo-v2.png" alt="ZLX Logo" class="logo">
+        <h2>Table of Contents</h2>
         <a href="#intro">Introduction</a>
         <a href="#syntax">Syntax</a>
+        <a href="#keywords">Keywords</a>
         <a href="#types">Types</a>
         <a href="#functions">Functions</a>
 
@@ -119,35 +142,152 @@
             <h1>Introduction</h1>
             <p>Welcome to the documentation for <strong>ZLX</strong>. This page covers syntax, types, features, and
                 common patterns.</p>
+            <p>ZLX has two main modes, interpreting and REPL. You can enter REPL by simply running the binary with no
+                command line arguments. If you would like to write ZLX code in a script and interpret it, simply pass
+                the path to the script to the binary upon execution.</p>
+            <p>ZLX's interpreter has 3 sub-modes: <code>run</code> (default), <code>ast</code>, and <code>dump</code>.
+                <code>run</code> is the default parameter passed to the binary, and it does not need to be specified.
+                This option parses the source code and interprets it. <code>ast</code> simply runs the parser
+                over the input file and checks for any immediate parse errors. This is the equivalent to checking for
+                compilation errors in other languages. <code>dump</code> prints the code in the input file with syntax
+                highlighting, without running the interpreter. This depends on the ast step, and thus cannot be used if
+                there are parse errors in your code. These options should be passed as the first argument (before the
+                filepath) if desired. If no option is given, the program defaults to interpreting the file.</p>
+            <p>ZLX's interpreter also has 2 debug modes: <code>time</code> and <code>-v</code>. <code>time</code> can be
+                passed after
+                the filepath to give a breakdown of the time each step takes to reach the desired output.
+                <code>-v</code> can be passed after either the <code>time</code> argument or directly after the
+                filepath. This option prints the verbose output of the parser, displaying a properly indented text
+                format of the recursively generated abstract syntax tree.
+            </p>
+            <p>Here are some examples of common uses of the ZLX binary:</p>
+            <pre><code>
+zlx                     // Initializes REPL mode
+zlx foo.zlx             // Interprets the file foo.zlx, where the filepath is relative to the cwd
+zlx run foo.zlx         // Same as the above command
+zlx ast foo.zlx         // Parses foo.zlx without interpreting
+zlx dump foo.zlx        // Parses and dumps the syntax highlighted content of foo.zlx without interpreting
+zlx foo.zlx time -v     // Interprets foo.zlx, timing execution and printing the generated AST
+zlx foo.zlx -v time     // Same as the above command
+            </code></pre>
         </section>
 
         <section id="syntax">
             <h1>Syntax</h1>
             <p>Basic syntax was inspired by Go, Python, Rust, and more:</p>
-            <pre><code>let x = 42;
-print(x);</code></pre>
+            <pre><code>
+let x = 42;
+print(x);
+            </code></pre>
+            <p>While not in REPL mode, statements must be closed by a semicolon. Using more than one semicolon for a
+                given statement is a syntax error and the interpreter will fail.</p>
+        </section>
+
+        <section id="keywords">
+            <h1>Reserved Keywords</h1>
+            <p>The following keywords are reserved in the ZLX language and cannot be used as identifiers:</p>
+
+            <h2>Language Keywords</h2>
+            <table>
+                <tr>
+                    <td>let</td>
+                    <td>const</td>
+                    <td>struct</td>
+                    <td>new</td>
+                    <td>import</td>
+                </tr>
+                <tr>
+                    <td>from</td>
+                    <td>fn</td>
+                    <td>if</td>
+                    <td>else</td>
+                    <td>foreach</td>
+                </tr>
+                <tr>
+                    <td>while</td>
+                    <td>return</td>
+                    <td>break</td>
+                    <td>continue</td>
+                    <td>typeof</td>
+                </tr>
+                <tr>
+                    <td>delete</td>
+                    <td>in</td>
+                    <td>true</td>
+                    <td>false</td>
+                    <td>match</td>
+                </tr>
+                <tr>
+                    <td>nil</td>
+                </tr>
+            </table>
+
+            <h2>Built-in Functions</h2>
+            <table>
+                <tr>
+                    <td>print</td>
+                    <td>println</td>
+                    <td>len</td>
+                    <td>ref</td>
+                    <td>range</td>
+                </tr>
+                <tr>
+                    <td>to_string</td>
+                    <td>to_number</td>
+                    <td>to_bool</td>
+                </tr>
+            </table>
+
+            <h2>Built-in Modules</h2>
+            <table>
+                <tr>
+                    <td>array</td>
+                    <td>debug</td>
+                    <td>fs</td>
+                    <td>math</td>
+                    <td>path</td>
+                </tr>
+                <tr>
+                    <td>random</td>
+                    <td>string</td>
+                    <td>sys</td>
+                    <td>time</td>
+                </tr>
+            </table>
         </section>
 
         <section id="types">
             <h1>Types</h1>
-            Type annotations are optional. When used, type annotations don't do anything in the realm of safety checks or static typing, but they help some people to
-            feel more comfortable. Underlying types are enforced in many operations, but these are inferred when expressions are evaluated.
-            <pre><code>let x: int = 42;
-print(x);</code></pre>
-            By default, all declarations get the "any" type, and can be reassigned within reason (without the const keyword). To get the type of any value, use <code>typeof</code> as:
-            <pre><code>let x: int = 42;
-print(typeof x); >> int </code></pre>
-            Typed values are not recommended as they require you to call the builtin <code>detype</code> function which returns the underlying value in the type. This builtin does not alter the data in the typed value, but instead returns a copy of the stored data.
-            <pre><code>let x: int = 42;
-print(detype(x)); >> 42 </code></pre>
+            <p>Type annotations are optional. When used, type annotations don't do anything in the realm of safety
+                checks or static typing, but they help some people to feel more comfortable. Underlying types are
+                enforced in many operations, but these are inferred when expressions are evaluated. </p>
+            <pre><code>
+let x: int = 42;
+print(x);
+            </code></pre>
+            <p>By default, all declarations get the "any" type, and can be reassigned within reason (without the const
+                keyword). To get the type of any value, use <code>typeof</code> as:</p>
+            <pre><code>
+let x: int = 42;
+print(typeof x); >> int
+            </code></pre>
+            <p>Typed values are not recommended as they require you to call the builtin <code>detype</code> function
+                which returns the underlying value in the type. This builtin does not alter the data in the typed value,
+                but instead returns a copy of the stored data.</p>
+            <pre><code>
+let x: int = 42;
+print(detype(x)); >> 42
+            </code></pre>
         </section>
 
         <section id="functions">
             <h1>Functions</h1>
             <p>Functions are declared using <code>fn</code>:</p>
-            <pre><code>fn add(a, b) {
+            <pre><code>
+fn add(a, b) {
   return a + b;
-}</code></pre>
+}
+            </code></pre>
         </section>
     </main>
 
