@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      - 'libs/**'
       - 'build.zig'
   pull_request:
     branches: ['*']
     paths:
       - 'src/**'
+      - 'libs/**'
       - 'build.zig'
 
 permissions:
