@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ZLX Language Reference</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --fg: #111111;
+            --accent: #007acc;
+            --code-bg: #f0f0f0;
+            --border: #ccc;
+        }
+
+        [data-theme="dark"] {
+            --bg: #121212;
+            --fg: #eeeeee;
+            --accent: #66b2ff;
+            --code-bg: #1e1e1e;
+            --border: #444;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--fg);
+        }
+
+        nav {
+            width: 250px;
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        nav h2 {
+            font-size: 1.2rem;
+            margin-top: 0;
+        }
+
+        nav a {
+            display: block;
+            margin: 0.5rem 0;
+            color: var(--fg);
+            text-decoration: none;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        button.theme-toggle {
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        section {
+            margin-bottom: 4rem;
+        }
+
+        section h1 {
+            font-size: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.3rem;
+        }
+
+        code {
+            background: var(--code-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        pre {
+            background: var(--code-bg);
+            padding: 1rem;
+            overflow-x: auto;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <h2>Docs</h2>
+        <a href="#intro">Introduction</a>
+        <a href="#syntax">Syntax</a>
+        <a href="#types">Types</a>
+        <a href="#functions">Functions</a>
+
+        <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+    </nav>
+
+    <main>
+        <section id="intro">
+            <h1>Introduction</h1>
+            <p>Welcome to the documentation for <strong>ZLX</strong>. This page covers syntax, types, features, and
+                common patterns.</p>
+        </section>
+
+        <section id="syntax">
+            <h1>Syntax</h1>
+            <p>Basic syntax was inspired by Go, Python, Rust, and more:</p>
+            <pre><code>let x = 42;
+print(x);</code></pre>
+        </section>
+
+        <section id="types">
+            <h1>Types</h1>
+            Type annotations are optional. When used, type annotations don't do anything in the realm of safety checks or static typing, but they help some people to
+            feel more comfortable. Underlying types are enforced in many operations, but these are inferred when expressions are evaluated.
+            <pre><code>let x: int = 42;
+print(x);</code></pre>
+            By default, all declarations get the "any" type, and can be reassigned within reason (without the const keyword). To get the type of any value, use <code>typeof</code> as:
+            <pre><code>let x: int = 42;
+print(typeof x); >> int </code></pre>
+            Typed values are not recommended as they require you to call the builtin <code>detype</code> function which returns the underlying value in the type. This builtin does not alter the data in the typed value, but instead returns a copy of the stored data.
+            <pre><code>let x: int = 42;
+print(detype(x)); >> 42 </code></pre>
+        </section>
+
+        <section id="functions">
+            <h1>Functions</h1>
+            <p>Functions are declared using <code>fn</code>:</p>
+            <pre><code>fn add(a, b) {
+  return a + b;
+}</code></pre>
+        </section>
+    </main>
+
+    <script>
+        const root = document.documentElement;
+
+        function setTheme(theme) {
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+
+        function toggleTheme() {
+            const current = root.getAttribute('data-theme');
+            setTheme(current === 'dark' ? 'light' : 'dark');
+        }
+
+        (function applyStoredTheme() {
+            const stored = localStorage.getItem('theme');
+            if (stored) {
+                setTheme(stored);
+            } else {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                setTheme(prefersDark ? 'dark' : 'light');
+            }
+        })();
+    </script>
+</body>
+
+</html>

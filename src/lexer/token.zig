@@ -1,8 +1,6 @@
 const std = @import("std");
 
 const driver = @import("../utils/driver.zig");
-const getWriterOut = driver.getWriterOut;
-const getWriterErr = driver.getWriterErr;
 
 // TokenKind
 pub const TokenKind = enum(u32) {
@@ -117,7 +115,7 @@ pub const Token = struct {
     }
 
     pub fn debug(self: *Self) !void {
-        const writer_out = getWriterOut();
+        const writer_out = driver.getWriterOut();
         try writer_out.print("Token Line #: {d}\n", .{self.line});
         if (self.isOneOfMany(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING })) {
             try writer_out.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });
@@ -127,7 +125,7 @@ pub const Token = struct {
     }
 
     pub fn debugRuntime(self: *const Self) !void {
-        const writer_out = getWriterOut();
+        const writer_out = driver.getWriterOut();
         try writer_out.print("Token Line #: {d}\n", .{self.line});
         if (self.isOneOfManyRuntime(&[_]TokenKind{ .IDENTIFIER, .NUMBER, .STRING })) {
             try writer_out.print("{s} ({s})\n", .{ try tokenKindString(self.allocator, self.kind), self.value });

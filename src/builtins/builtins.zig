@@ -52,6 +52,10 @@ pub const builtin_fns = [_]BuiltinFn{
         .handler = fns.deref,
     },
     .{
+        .name = "detype",
+        .handler = fns.detype,
+    },
+    .{
         .name = "range",
         .handler = fns.range,
     },

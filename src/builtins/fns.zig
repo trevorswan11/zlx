@@ -88,11 +88,29 @@ pub fn deref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !
     const val = try eval.evalExpr(args[0], env);
 
     if (val != .reference) {
-        try writer_err.print("deref(...): expected reference, got {s}\n", .{@tagName(val)});
+        try writer_err.print("deref(...): expected reference, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 
     return val.reference.*;
+}
+
+pub fn detype(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != 1) {
+        try writer_err.print("detype(...): expected exactly 1 argument, got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const val = try eval.evalExpr(args[0], env);
+
+    if (val != .typed_val) {
+        try writer_err.print("detype(...): expected typed value, got a(n) {s}\n", .{@tagName(val)});
+        return error.TypeMismatch;
+    }
+
+    return val.typed_val.value.*;
 }
 
 pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
