@@ -147,7 +147,7 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
     return .nil;
 }
 
-pub fn class(c: *ast.StructDeclarationStmt, env: *Environment) !Value {
+pub fn structure(c: *ast.StructDeclarationStmt, env: *Environment) !Value {
     var methods = std.StringHashMap(*ast.Stmt).init(env.allocator);
     var constructor: ?*ast.Stmt = null;
 
@@ -225,7 +225,7 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
     defer decl_names.deinit();
     var recursive_flag = false; // Errors should be recursively bubbled up as decl_names is not shared between scopes
 
-    // For now, functions, variables, classes, and recursive imports will be included
+    // For now, functions, variables, structs, and recursive imports will be included
     for (ast_block.block.body.items) |stmt| {
         switch (stmt.*) {
             .var_decl => |*var_decl| {
@@ -254,11 +254,11 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
                     break;
                 }
             },
-            .struct_decl => |*class_decl| {
-                const decl_name = class_decl.name;
+            .struct_decl => |*struct_decl| {
+                const decl_name = struct_decl.name;
                 try decl_names.put(decl_name, {});
                 if (std.mem.eql(u8, i.name, "*") or std.mem.eql(u8, i.name, decl_name)) {
-                    _ = try class(class_decl, env); // Defines the class in the env
+                    _ = try structure(struct_decl, env); // Defines the struct in the env
                     try env.makeConstant(decl_name);
                 }
 

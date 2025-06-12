@@ -337,22 +337,22 @@ pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
 pub fn parseStructDeclStmt(p: *parser.Parser) !ast.Stmt {
     _ = try p.expect(.STRUCT);
     const writer_err = driver.getWriterErr();
-    const class_name = (try p.expect(.IDENTIFIER)).value;
+    const struct_name = (try p.expect(.IDENTIFIER)).value;
     var reserved_map = try token.Token.getReservedMap(p.allocator);
     defer reserved_map.deinit();
-    if (reserved_map.get(class_name) != null) {
-        try writer_err.print("Reserved Identifier \"{s}\" used for class name @ Line {d}\n", .{
-            class_name,
+    if (reserved_map.get(struct_name) != null) {
+        try writer_err.print("Reserved Identifier \"{s}\" used for struct name @ Line {d}\n", .{
+            struct_name,
             p.tokens.items[p.pos].line,
         });
         return error.ReservedIdentifier;
     }
-    const class_body = try parseBlockStmt(p);
+    const struct_body = try parseBlockStmt(p);
 
     return .{
         .struct_decl = .{
-            .name = class_name,
-            .body = class_body.block.body,
+            .name = struct_name,
+            .body = struct_body.block.body,
         },
     };
 }

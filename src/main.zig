@@ -141,7 +141,7 @@ test {
 
     // General Behavior - Tests located in `testing` directory
     _ = @import("testing/testing.zig");
-    _ = @import("testing/classes_objects.zig");
+    _ = @import("testing/structs_objects.zig");
     _ = @import("testing/functions.zig");
     _ = @import("testing/loops.zig");
     _ = @import("testing/operations.zig");

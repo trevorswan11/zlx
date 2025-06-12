@@ -70,7 +70,7 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
         .if_stmt => |*i| return try stmt_handlers.conditional(i, env),
         .foreach_stmt => |*f| return try stmt_handlers.foreach(f, env),
         .while_stmt => |*w| return try stmt_handlers.while_loop(w, env),
-        .struct_decl => |*c| return try stmt_handlers.class(c, env),
+        .struct_decl => |*c| return try stmt_handlers.structure(c, env),
         .function_decl => |*f| return try stmt_handlers.function(f, env),
         .import_stmt => |*i| return try stmt_handlers.import(i, env),
         .break_stmt => |_| return .break_signal,
