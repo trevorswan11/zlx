@@ -266,28 +266,44 @@ pub fn repl(allocator: std.mem.Allocator) !void {
 
     while (true) {
         try writer_out.print(">> ", .{});
-        var line_buf = std.ArrayList(u8).init(env.allocator);
-        defer line_buf.clearRetainingCapacity();
+        var full_line = std.ArrayList(u8).init(env.allocator);
+        defer full_line.clearRetainingCapacity();
 
-        // Read one line
-        const line = try stdin.readUntilDelimiterOrEofAlloc(env.allocator, '\n', 1024) orelse {
-            try writer_err.print("Input error!\n", .{});
-            continue;
-        };
+        while (true) {
+            const line = try stdin.readUntilDelimiterOrEofAlloc(env.allocator, '\n', 1024) orelse {
+                try writer_err.print("Input error!\n", .{});
+                break;
+            };
 
-        const trimmed = std.mem.trim(u8, line, " \t\r\n");
-        if (std.mem.eql(u8, trimmed, "exit")) {
+            const trimmed = std.mem.trim(u8, line, " \t\r\n");
+
+            if (std.mem.eql(u8, trimmed, "exit")) {
+                return;
+            } else if (std.mem.eql(u8, trimmed, "clenv")) {
+                env.clear();
+                break;
+            }
+
+            // Append the line
+            try full_line.appendSlice(trimmed);
+
+            // Check for continuation
+            if (trimmed.len > 0 and trimmed[trimmed.len - 1] == '\\') {
+                // Remove the backslash and continue reading
+                _ = full_line.pop();
+                try full_line.append(' ');
+                try writer_out.print(".. ", .{});
+                continue;
+            }
+
             break;
-        } else if (std.mem.eql(u8, trimmed, "clenv")) {
-            env.clear();
         }
 
-        if (trimmed.len == 0) {
-            continue;
-        }
+        const final_input = std.mem.trim(u8, full_line.items, " \t\r\n");
+        if (final_input.len == 0) continue;
 
         const parser = @import("../parser/parser.zig");
-        const block = parser.parseREPL(env.allocator, trimmed) catch |err| {
+        const block = parser.parseREPL(env.allocator, final_input) catch |err| {
             try writer_err.print("Parse Error: {!}\n", .{err});
             continue;
         };

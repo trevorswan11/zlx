@@ -77,6 +77,24 @@ pub fn ref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Va
     };
 }
 
+pub fn deref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != 1) {
+        try writer_err.print("deref(...): expected exactly 1 argument, got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const val = try eval.evalExpr(args[0], env);
+
+    if (val != .reference) {
+        try writer_err.print("deref(...): expected reference, got {s}\n", .{@tagName(val)});
+        return error.TypeMismatch;
+    }
+
+    return val.reference.*;
+}
+
 pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 

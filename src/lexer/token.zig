@@ -6,7 +6,7 @@ const getWriterErr = driver.getWriterErr;
 
 // TokenKind
 pub const TokenKind = enum(u32) {
-    EOF = 0, // iota
+    EOF = 0,
     NIL,
     TRUE,
     FALSE,
@@ -77,8 +77,8 @@ pub const TokenKind = enum(u32) {
     ELSE,
     FOREACH,
     WHILE,
-    FOR,
     TYPEOF,
+    DELETE,
     IN,
     BREAK,
     CONTINUE,
@@ -169,11 +169,11 @@ pub const Token = struct {
         try reserved.put("else", .ELSE);
         try reserved.put("foreach", .FOREACH);
         try reserved.put("while", .WHILE);
-        try reserved.put("for", .FOR);
         try reserved.put("return", .RETURN);
         try reserved.put("break", .BREAK);
         try reserved.put("continue", .CONTINUE);
         try reserved.put("typeof", .TYPEOF);
+        try reserved.put("delete", .DELETE);
         try reserved.put("in", .IN);
         try reserved.put("true", .TRUE);
         try reserved.put("false", .FALSE);

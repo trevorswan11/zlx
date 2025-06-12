@@ -225,6 +225,17 @@ pub const Value = union(enum) {
             else => false,
         };
     }
+
+    pub fn raw(self: *const Value) Value {
+        var current = self.*;
+        while (true) {
+            current = switch (current) {
+                .typed_val => current.typed_val.value.*,
+                .reference => current.reference.*,
+                else => return current,
+            };
+        }
+    }
 };
 
 pub const Environment = struct {
@@ -328,6 +339,14 @@ pub const Environment = struct {
             try writer_err.print("Identifier \"{s}\" is Undefined\n", .{name});
             return error.UndefinedValue;
         }
+    }
+
+    pub fn remove(self: *Self, name: []const u8) Value {
+        const flag = self.values.remove(name);
+        _ = self.constants.remove(name);
+        return .{
+            .boolean = flag,
+        };
     }
 
     pub fn clear(self: *Self) void {

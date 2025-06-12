@@ -235,6 +235,14 @@ pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
                 else => "any",
             },
         },
+        .DELETE => {
+            if (p.right.* == .symbol) {
+                return env.remove(p.right.symbol.value);
+            } else {
+                try writer_err.print("Can only delete symbol expressions, got a(n) {s}\n", .{@tagName(p.right.*)});
+                return error.TypeMismatch;
+            }
+        },
         else => {
             const operator_kind_str = try token.tokenKindString(env.allocator, p.operator.kind);
             defer env.allocator.free(operator_kind_str);

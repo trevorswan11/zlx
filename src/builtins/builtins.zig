@@ -48,6 +48,10 @@ pub const builtin_fns = [_]BuiltinFn{
         .handler = fns.ref,
     },
     .{
+        .name = "deref",
+        .handler = fns.deref,
+    },
+    .{
         .name = "range",
         .handler = fns.range,
     },

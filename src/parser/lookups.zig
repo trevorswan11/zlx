@@ -134,6 +134,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
 
     // Unary/Prefix
     try nud(.TYPEOF, binding.UNARY, exprs.parsePrefixExpr);
+    try nud(.DELETE, binding.UNARY, exprs.parsePrefixExpr);
     _ = try nud_lu.put(.MINUS, exprs.parsePrefixExpr);
     try nud(.NOT, binding.UNARY, exprs.parsePrefixExpr);
     try nud(.OPEN_BRACKET, binding.PRIMARY, exprs.parseArrayLiteralExpr);

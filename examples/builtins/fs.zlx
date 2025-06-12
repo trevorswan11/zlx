@@ -24,8 +24,8 @@ println(fs.is_dir("test_dir"));           // true
 println(fs.is_dir("example.txt"));        // false
 
 // Delete
-fs.delete("example.txt");
-fs.delete("example_renamed.txt");
-fs.delete("test_dir/file.txt");
+fs.remove("example.txt");
+fs.remove("example_renamed.txt");
+fs.remove("test_dir/file.txt");
 println(fs.exists("example.txt"));        // false
 fs.rm("test_dir");

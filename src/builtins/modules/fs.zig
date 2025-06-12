@@ -57,7 +57,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "read", readHandler);
     try pack(&map, "write", writeHandler);
     try pack(&map, "exists", existsHandler);
-    try pack(&map, "delete", deleteHandler);
+    try pack(&map, "remove", removeHandler);
     try pack(&map, "list", listHandler);
     try pack(&map, "mkdir", mkdirHandler);
     try pack(&map, "rmdir", rmdirHandler);
@@ -114,7 +114,7 @@ pub fn existsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     };
 }
 
-fn deleteHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn removeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = try expectStringArg(args, env);
     try std.fs.cwd().deleteFile(path);
 
@@ -378,9 +378,9 @@ test "fs_builtin" {
         \\println(fs.is_dir(p + "/test_dir"));
         \\println(fs.is_dir(p + "/example.txt"));
         \\
-        \\fs.delete(p + "/example.txt");
-        \\fs.delete(p + "/example_renamed.txt");
-        \\fs.delete(p + "/test_dir/file.txt");
+        \\fs.remove(p + "/example.txt");
+        \\fs.remove(p + "/example_renamed.txt");
+        \\fs.remove(p + "/test_dir/file.txt");
         \\println(fs.exists(p + "/example.txt"));
         \\fs.rm(p);
     , .{path});
