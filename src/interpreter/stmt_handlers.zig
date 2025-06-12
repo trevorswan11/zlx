@@ -147,7 +147,7 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
     return .nil;
 }
 
-pub fn class(c: *ast.ClassDeclarationStmt, env: *Environment) !Value {
+pub fn class(c: *ast.StructDeclarationStmt, env: *Environment) !Value {
     var methods = std.StringHashMap(*ast.Stmt).init(env.allocator);
     var constructor: ?*ast.Stmt = null;
 
@@ -163,7 +163,7 @@ pub fn class(c: *ast.ClassDeclarationStmt, env: *Environment) !Value {
     }
 
     const cls_val: Value = .{
-        .class = .{
+        .structure = .{
             .name = c.name,
             .body = c.body,
             .constructor = constructor,
@@ -254,7 +254,7 @@ pub fn import(i: *ast.ImportStmt, env: *Environment) !Value {
                     break;
                 }
             },
-            .class_decl => |*class_decl| {
+            .struct_decl => |*class_decl| {
                 const decl_name = class_decl.name;
                 try decl_names.put(decl_name, {});
                 if (std.mem.eql(u8, i.name, "*") or std.mem.eql(u8, i.name, decl_name)) {

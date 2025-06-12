@@ -45,7 +45,7 @@ test "ast_check" {
         \\import fs;
         \\import time;
         \\
-        \\class DirectoryReader {
+        \\struct DirectoryReader {
         \\  let directoryPath: string;
         \\
         \\  fn mount(directoryPath: string) {

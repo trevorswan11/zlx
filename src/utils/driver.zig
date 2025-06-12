@@ -135,9 +135,9 @@ pub fn printStmt(stmt: *ast.Stmt, allocator: std.mem.Allocator) !void {
                     try writer.print("{s}\n", .{str});
                 }
             },
-            .class_decl => {
-                try writer.print("Class Declaration Statement: Name = {s}\n", .{s.class_decl.name});
-                for (s.class_decl.body.items) |it| {
+            .struct_decl => {
+                try writer.print("Class Declaration Statement: Name = {s}\n", .{s.struct_decl.name});
+                for (s.struct_decl.body.items) |it| {
                     const str = try it.toString(allocator);
                     defer allocator.free(str);
                     try writer.print("{s}\n", .{str});

@@ -1,4 +1,4 @@
-class Greeter {
+struct Greeter {
     let name: string;
 
     fn ctor(name: string) {

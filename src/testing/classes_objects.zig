@@ -2,7 +2,7 @@ const std = @import("std");
 
 const testing = @import("testing.zig");
 
-// Tests class creation with constructors and method invocation
+// Tests struct creation with constructors and method invocation
 test "methods" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
@@ -17,7 +17,7 @@ test "methods" {
     testing.driver.setWriters(writer);
 
     const source =
-        \\class Greeter {
+        \\struct Greeter {
         \\let name: string;
         \\
         \\fn ctor(name: string) {
@@ -31,7 +31,7 @@ test "methods" {
         \\
         \\let g = new Greeter("Ziggy");
         \\println(g.name);
-        \\println(g["__class_name"]);
+        \\println(g["__struct_name"]);
         \\g.greet();
     ;
 

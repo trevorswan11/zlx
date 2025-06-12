@@ -19,7 +19,7 @@ pub const Value = union(enum) {
         closure: *Environment,
     },
     object: std.StringHashMap(Value),
-    class: struct {
+    structure: struct {
         name: []const u8,
         body: std.ArrayList(*ast.Stmt),
         constructor: ?*ast.Stmt,
@@ -109,19 +109,19 @@ pub const Value = union(enum) {
         return try str_builder.toOwnedSlice();
     }
 
-    fn stringClass(name: []const u8, body: std.ArrayList(*ast.Stmt), ctor: ?*ast.Stmt, allocator: std.mem.Allocator) ![]u8 {
+    fn stringStruct(name: []const u8, body: std.ArrayList(*ast.Stmt), ctor: ?*ast.Stmt, allocator: std.mem.Allocator) ![]u8 {
         var str_builder = std.ArrayList(u8).init(allocator);
         defer str_builder.deinit();
 
-        const formatted_name = try std.fmt.allocPrint(allocator, "Class: {s}\n", .{name});
+        const formatted_name = try std.fmt.allocPrint(allocator, "Struct: {s}\n", .{name});
         defer allocator.free(formatted_name);
         try str_builder.appendSlice(formatted_name);
 
-        const formatted_len = try std.fmt.allocPrint(allocator, "Class Body Len: {d}\n", .{body.items.len});
+        const formatted_len = try std.fmt.allocPrint(allocator, "Struct Body Len: {d}\n", .{body.items.len});
         defer allocator.free(formatted_len);
         try str_builder.appendSlice(formatted_len);
 
-        try str_builder.appendSlice("Class Body:\n");
+        try str_builder.appendSlice("Struct Body:\n");
         for (body.items) |b| {
             const stmt_str = try b.toString(allocator);
             defer allocator.free(stmt_str);
@@ -168,7 +168,7 @@ pub const Value = union(enum) {
             .array => |a| try stringArray(a, allocator),
             .function => |f| try stringFunction(f.parameters, f.body, allocator),
             .object => |o| try stringObject(o, allocator),
-            .class => |c| try stringClass(c.name, c.body, c.constructor, allocator),
+            .structure => |c| try stringStruct(c.name, c.body, c.constructor, allocator),
             .reference => |r| try stringReference(r, allocator),
             .bound_method => |bm| try stringBoundMethod(bm.instance, allocator),
             .builtin => |_| try std.fmt.allocPrint(allocator, "<Builtin Module>", .{}),

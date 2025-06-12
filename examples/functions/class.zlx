@@ -1,4 +1,4 @@
-class Person {
+struct Person {
     let name: string;
     let age: number;
 

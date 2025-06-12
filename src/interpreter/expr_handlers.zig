@@ -266,19 +266,19 @@ pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
 
     if (map.get(m.property)) |val| {
         return val;
-    } else if (map.get("__class_name")) |cls_name_val| {
+    } else if (map.get("__struct_name")) |cls_name_val| {
         if (cls_name_val != .string) {
-            try writer_err.print("Class name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
-            return error.InvalidClassRef;
+            try writer_err.print("Struct name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
+            return error.InvalidStructRef;
         }
 
-        const class_val = try env.get(cls_name_val.string);
-        if (class_val != .class) {
-            try writer_err.print("Class name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
-            return error.InvalidClassRef;
+        const struct_val = try env.get(cls_name_val.string);
+        if (struct_val != .structure) {
+            try writer_err.print("Struct name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
+            return error.InvalidStructRef;
         }
 
-        if (class_val.class.methods.get(m.property)) |method_stmt| {
+        if (struct_val.structure.methods.get(m.property)) |method_stmt| {
             const val = try env.allocator.create(Value);
             val.* = target;
             return .{
@@ -347,20 +347,20 @@ pub fn function(f: *ast.FunctionExpr, env: *Environment) !Value {
 }
 
 pub fn new(n: *ast.NewExpr, env: *Environment) !Value {
-    const class_val = try evalExpr(n.instantiation.method, env);
+    const struct_val = try evalExpr(n.instantiation.method, env);
     const writer_err = driver.getWriterErr();
-    if (class_val != .class) {
-        try writer_err.print("The 'new' keyword can only be used when creating a class, got {s}\n", .{@tagName(class_val)});
+    if (struct_val != .structure) {
+        try writer_err.print("The 'new' keyword can only be used when creating a struct, got {s}\n", .{@tagName(struct_val)});
         return error.TypeMismatch;
     }
 
-    const cls = class_val.class;
+    const cls = struct_val.structure;
 
     const instance_ptr = try env.allocator.create(Value);
     instance_ptr.* = Value{
         .object = std.StringHashMap(Value).init(env.allocator),
     };
-    try instance_ptr.*.object.put("__class_name", .{
+    try instance_ptr.*.object.put("__struct_name", .{
         .string = cls.name,
     });
 

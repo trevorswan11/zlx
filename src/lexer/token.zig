@@ -66,7 +66,7 @@ pub const TokenKind = enum(u32) {
     // Reserved Keywords
     LET,
     CONST,
-    CLASS,
+    STRUCT,
     NEW,
     IMPORT,
     FROM,
@@ -158,7 +158,7 @@ pub const Token = struct {
         // Keywords
         try reserved.put("let", .LET);
         try reserved.put("const", .CONST);
-        try reserved.put("class", .CLASS);
+        try reserved.put("struct", .STRUCT);
         try reserved.put("new", .NEW);
         try reserved.put("import", .IMPORT);
         try reserved.put("from", .FROM);

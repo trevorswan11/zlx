@@ -187,7 +187,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try stmt(.IMPORT, stmts.parseImportStmt);
     try stmt(.FOREACH, stmts.parseForEachStmt);
     try stmt(.WHILE, stmts.parseWhileStmt);
-    try stmt(.CLASS, stmts.parseClassDeclStmt);
+    try stmt(.STRUCT, stmts.parseStructDeclStmt);
     try stmt(.BREAK, stmts.parseBreakStmt);
     try stmt(.CONTINUE, stmts.parseContinueStmt);
     try stmt(.RETURN, stmts.parseReturnStmt);

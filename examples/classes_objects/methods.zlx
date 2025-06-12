@@ -1,4 +1,4 @@
-class Greeter {
+struct Greeter {
     let name: string;
 
     fn ctor(name: string) {
@@ -12,5 +12,5 @@ class Greeter {
 
 let g = new Greeter("Ziggy");
 println(g.name);
-println(g["__class_name"]);
+println(g["__struct_name"]);
 g.greet();

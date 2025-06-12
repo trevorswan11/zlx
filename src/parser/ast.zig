@@ -309,7 +309,7 @@ pub const WhileStmt = struct {
     body: std.ArrayList(*Stmt),
 };
 
-pub const ClassDeclarationStmt = struct {
+pub const StructDeclarationStmt = struct {
     name: []const u8,
     body: std.ArrayList(*Stmt),
 };
@@ -330,7 +330,7 @@ pub const Stmt = union(enum) {
     import_stmt: ImportStmt,
     foreach_stmt: ForeachStmt,
     while_stmt: WhileStmt,
-    class_decl: ClassDeclarationStmt,
+    struct_decl: StructDeclarationStmt,
     break_stmt: BreakStmt,
     continue_stmt: ContinueStmt,
     return_stmt: ReturnStmt,
@@ -432,7 +432,7 @@ pub const Stmt = union(enum) {
                     try stmt.writeTo(writer, indent_level + 2);
                 }
             },
-            .class_decl => |c| {
+            .struct_decl => |c| {
                 try indent(writer, indent_level);
                 try writer.print("ClassDecl: {s}\n", .{c.name});
                 for (c.body.items) |stmt| {

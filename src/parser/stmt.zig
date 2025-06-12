@@ -334,8 +334,8 @@ pub fn parseWhileStmt(p: *parser.Parser) !ast.Stmt {
     };
 }
 
-pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
-    _ = try p.expect(.CLASS);
+pub fn parseStructDeclStmt(p: *parser.Parser) !ast.Stmt {
+    _ = try p.expect(.STRUCT);
     const writer_err = driver.getWriterErr();
     const class_name = (try p.expect(.IDENTIFIER)).value;
     var reserved_map = try token.Token.getReservedMap(p.allocator);
@@ -350,7 +350,7 @@ pub fn parseClassDeclStmt(p: *parser.Parser) !ast.Stmt {
     const class_body = try parseBlockStmt(p);
 
     return .{
-        .class_decl = .{
+        .struct_decl = .{
             .name = class_name,
             .body = class_body.block.body,
         },

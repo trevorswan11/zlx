@@ -84,7 +84,7 @@ test "bound" {
     testing.driver.setWriters(writer);
 
     const source =
-        \\class Greeter {
+        \\struct Greeter {
         \\let name: string;
         \\
         \\fn ctor(name: string) {
@@ -114,7 +114,7 @@ test "bound" {
 }
 
 // Tests function's ability to be passed as parameters to other functions
-test "first_class" {
+test "first_struct" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
@@ -128,7 +128,7 @@ test "first_class" {
     testing.driver.setWriters(writer);
 
     const source =
-        \\class Greeter {
+        \\struct Greeter {
         \\let name: string;
         \\
         \\fn ctor(name: string) {
@@ -164,8 +164,8 @@ test "first_class" {
     try testing.expectEqualStrings(expected, actual);
 }
 
-// Tests basic class declaration and initialization
-test "class" {
+// Tests basic struct declaration and initialization
+test "struct" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
@@ -179,7 +179,7 @@ test "class" {
     testing.driver.setWriters(writer);
 
     const source =
-        \\class Person {
+        \\struct Person {
         \\let name: string;
         \\let age: number;
         \\
