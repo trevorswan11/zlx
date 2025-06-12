@@ -333,4 +333,22 @@ pub const Environment = struct {
     pub fn clear(self: *Self) void {
         self.values.clearRetainingCapacity();
     }
+
+    pub fn boxExpr(self: *Self, e: ast.Expr) !*ast.Expr {
+        const ptr = try self.allocator.create(ast.Expr);
+        ptr.* = e;
+        return ptr;
+    }
+
+    pub fn boxStmt(self: *Self, stmt: ast.Stmt) !*ast.Stmt {
+        const ptr = try self.allocator.create(ast.Stmt);
+        ptr.* = stmt;
+        return ptr;
+    }
+
+    pub fn boxType(self: *Self, e: ast.Type) !*ast.Type {
+        const ptr = try self.allocator.create(ast.Type);
+        ptr.* = e;
+        return ptr;
+    }
 };

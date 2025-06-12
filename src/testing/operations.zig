@@ -203,3 +203,51 @@ test "prefix" {
     const actual = output_buffer.items;
     try testing.expectEqualStrings(expected, actual);
 }
+
+// Tests compound assignment expression handling
+test "compound_assign" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = testing.Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    testing.driver.setWriters(writer);
+
+    const source =
+        \\let x = 10;
+        \\x += 5;
+        \\println(x); // 15
+        \\
+        \\x -= 2;
+        \\println(x); // 13
+        \\
+        \\x *= 2;
+        \\println(x); // 26
+        \\
+        \\x /= 2;
+        \\println(x); // 13
+        \\
+        \\x %= 4;
+        \\println(x); // 1
+    ;
+
+    const block = try testing.parse(allocator, source);
+    _ = try testing.eval.evalStmt(block, &env);
+
+    const expected =
+        \\15
+        \\13
+        \\26
+        \\13
+        \\1
+        \\
+    ;
+
+    const actual = output_buffer.items;
+    try testing.expectEqualStrings(expected, actual);
+}

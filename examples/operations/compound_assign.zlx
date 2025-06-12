@@ -1,0 +1,15 @@
+let x = 10;
+x += 5;
+println(x); // 15
+
+x -= 2;
+println(x); // 13
+
+x *= 2;
+println(x); // 26
+
+x /= 2;
+println(x); // 13
+
+x %= 4;
+println(x); // 1

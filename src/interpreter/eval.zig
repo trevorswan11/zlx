@@ -57,6 +57,7 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
         .new_expr => |*n| return try expr_handlers.new(n, env),
         .object => |*o| return try expr_handlers.object(o, env),
         .match_expr => |*m| return try expr_handlers.match(m, env),
+        .compound_assignment => |*c| return try expr_handlers.compoundAssignment(c, env),
         .nil => |n| return try expr_handlers.nil(n, env),
     }
 }

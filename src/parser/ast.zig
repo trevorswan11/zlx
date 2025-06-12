@@ -86,6 +86,12 @@ pub const ObjectEntry = struct {
     value: *Expr,
 };
 
+pub const CompoundAssignmentExpr = struct {
+    assignee: *Expr,
+    operator: token.Token,
+    value: *Expr,
+};
+
 pub const Expr = union(enum) {
     number: NumberExpr,
     string: StringExpr,
@@ -103,6 +109,7 @@ pub const Expr = union(enum) {
     new_expr: NewExpr,
     object: ObjectExpr,
     match_expr: Match,
+    compound_assignment: CompoundAssignmentExpr,
     nil: void,
 
     pub fn toString(self: *Expr, allocator: std.mem.Allocator) ![]const u8 {
@@ -235,6 +242,16 @@ pub const Expr = union(enum) {
                     try writer.print("Body:\n", .{});
                     try stmt.body.writeTo(writer, indent_level + 3);
                 }
+            },
+            .compound_assignment => |c| {
+                try indent(writer, indent_level);
+                try writer.print("Compound Assignment:\n", .{});
+                try indent(writer, indent_level + 1);
+                try c.assignee.writeTo(writer, indent_level + 2);
+                try indent(writer, indent_level + 1);
+                try writer.print("Operator: {s}\n", .{@tagName(c.operator.kind)});
+                try indent(writer, indent_level + 1);
+                try c.value.writeTo(writer, indent_level + 2);
             },
             .nil => {
                 try indent(writer, indent_level);

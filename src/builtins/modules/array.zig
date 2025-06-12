@@ -22,8 +22,11 @@ fn expectArrayRef(args: []const *ast.Expr, env: *Environment) !*std.ArrayList(Va
     const val = try eval.evalExpr(args[0], env);
     if (val != .reference or val.reference.* != .array) {
         try writer_err.print("array module: expression evaluation returned a value that is not a reference to an array\n", .{});
-        if (val == .reference) {try writer_err.print("  Found a reference to a(n) {s}\n", .{@tagName(val)});}
-        else {try writer_err.print("  Found a(n) {s}\n", .{@tagName(val.deref())});}
+        if (val == .reference) {
+            try writer_err.print("  Found a reference to a(n) {s}\n", .{@tagName(val)});
+        } else {
+            try writer_err.print("  Found a(n) {s}\n", .{@tagName(val.deref())});
+        }
         return error.TypeMismatch;
     }
 

@@ -415,6 +415,48 @@ pub fn match(m: *ast.Match, env: *Environment) !Value {
     return .nil;
 }
 
+pub fn compoundAssignment(a: *ast.CompoundAssignmentExpr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    const lhs_val = try evalExpr(a.assignee, env);
+    const rhs_val = try evalExpr(a.value, env);
+
+    const binary_kind: token.TokenKind = switch (a.operator.kind) {
+        .PLUS_EQUALS => .PLUS,
+        .MINUS_EQUALS => .MINUS,
+        .STAR_EQUALS => .STAR,
+        .SLASH_EQUALS => .SLASH,
+        .PERCENT_EQUALS => .PERCENT,
+        else => {
+            try writer_err.print("Cannot perform compound assignment using token {s}\n", .{@tagName(a.operator.kind)});
+            return error.InvalidCompoundOperator;
+        },
+    };
+
+    const result = try eval.evalBinary(.{
+        .kind = binary_kind,
+        .allocator = a.operator.allocator,
+        .line = a.operator.line,
+        .value = a.operator.value,
+        .start = a.operator.start,
+        .end = a.operator.end,
+    }, lhs_val, rhs_val);
+
+    if (result != .number) {
+        try writer_err.print("Cannot perform compound assignment on type {s}\n", .{@tagName(result)});
+        return error.TypeMismatch;
+    }
+
+    const assignment_expr = try env.allocator.create(ast.AssignmentExpr);
+    assignment_expr.* = .{
+        .assignee = a.assignee,
+        .assigned_value = try env.boxExpr(.{ .number = .{
+            .value = result.number,
+        } }),
+    };
+
+    return try assignment(assignment_expr, env);
+}
+
 pub fn nil(_: void, _: *Environment) !Value {
     return .nil;
 }

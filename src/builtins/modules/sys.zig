@@ -144,7 +144,7 @@ fn runHandler(
     var stderr_buf = std.ArrayList(u8).init(allocator);
 
     // Combine the system and local environments to run the command
-    var process_env_itr= process_env.iterator();
+    var process_env_itr = process_env.iterator();
     const system_env = try std.process.getEnvMap(allocator);
     var system_env_itr = system_env.iterator();
 
@@ -173,7 +173,9 @@ fn runHandler(
     try map.put("stdout", .{ .string = try stdout_buf.toOwnedSlice() });
     try map.put("stderr", .{ .string = try stderr_buf.toOwnedSlice() });
 
-    return Value{ .object = map, };
+    return Value{
+        .object = map,
+    };
 }
 
 // === TESTING ===

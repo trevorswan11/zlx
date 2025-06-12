@@ -95,11 +95,11 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
 
     // Assignment
     try led(.ASSIGNMENT, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.PLUS_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.MINUS_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.SLASH_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.STAR_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
-    try led(.PERCENT_EQUALS, binding.ASSIGNMENT, exprs.parseAssignmentExpr);
+    try led(.PLUS_EQUALS, binding.ASSIGNMENT, exprs.parseCompoundAssignmentExpr);
+    try led(.MINUS_EQUALS, binding.ASSIGNMENT, exprs.parseCompoundAssignmentExpr);
+    try led(.SLASH_EQUALS, binding.ASSIGNMENT, exprs.parseCompoundAssignmentExpr);
+    try led(.STAR_EQUALS, binding.ASSIGNMENT, exprs.parseCompoundAssignmentExpr);
+    try led(.PERCENT_EQUALS, binding.ASSIGNMENT, exprs.parseCompoundAssignmentExpr);
 
     // Logical
     try led(.AND, binding.LOGICAL, exprs.parseBinaryExpr);

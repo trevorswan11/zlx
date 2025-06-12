@@ -74,6 +74,19 @@ pub fn parseAssignmentExpr(p: *parser.Parser, left: ast.Expr, bp: BindingPower) 
     };
 }
 
+pub fn parseCompoundAssignmentExpr(p: *parser.Parser, left: ast.Expr, _: BindingPower) !ast.Expr {
+    const operator_token = p.advance(); // +=, -=, etc.
+    const rhs = try parseExpr(p, binding.ASSIGNMENT);
+
+    return .{
+        .compound_assignment = .{
+            .assignee = try ast.boxExpr(p, left),
+            .operator = operator_token,
+            .value = try ast.boxExpr(p, rhs),
+        },
+    };
+}
+
 pub fn parseRangeExpr(p: *parser.Parser, left: ast.Expr, bp: BindingPower) !ast.Expr {
     _ = p.advance();
     const upper = try parseExpr(p, bp);
