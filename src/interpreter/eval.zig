@@ -51,6 +51,7 @@ pub fn evalExpr(expr: *ast.Expr, env: *Environment) anyerror!Value {
         .range_expr => |*r| return try expr_handlers.range(r, env),
         .call => |*c| return try expr_handlers.call(c, env),
         .prefix => |*p| return try expr_handlers.prefix(p, env),
+        .postfix => |*p| return try expr_handlers.postfix(p, env),
         .member => |*m| return expr_handlers.member(m, env),
         .computed => |*c| return try expr_handlers.computed(c, env),
         .function_expr => |*f| return try expr_handlers.function(f, env),

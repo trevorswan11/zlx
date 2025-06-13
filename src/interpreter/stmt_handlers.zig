@@ -133,8 +133,9 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
             break;
         }
 
+        var child_env = Environment.init(env.allocator, env);
         for (w.body.items) |stmt| {
-            const val = try evalStmt(stmt, env);
+            const val = try evalStmt(stmt, &child_env);
             switch (val) {
                 .break_signal => return .nil,
                 .continue_signal => break,

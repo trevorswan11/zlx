@@ -252,6 +252,41 @@ pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
     }
 }
 
+pub fn postfix(p: *ast.PostfixExpr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+
+    if (p.operator.kind == .PLUS_PLUS or p.operator.kind == .MINUS_MINUS) {
+        if (p.left.* != .symbol) {
+            try writer_err.print("Cannot invoke postfix '++' or '--' on type {s}\n", .{@tagName(p.left.*)});
+            return error.InvalidPostfixTarget;
+        }
+
+        const name = p.left.symbol.value;
+        var val = try env.get(name);
+
+        if (val != .number) {
+            try writer_err.print("Postfix operator requires a number, got {s}\n", .{@tagName(val)});
+            return error.UnsupportedPostfixOperand;
+        }
+
+        const original = val; // Postfix operators should return original before using operator
+
+        if (p.operator.kind == .PLUS_PLUS) {
+            val.number += 1;
+        } else if (p.operator.kind == .MINUS_MINUS) {
+            val.number -= 1;
+        }
+
+        try env.assign(name, val);
+        return original;
+    }
+
+    const operator_kind_str = try token.tokenKindString(env.allocator, p.operator.kind);
+    defer env.allocator.free(operator_kind_str);
+    try writer_err.print("Operator {s} is not a valid postfix operator\n", .{operator_kind_str});
+    return error.UnsupportedPostfixOperator;
+}
+
 pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
     var target = try evalExpr(m.member, env);
     const writer_err = driver.getWriterErr();

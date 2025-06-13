@@ -121,7 +121,9 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try led(.PLUS, binding.ADDITIVE, exprs.parseBinaryExpr);
     try led(.MINUS, binding.ADDITIVE, exprs.parseBinaryExpr);
     try nud(.MINUS_MINUS, binding.UNARY, exprs.parsePrefixExpr);
+    _ = try led_lu.put(.MINUS_MINUS, exprs.parsePostfixExpr);
     try nud(.PLUS_PLUS, binding.UNARY, exprs.parsePrefixExpr);
+    _ = try led_lu.put(.PLUS_PLUS, exprs.parsePostfixExpr);
     try led(.SLASH, binding.MULTIPLICATIVE, exprs.parseBinaryExpr);
     try led(.STAR, binding.MULTIPLICATIVE, exprs.parseBinaryExpr);
     try led(.PERCENT, binding.MULTIPLICATIVE, exprs.parseBinaryExpr);

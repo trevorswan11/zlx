@@ -38,6 +38,11 @@ pub const PrefixExpr = struct {
     right: *Expr,
 };
 
+pub const PostfixExpr = struct {
+    operator: token.Token,
+    left: *Expr,
+};
+
 pub const AssignmentExpr = struct {
     assignee: *Expr,
     assigned_value: *Expr,
@@ -99,6 +104,7 @@ pub const Expr = union(enum) {
     symbol: SymbolExpr,
     binary: BinaryExpr,
     prefix: PrefixExpr,
+    postfix: PostfixExpr,
     assignment: AssignmentExpr,
     member: MemberExpr,
     call: CallExpr,
@@ -143,6 +149,13 @@ pub const Expr = union(enum) {
                     try token.tokenKindString(p.operator.allocator, p.operator.kind),
                 });
                 try p.right.writeTo(writer, indent_level + 1);
+            },
+            .postfix => |p| {
+                try indent(writer, indent_level);
+                try writer.print("PostfixExpr: operator = {s}\n", .{
+                    try token.tokenKindString(p.operator.allocator, p.operator.kind),
+                });
+                try p.left.writeTo(writer, indent_level + 1);
             },
             .binary => |b| {
                 try indent(writer, indent_level);

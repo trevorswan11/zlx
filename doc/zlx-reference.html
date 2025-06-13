@@ -133,6 +133,7 @@
         <a href="#keywords">Keywords</a>
         <a href="#types">Types</a>
         <a href="#functions">Functions</a>
+        <a href="#tokens">Tokens</a>
 
         <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
     </nav>
@@ -152,7 +153,8 @@
                 compilation errors in other languages. <code>dump</code> prints the code in the input file with syntax
                 highlighting, without running the interpreter. This depends on the ast step, and thus cannot be used if
                 there are parse errors in your code. These options should be passed as the first argument (before the
-                filepath) if desired. If no option is given, the program defaults to interpreting the file.</p>
+                filepath) if desired. If no option is given, the program defaults to interpreting the file.
+            </p>
             <p>ZLX's interpreter also has 2 debug modes: <code>time</code> and <code>-v</code>. <code>time</code> can be
                 passed after
                 the filepath to give a breakdown of the time each step takes to reach the desired output.
@@ -174,13 +176,27 @@ zlx foo.zlx -v time     // Same as the above command
 
         <section id="syntax">
             <h1>Syntax</h1>
-            <p>Basic syntax was inspired by Go, Python, Rust, and more:</p>
+            <p>Basic syntax was inspired by Go, Python, Rust, and more. You can declare mutable variables using the
+                <code>let</code> keyword, or constant variables with the <code>const</code> keyword:
+            </p>
             <pre><code>
 let x = 42;
-print(x);
+const y = 20;
+print(x, y); >> 4220
+y = 2;                  // Error, cannot reassign to constant
             </code></pre>
             <p>While not in REPL mode, statements must be closed by a semicolon. Using more than one semicolon for a
                 given statement is a syntax error and the interpreter will fail.</p>
+            <p>While in REPL mode, the interpreter is more forgiving and does not need to consume a semicolon to
+                interpret a statement. It is only required to use a semicolon when your input takes up multiple lines.
+                You can continue your expression onto the next line by using the <code>\</code> symbol. When the REPL
+                system detects this character, it will advance to the next line and display <code>..</code> instead of
+                <code>>></code>. This indicates that you can continue your input on the next line.
+            </p>
+            <p>ZLX supports most common operators found in many languages, including common prefix, postfix, and
+                reassignment operators like <code>+=</code> Most of these operators are heavily dependent on the
+                underlying type of the operand, but this should not be an issue in most scenarios. To learn more about
+                the typing system, read the next section.</p>
         </section>
 
         <section id="keywords">
@@ -285,10 +301,140 @@ print(detype(x)); >> 42
             <p>Functions are declared using <code>fn</code>:</p>
             <pre><code>
 fn add(a, b) {
-  return a + b;
+    return a + b;
 }
             </code></pre>
         </section>
+
+        <section id="tokens">
+            <h1>Token Reference</h1>
+            <p>The following are the core tokens and symbols used in ZLX. These are grouped by usage and represent the
+                actual syntax users can write. Internal tokens like <code>EOF</code> are omitted.</p>
+
+            <h2>Literals & Identifiers</h2>
+            <pre><code>
+let flag = true;
+if flag {
+    println("It is true!");
+}
+
+let x = nil;
+let name = "ZLX";
+let pi = 3.14;
+    </code></pre>
+
+            <h2>Grouping & Blocks</h2>
+            <pre><code>
+print((1 + 2) * 3);
+
+if x > 10 {
+    println("Big!");
+}
+
+let a = [1, 2, 3];
+println(a[1]);
+    </code></pre>
+
+            <h2>Assignment, Equality & Logic</h2>
+            <pre><code>
+let x = 10;
+if x == 3 {
+    println("Equal");
+}
+
+if !done {
+    println("Not done");
+}
+
+if x >= 10 {
+    println("Big enough");
+}
+
+if x > 0 && y > 0 {
+    println("All positive");
+}
+    </code></pre>
+
+            <h2>Arithmetic & Bitwise Operators</h2>
+            <pre><code>
+let area = w * h;
+
+x += 5;
+
+let x = 0;
+x++;     // now x is 1
+
+let a = 1 | 2;  // a = 3
+    </code></pre>
+
+            <h2>Punctuation & Special Symbols</h2>
+            <pre><code>
+let x = 10;
+
+let x: int = 3;
+struct Point { x: int, y: int }
+
+print(x, y);
+let a = [1, 2, 3];
+
+foreach i in 1..5 {
+    println(i);
+}
+
+let result = match x {
+    1 => "one",
+    2 => "two",
+    _ => "other",
+};
+    </code></pre>
+
+            <h2>Keywords</h2>
+            <pre><code>
+let x = 5;
+const y = 10;
+
+if x == 5 {
+    println("Five");
+} else {
+    println("Not five");
+}
+
+while x < 5 {
+    x++;
+}
+
+foreach i in array {
+    println(i);
+}
+
+fn square(x) {
+    return x * x;
+}
+
+while true {
+    if x > 10 {
+        break;
+    }
+    x++;
+}
+
+struct Point { x, y }
+let p = new Point;
+
+import fs from "fs";
+
+let y = match x {
+    1 => "one",
+    _ => "other",
+};
+
+println(typeof x);
+
+delete x;
+    </code></pre>
+        </section>
+
+
     </main>
 
     <script>

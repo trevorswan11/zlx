@@ -1,0 +1,7 @@
+let a = 5;
+let b = a--;
+println("a = " + a);
+println("b = " + b);
+let c = a++;
+println("a = " + a);
+println("c = " + c);

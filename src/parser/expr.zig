@@ -22,7 +22,9 @@ pub fn parseExpr(p: *parser.Parser, min_bp: BindingPower) !ast.Expr {
 
             // stop at EOF or anything without a known binding power
             const next_bp = lus.bp_lu.get(token_kind) orelse break;
-            if (next_bp.left < min_bp.right) break;
+            if (next_bp.left < min_bp.right) {
+                break;
+            }
 
             const led_fn = lus.led_lu.get(token_kind) orelse {
                 try writer_err.print("Expr Parse Error: LED Handler expected for token {s} ({d}/{d}) @ Line {d}\n", .{
@@ -58,6 +60,17 @@ pub fn parsePrefixExpr(p: *parser.Parser) !ast.Expr {
         .prefix = .{
             .operator = operator_token,
             .right = try ast.boxExpr(p, expr),
+        },
+    };
+}
+
+pub fn parsePostfixExpr(p: *parser.Parser, left: ast.Expr, _: BindingPower) !ast.Expr {
+    const operator_token = p.advance();
+
+    return .{
+        .postfix = .{
+            .operator = operator_token,
+            .left = try ast.boxExpr(p, left),
         },
     };
 }
