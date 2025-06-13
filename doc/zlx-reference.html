@@ -126,14 +126,15 @@
 
 <body>
     <nav>
-        <img src="../resources/zlx-logo-v2.png" alt="ZLX Logo" class="logo">
+        <!-- <img src="../resources/zlx-logo-v2.png" alt="ZLX Logo" class="logo"> --> <!-- Removed for now to allow single-file sharing-->
         <h2>Table of Contents</h2>
         <a href="#intro">Introduction</a>
         <a href="#syntax">Syntax</a>
         <a href="#keywords">Keywords</a>
         <a href="#types">Types</a>
+        <a href="#loops">Loops</a>
+        <a href="#structs">Structs</a>
         <a href="#functions">Functions</a>
-        <a href="#tokens">Tokens</a>
 
         <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
     </nav>
@@ -296,6 +297,68 @@ print(detype(x)); >> 42
             </code></pre>
         </section>
 
+        <section id="loops">
+            <h1>Loops</h1>
+            <p>ZLX has two types of loops, foreach loops and while loops. A foreach loop allows you to loop through an
+                iterable set of elements, specifically an array. You can iterate over a predefined array, or you can use
+                a range expression to loop over an anonymous array. Anonymous arrays are created using the
+                <code>..</code> operator as: <code>start..end</code>. With this notation, an array starting at
+                <code>start</code> and ending at <code>end - 1</code> will be generated. In other words, the array will
+                be of length <code>end - start</code>. You can also index into the array by using the
+                syntax: <code>foreach value, index in array</code>. If you are interested in creating an array with a
+                defined start and end value, but with a step value that is not 1, then see the <code>range</code>
+                builtin function. The following examples show proper use of a foreach loop in zlx:
+            </p>
+            <pre><code>
+foreach val in 0..3 {
+    println(val);       // Loops through the array: [0, 1, 2]
+}
+                
+let nums = [1, 2, 3];
+foreach val, i in nums {
+    println("" + (val + 1) + " @ index " + i);
+}
+            </code></pre>
+            <p>While loops in zlx are much less involved, simply taking a condition as its argument. This condition is
+                not automatically coerced into a bool, so if you would like to do the C-style <code>while 1...</code>,
+                then you should look to the builtin function <code>to_bool</code>. A while loop will run until the
+                condition is violated, or until a break or return signal is reached. Both foreach and while loops
+                support nested break, continue, and return statements to provide control over loop behavior. These
+                statements work the same as in any other modern language. Below are some examples of valid while loops
+                in zlx:</p>
+            <pre><code>
+let i = 0;
+while i < 3 {           // Loops 3 total times
+    println(i);
+    i = i + 1;
+}
+
+i = 0;
+while i < 6 {
+    if i == 3 {
+        i = i + 1;
+        continue;       // Skips 3
+    }
+    println(i);
+    i = i + 1;
+}
+
+i = 0;
+while i < 100 {
+    println(i);
+    i = i + 1;
+    if (i == 3) {
+        break;          // Quits at 3
+    }
+}
+            </code></pre>
+        </section>
+
+        <section id="structs">
+            <h1>Structs</h1>
+            <p>Structs in zlx are basically classes without inheritance. There is no concept of </p>
+        </section>
+
         <section id="functions">
             <h1>Functions</h1>
             <p>Functions are declared using <code>fn</code>:</p>
@@ -304,136 +367,61 @@ fn add(a, b) {
     return a + b;
 }
             </code></pre>
-        </section>
-
-        <section id="tokens">
-            <h1>Token Reference</h1>
-            <p>The following are the core tokens and symbols used in ZLX. These are grouped by usage and represent the
-                actual syntax users can write. Internal tokens like <code>EOF</code> are omitted.</p>
-
-            <h2>Literals & Identifiers</h2>
+            <p>They can be declared without any type declarations as seen above, or with types for variables and the
+                return type. Ultimately, the inclusion of type annotations in function declarations does not do anything
+                for the way interpreting works. A function with type declarations might look like:</p>
             <pre><code>
-let flag = true;
-if flag {
-    println("It is true!");
+fn add(a: int, b: int): int {
+    const res = a + b;
+    res;
 }
-
-let x = nil;
-let name = "ZLX";
-let pi = 3.14;
-    </code></pre>
-
-            <h2>Grouping & Blocks</h2>
+println(add(5, 10));
+            </code></pre>
+            <p>Functions in zlx are first-class, meaning they can be passed as parameters and bound to variables freely.
+                Functions can also be returned from other functions. They may be created inside the function, but you
+                must be careful not to violate closures. Some examples:</p>
+            <p></p>
             <pre><code>
-print((1 + 2) * 3);
+struct Greeter {
+    let name: string;
 
-if x > 10 {
-    println("Big!");
-}
-
-let a = [1, 2, 3];
-println(a[1]);
-    </code></pre>
-
-            <h2>Assignment, Equality & Logic</h2>
-            <pre><code>
-let x = 10;
-if x == 3 {
-    println("Equal");
-}
-
-if !done {
-    println("Not done");
-}
-
-if x >= 10 {
-    println("Big enough");
-}
-
-if x > 0 && y > 0 {
-    println("All positive");
-}
-    </code></pre>
-
-            <h2>Arithmetic & Bitwise Operators</h2>
-            <pre><code>
-let area = w * h;
-
-x += 5;
-
-let x = 0;
-x++;     // now x is 1
-
-let a = 1 | 2;  // a = 3
-    </code></pre>
-
-            <h2>Punctuation & Special Symbols</h2>
-            <pre><code>
-let x = 10;
-
-let x: int = 3;
-struct Point { x: int, y: int }
-
-print(x, y);
-let a = [1, 2, 3];
-
-foreach i in 1..5 {
-    println(i);
-}
-
-let result = match x {
-    1 => "one",
-    2 => "two",
-    _ => "other",
-};
-    </code></pre>
-
-            <h2>Keywords</h2>
-            <pre><code>
-let x = 5;
-const y = 10;
-
-if x == 5 {
-    println("Five");
-} else {
-    println("Not five");
-}
-
-while x < 5 {
-    x++;
-}
-
-foreach i in array {
-    println(i);
-}
-
-fn square(x) {
-    return x * x;
-}
-
-while true {
-    if x > 10 {
-        break;
+    fn ctor(name: string) {
+        this.name = name;
     }
-    x++;
+
+    fn greet() {
+        println("Hello, " + this.name);
+    }
 }
 
-struct Point { x, y }
-let p = new Point;
+fn repeat(func: function, times: number) {
+    foreach _ in 0..times {
+        func();
+    }
+}
 
-import fs from "fs";
+let g = new Greeter("Ziggy");
+repeat(g.greet, 3);
+            </code></pre>
+            <p>The above code is valid, creating a struct called person with name Ziggy, and passing the greet function
+                of the Greeter class to a function that runs it times number of times. Similar to the way this is
+                structured, you could assign g.greet to a variable, and pass that variable as the function argument.
+                This is perfectly valid zlx code.</p>
+            <pre><code>
+fn builder(x) {
+    fn add(y) {
+        return x + y;
+    }
+    return add;
+}
 
-let y = match x {
-    1 => "one",
-    _ => "other",
-};
-
-println(typeof x);
-
-delete x;
-    </code></pre>
+let func = builder(23);
+println(func(4));
+            </code></pre>
+            <p>The above code will fail as the add function does not capture the parameter x declared in the builder
+                function. This is not safety checked and will cause an immediate failure on the backend. You cannot
+                handle this type of error without changing the source code of zlx. I do not want to do this yet!</p>
         </section>
-
 
     </main>
 
