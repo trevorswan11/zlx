@@ -181,7 +181,7 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
     } else {
         return_type = .{
             .symbol = .{
-                .value_type = "void",
+                .value_type = "any",
             },
         };
     }

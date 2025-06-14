@@ -37,7 +37,7 @@ pub fn println(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
 pub fn len(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
-        try writer_err.print("len(...): expected exactly 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("len(arr|str): expected exactly 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
     const val = try eval.evalExpr(args[0], env);
@@ -49,7 +49,7 @@ pub fn len(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Va
             .number = @floatFromInt(s.len),
         },
         else => {
-            try writer_err.print("len(...): only operates on strings and arrays, got a(n) {s}\n", .{@tagName(val)});
+            try writer_err.print("len(arr|str): only operates on strings and arrays, got a(n) {s}\n", .{@tagName(val)});
             return error.TypeMismatch;
         },
     };
@@ -59,7 +59,7 @@ pub fn ref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Va
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
-        try writer_err.print("ref(...): expected exactly 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("ref(value): expected exactly 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -81,14 +81,14 @@ pub fn deref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
-        try writer_err.print("deref(...): expected exactly 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("deref(reference): expected exactly 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
 
     if (val != .reference) {
-        try writer_err.print("deref(...): expected reference, got a(n) {s}\n", .{@tagName(val)});
+        try writer_err.print("deref(reference): expected reference, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 
@@ -99,14 +99,14 @@ pub fn detype(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
-        try writer_err.print("detype(...): expected exactly 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("detype(typed_val): expected exactly 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
 
     if (val != .typed_val) {
-        try writer_err.print("detype(...): expected typed value, got a(n) {s}\n", .{@tagName(val)});
+        try writer_err.print("detype(typed_val): expected typed value, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 
@@ -117,11 +117,11 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     const writer_err = driver.getWriterErr();
 
     if (args.len == 2) {
-        try writer_err.print("range(...): expected 3 arguments (start, end, step), got {d}\n", .{args.len});
+        try writer_err.print("range(start, end, step): expected 3 arguments (start, end, step), got {d}\n", .{args.len});
         try writer_err.print("  Consider using 'start..end' syntax\n", .{});
         return error.ArgumentCountMismatch;
     } else if (args.len != 3) {
-        try writer_err.print("range(...): expected 3 arguments (start, end, step), got {d}\n", .{args.len});
+        try writer_err.print("range(start, end, step): expected 3 arguments (start, end, step), got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -130,7 +130,7 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     const c = try eval.evalExpr(args[2], env);
 
     if (a != .number or b != .number or c != .number) {
-        try writer_err.print("range(...): all arguments must be numbers\n", .{});
+        try writer_err.print("range(start, end, step): all arguments must be numbers\n", .{});
         try writer_err.print("  Start = {s}\n", .{try a.toString(env.allocator)});
         try writer_err.print("  End = {s}\n", .{try b.toString(env.allocator)});
         try writer_err.print("  Step = {s}\n", .{try c.toString(env.allocator)});
@@ -142,7 +142,7 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     const step: i64 = @intFromFloat(c.number);
 
     if (step == 0) {
-        try writer_err.print("range(...): step cannot be zero\n", .{});
+        try writer_err.print("range(start, end, step): step cannot be zero\n", .{});
         return error.InvalidStep;
     }
 
@@ -150,12 +150,16 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     if (step > 0) {
         var i = start;
         while (i < end) : (i += step) {
-            try result.append(.{ .number = @floatFromInt(i) });
+            try result.append(.{
+                .number = @floatFromInt(i),
+            });
         }
     } else {
         var i = start;
         while (i > end) : (i += step) {
-            try result.append(.{ .number = @floatFromInt(i) });
+            try result.append(.{
+                .number = @floatFromInt(i),
+            });
         }
     }
 
@@ -168,7 +172,7 @@ pub fn to_string(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *En
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
-        try writer_err.print("to_string(...) expects exactly 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("to_string(value) expects exactly 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -183,18 +187,18 @@ pub fn to_number(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
-        try writer_err.print("to_number(...) expects exactly 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("to_number(value) expects exactly 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .string) {
-        try writer_err.print("to_number(...) expects a string argument, got a(n) {s}\n", .{@tagName(val)});
+        try writer_err.print("to_number(value) expects a string argument, got a(n) {s}\n", .{@tagName(val)});
         return error.TypeMismatch;
     }
 
     const parsed = std.fmt.parseFloat(f64, val.string) catch {
-        try writer_err.print("to_number(...) failed to parse input: \"{s}\"\n", .{val.string});
+        try writer_err.print("to_number(value) failed to parse input: \"{s}\"\n", .{val.string});
         return error.ParseFailure;
     };
 
@@ -207,7 +211,7 @@ pub fn to_bool(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
-        try writer_err.print("to_bool(...) expects exactly 1 argument, got {d}\n", .{args.len});
+        try writer_err.print("to_bool(value) expects exactly 1 argument, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -224,6 +228,7 @@ pub fn coerceBool(val: Value) bool {
         .string => val.string.len != 0,
         .array => val.array.items.len != 0,
         .reference => coerceBool(val.reference.*),
+        .typed_val => |tv| coerceBool(tv.value.*),
         .nil => false,
         else => true, // objects, references, functions, etc. will be considered 'truthy'
     };

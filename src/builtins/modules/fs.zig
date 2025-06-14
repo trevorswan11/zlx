@@ -68,7 +68,6 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "read_lines", readLinesHandler);
     try pack(&map, "touch", touchHandler);
     try pack(&map, "append", appendHandler);
-    try pack(&map, "rm", rmHandler);
     try pack(&map, "list_all_files", listAllFilesHandler);
 
     return .{

@@ -121,20 +121,181 @@
             background: var(--code-bg);
             font-family: monospace;
         }
+
+        nav ul {
+            padding-left: 1.5em;
+            margin-top: 0.2em;
+        }
     </style>
 </head>
 
 <body>
     <nav>
-        <!-- <img src="../resources/zlx-logo-v2.png" alt="ZLX Logo" class="logo"> --> <!-- Removed for now to allow single-file sharing-->
+        <!-- <img src="../resources/ZLX-logo-v2.png" alt="ZLX Logo" class="logo"> -->
+        <!-- Removed for now to allow single-file sharing-->
         <h2>Table of Contents</h2>
         <a href="#intro">Introduction</a>
         <a href="#syntax">Syntax</a>
         <a href="#keywords">Keywords</a>
         <a href="#types">Types</a>
         <a href="#loops">Loops</a>
+        <a href="#objects">Objects</a>
         <a href="#structs">Structs</a>
         <a href="#functions">Functions</a>
+        <a href="#patterns">Pattern Matching</a>
+        <div>
+            <a href="#builtins">Builtins</a>
+            <ul>
+                <li>
+                    <a href="#array">array</a>
+                    <ul>
+                        <li><a href="#array-push">push</a></li>
+                        <li><a href="#array-pop">pop</a></li>
+                        <li><a href="#array-insert">insert</a></li>
+                        <li><a href="#array-remove">remove</a></li>
+                        <li><a href="#array-clear">clear</a></li>
+                        <li><a href="#array-get">get</a></li>
+                        <li><a href="#array-set">set</a></li>
+                        <li><a href="#array-slice">slice</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#debug">debug</a>
+                    <ul>
+                        <li><a href="#debug-assert">assert</a></li>
+                        <li><a href="#debug-assertEqual">assertEqual</a></li>
+                        <li><a href="#debug-assertNotEqual">assertNotEqual</a></li>
+                        <li><a href="#debug-fail">fail</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#fs">fs</a>
+                    <ul>
+                        <li><a href="#fs-read">read</a></li>
+                        <li><a href="#fs-write">write</a></li>
+                        <li><a href="#fs-exists">exists</a></li>
+                        <li><a href="#fs-remove">remove</a></li>
+                        <li><a href="#fs-list">list</a></li>
+                        <li><a href="#fs-list_all_files">list_all_files</a></li>
+                        <li><a href="#fs-mkdir">mkdir</a></li>
+                        <li><a href="#fs-rmdir">rmdir</a></li>
+                        <li><a href="#fs-rm">rm</a></li>
+                        <li><a href="#fs-copy">copy</a></li>
+                        <li><a href="#fs-rename">rename</a></li>
+                        <li><a href="#fs-is_dir">is_dir</a></li>
+                        <li><a href="#fs-read_lines">read_lines</a></li>
+                        <li><a href="#fs-touch">touch</a></li>
+                        <li><a href="#fs-append">append</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#math">math</a>
+                    <ul>
+                        <li><a href="#math-sqrt">sqrt</a></li>
+                        <li><a href="#math-abs">abs</a></li>
+                        <li><a href="#math-sin">sin</a></li>
+                        <li><a href="#math-cos">cos</a></li>
+                        <li><a href="#math-tan">tan</a></li>
+                        <li><a href="#math-asin">asin</a></li>
+                        <li><a href="#math-acos">acos</a></li>
+                        <li><a href="#math-atan">atan</a></li>
+                        <li><a href="#math-atan2">atan2</a></li>
+                        <li><a href="#math-log">log</a></li>
+                        <li><a href="#math-log10">log10</a></li>
+                        <li><a href="#math-exp">exp</a></li>
+                        <li><a href="#math-floor">floor</a></li>
+                        <li><a href="#math-ceil">ceil</a></li>
+                        <li><a href="#math-round">round</a></li>
+                        <li><a href="#math-pow">pow</a></li>
+                        <li><a href="#math-min">min</a></li>
+                        <li><a href="#math-max">max</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#path">path</a>
+                    <ul>
+                        <li><a href="#path-join">join</a></li>
+                        <li><a href="#path-basename">basename</a></li>
+                        <li><a href="#path-dirname">dirname</a></li>
+                        <li><a href="#path-extname">extname</a></li>
+                        <li><a href="#path-stem">stem</a></li>
+                        <li><a href="#path-is_absolute">is_absolute</a></li>
+                        <li><a href="#path-is_relative">is_relative</a></li>
+                        <li><a href="#path-normalize">normalize</a></li>
+                        <li><a href="#path-split">split</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#random">random</a>
+                    <ul>
+                        <li><a href="#random-rand">rand</a></li>
+                        <li><a href="#random-randint">randint</a></li>
+                        <li><a href="#random-choice">choice</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#string">string</a>
+                    <ul>
+                        <li><a href="#string-upper">upper</a></li>
+                        <li><a href="#string-lower">lower</a></li>
+                        <li><a href="#string-slice">slice</a></li>
+                        <li><a href="#string-find">find</a></li>
+                        <li><a href="#string-replace">replace</a></li>
+                        <li><a href="#string-split">split</a></li>
+                        <li><a href="#string-trim">trim</a></li>
+                        <li><a href="#string-contains">contains</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#sys">sys</a>
+                    <ul>
+                        <li><a href="#sys-args">args</a></li>
+                        <li><a href="#sys-getenv">getenv</a></li>
+                        <li><a href="#sys-setenv">setenv</a></li>
+                        <li><a href="#sys-unsetenv">unsetenv</a></li>
+                        <li><a href="#sys-run">run</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#time">time</a>
+                    <ul>
+                        <li><a href="#time-now">now</a></li>
+                        <li><a href="#time-millis">millis</a></li>
+                        <li><a href="#time-sleep">sleep</a></li>
+                        <li><a href="#time-sleepMs">sleepMs</a></li>
+                        <li><a href="#time-start">start</a></li>
+                        <li><a href="#time-stop">stop</a></li>
+                        <li><a href="#time-delta">delta</a></li>
+                        <li><a href="#time-timestamp">timestamp</a></li>
+                        <li><a href="#time-constants">Time Constants</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#builtin-functions">Functions</a>
+                    <ul>
+                        <li><a href="#print">print</a></li>
+                        <li><a href="#println">println</a></li>
+                        <li><a href="#len">len</a></li>
+                        <li><a href="#ref">ref</a></li>
+                        <li><a href="#deref">deref</a></li>
+                        <li><a href="#detype">detype</a></li>
+                        <li><a href="#range">range</a></li>
+                        <li><a href="#to_string">to_string</a></li>
+                        <li><a href="#to_number">to_number</a></li>
+                        <li><a href="#to_bool">to_bool</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
 
         <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
     </nav>
@@ -142,7 +303,7 @@
     <main>
         <section id="intro">
             <h1>Introduction</h1>
-            <p>Welcome to the documentation for <strong>ZLX</strong>. This page covers syntax, types, features, and
+            <p>Welcome to the documentation for ZLX. This page covers syntax, types, features, and
                 common patterns.</p>
             <p>ZLX has two main modes, interpreting and REPL. You can enter REPL by simply running the binary with no
                 command line arguments. If you would like to write ZLX code in a script and interpret it, simply pass
@@ -165,13 +326,13 @@
             </p>
             <p>Here are some examples of common uses of the ZLX binary:</p>
             <pre><code>
-zlx                     // Initializes REPL mode
-zlx foo.zlx             // Interprets the file foo.zlx, where the filepath is relative to the cwd
-zlx run foo.zlx         // Same as the above command
-zlx ast foo.zlx         // Parses foo.zlx without interpreting
-zlx dump foo.zlx        // Parses and dumps the syntax highlighted content of foo.zlx without interpreting
-zlx foo.zlx time -v     // Interprets foo.zlx, timing execution and printing the generated AST
-zlx foo.zlx -v time     // Same as the above command
+ZLX                     // Initializes REPL mode
+ZLX foo.ZLX             // Interprets the file foo.ZLX, where the filepath is relative to the cwd
+ZLX run foo.ZLX         // Same as the above command
+ZLX ast foo.ZLX         // Parses foo.ZLX without interpreting
+ZLX dump foo.ZLX        // Parses and dumps the syntax highlighted content of foo.ZLX without interpreting
+ZLX foo.ZLX time -v     // Interprets foo.ZLX, timing execution and printing the generated AST
+ZLX foo.ZLX -v time     // Same as the above command
             </code></pre>
         </section>
 
@@ -295,6 +456,18 @@ print(typeof x); >> int
 let x: int = 42;
 print(detype(x)); >> 42
             </code></pre>
+            <h2>Strings</h2>
+            <p>Strings in ZLX are somewhat unique. They can be declared only with double quotes, and multiline strings
+                can
+                be declared using 3 triple quotes. Multiline strings will capture all newline tokens starting from the
+                end
+                of the first triplet of quotes and ending with the start of the ending triplet.</p>
+            <pre><code>
+let s = """This is
+a multiline
+string""";
+println(s);
+            </code></pre>
         </section>
 
         <section id="loops">
@@ -307,7 +480,7 @@ print(detype(x)); >> 42
                 be of length <code>end - start</code>. You can also index into the array by using the
                 syntax: <code>foreach value, index in array</code>. If you are interested in creating an array with a
                 defined start and end value, but with a step value that is not 1, then see the <code>range</code>
-                builtin function. The following examples show proper use of a foreach loop in zlx:
+                builtin function. The following examples show proper use of a foreach loop in ZLX:
             </p>
             <pre><code>
 foreach val in 0..3 {
@@ -319,13 +492,13 @@ foreach val, i in nums {
     println("" + (val + 1) + " @ index " + i);
 }
             </code></pre>
-            <p>While loops in zlx are much less involved, simply taking a condition as its argument. This condition is
+            <p>While loops in ZLX are much less involved, simply taking a condition as its argument. This condition is
                 not automatically coerced into a bool, so if you would like to do the C-style <code>while 1...</code>,
                 then you should look to the builtin function <code>to_bool</code>. A while loop will run until the
                 condition is violated, or until a break or return signal is reached. Both foreach and while loops
                 support nested break, continue, and return statements to provide control over loop behavior. These
                 statements work the same as in any other modern language. Below are some examples of valid while loops
-                in zlx:</p>
+                in ZLX:</p>
             <pre><code>
 let i = 0;
 while i < 3 {           // Loops 3 total times
@@ -354,9 +527,51 @@ while i < 100 {
             </code></pre>
         </section>
 
+        <section id="objects">
+            <h1>Objects</h1>
+            <p>Objects in ZLX are weakly typed groups of data. They can be thought of as named tuples in other
+                languages. You can access the values in an objects by using the <code>.</code> operator or by using a
+                computed expression, which is defined by the <code>obj[name]</code> syntax. With this syntax, the name
+                must be a string. This type of expression makes the object act as a pseudo lookup table, but
+                interpretation will fail if the property doesn't exist. An example declaration of an object and its two
+                ways of accessing data are shown here:</p>
+            <pre><code>
+let obj1 = { foo: 123, bar: "baz" };
+println(obj1.foo);
+println(obj1["bar"]);
+            </code></pre>
+        </section>
+
         <section id="structs">
             <h1>Structs</h1>
-            <p>Structs in zlx are basically classes without inheritance. There is no concept of </p>
+            <p>Structs in ZLX are basically classes without inheritance. There is no concept of OOP in ZLX, and structs
+                should only be used as helpful ways to organize data and have common functions for certain types. They
+                are declared using the <code>struct</code> keyword, and you can reference data inside a struct through
+                its functions using the <code>this</code> keyword. You can call functions on structs using typical call
+                notation as seen in virtually all languages. All fields declared in a struct are public, and there is no
+                way to access this behavior. You can access fields by using the <code>.</code> operator or by using a
+                computed expression as you would on a basic object. An example struct with example interactions with its
+                field and functions can be seen here:
+            </p>
+            <pre><code>
+struct Greeter {
+    let name: string;
+
+    fn ctor(name: string) {
+        this.name = name;
+    }
+
+    fn greet() {
+        println("Hello, " + this.name);
+    }
+}
+
+let g = new Greeter("Ziggy");
+println(g.name);                // Ziggy
+println(g["__struct_name"]);    // Greeter
+println(g["name"]);             // Ziggy
+g.greet();                      // Hello, Ziggy
+            </code></pre>
         </section>
 
         <section id="functions">
@@ -377,7 +592,7 @@ fn add(a: int, b: int): int {
 }
 println(add(5, 10));
             </code></pre>
-            <p>Functions in zlx are first-class, meaning they can be passed as parameters and bound to variables freely.
+            <p>Functions in ZLX are first-class, meaning they can be passed as parameters and bound to variables freely.
                 Functions can also be returned from other functions. They may be created inside the function, but you
                 must be careful not to violate closures. Some examples:</p>
             <p></p>
@@ -406,7 +621,7 @@ repeat(g.greet, 3);
             <p>The above code is valid, creating a struct called person with name Ziggy, and passing the greet function
                 of the Greeter class to a function that runs it times number of times. Similar to the way this is
                 structured, you could assign g.greet to a variable, and pass that variable as the function argument.
-                This is perfectly valid zlx code.</p>
+                This is perfectly valid ZLX code.</p>
             <pre><code>
 fn builder(x) {
     fn add(y) {
@@ -420,8 +635,387 @@ println(func(4));
             </code></pre>
             <p>The above code will fail as the add function does not capture the parameter x declared in the builder
                 function. This is not safety checked and will cause an immediate failure on the backend. You cannot
-                handle this type of error without changing the source code of zlx. I do not want to do this yet!</p>
+                handle this type of error without changing the source code of ZLX. I do not want to do this yet!</p>
         </section>
+
+        <section id="patterns">
+            <h1>Pattern Matching</h1>
+            <p>Pattern matching in ZLX works very similar to how it does in languages like rust and zig. In ZLX, pattern
+                matching can be used as a statement that invokes a set of instructions based on the state of a variable,
+                or it can be used as an expression used for assignment to a variable based on the switched value. You
+                can use the <code>_</code> token as an else block that catches all unspecified cases. Each case and its
+                corresponding statement must be connected by the arrow operator (<code>=></code>). The two common uses
+                for match statements can be seen here:</p>
+            <pre><code>
+// Match Statement
+let x = 3;
+match x {
+    1 => println("one");
+    2 => println("two");
+    3 => {
+        print("three ");
+        println("more");
+    },
+    _ => println("default");
+}                               // three more
+
+// Match Expression
+let x = 3;
+let y = match x {
+    3 => 4,
+    _ => 100,
+};
+
+println(y);                     // 4
+            </code></pre>
+        </section>
+
+        <section id="builtins">
+            <h1>Builtins</h1>
+            <p>Builtin modules are objects of functions and variables that can be imported into any ZLX file using the
+                <code>import</code> keyword followed by the module name. While this is required for modules, builtin
+                functions are included by default and can be accessed anywhere at any time. As seen in the keywords
+                section of this doc, builtin functions and builtin module names are all reserved keywords and cannot be
+                used as identifiers. When invoking a builtin module function, the module will tell you if your function
+                call is incorrect, but these docs can be used for a surface level understanding. For now, a lot of this
+                documentation will be very sparse as I am lazy! ChatGPT was used to create these documentation 'stubs'.
+            </p>
+            <h2 id="array">array</h2>
+            <h3 id="array-push">push</h3>
+            <p>Adds a value to the end of the array.</p>
+
+            <h3 id="array-pop">pop</h3>
+            <p>Removes and returns the last element of the array.</p>
+
+            <h3 id="array-insert">insert</h3>
+            <p>Inserts a value at a specified index, shifting others right.</p>
+
+            <h3 id="array-remove">remove</h3>
+            <p>Removes an element at a specified index, shifting others left.</p>
+
+            <h3 id="array-clear">clear</h3>
+            <p>Removes all elements from the array.</p>
+
+            <h3 id="array-get">get</h3>
+            <p>Retrieves the value at a specified index.</p>
+
+            <h3 id="array-set">set</h3>
+            <p>Sets the value at a specified index.</p>
+
+            <h3 id="array-slice">slice</h3>
+            <p>Returns a subarray between two indices (inclusive start, exclusive end).</p>
+
+            <h2 id="debug">debug</h2>
+            <p>You can specify a message to be printed as the last argument for all of these functions. This last
+                argument will be printed on failure, and must be a string.</p>
+
+            <h3 id="debug-assert">assert</h3>
+            <p>Throws an error if the given condition is false. Used to enforce invariants.</p>
+
+            <h3 id="debug-assertEqual">assertEqual</h3>
+            <p>Throws an error if two values are not equal.</p>
+
+            <h3 id="debug-assertNotEqual">assertNotEqual</h3>
+            <p>Throws an error if two values are equal. Useful for negative tests.</p>
+
+            <h3 id="debug-fail">fail</h3>
+            <p>Unconditionally triggers a failure. Useful for stubs or deliberate test breaks.</p>
+
+            <h2 id="fs">fs</h2>
+            <h3 id="fs-read">read</h3>
+            <p>Reads the contents of a file and returns it as a string.</p>
+
+            <h3 id="fs-write">write</h3>
+            <p>Writes a string to a file, overwriting if it already exists.</p>
+
+            <h3 id="fs-exists">exists</h3>
+            <p>Returns true if the specified file or directory exists.</p>
+
+            <h3 id="fs-remove">remove</h3>
+            <p>Removes a specified file or directory. Alias of <code>rm</code>.</p>
+
+            <h3 id="fs-list">list</h3>
+            <p>Returns the entries in a directory (non-recursive).</p>
+
+            <h3 id="fs-list_all_files">list_all_files</h3>
+            <p>Recursively lists all files in a directory.</p>
+
+            <h3 id="fs-mkdir">mkdir</h3>
+            <p>Creates a directory at the given path.</p>
+
+            <h3 id="fs-rmdir">rmdir</h3>
+            <p>Removes an empty directory.</p>
+
+            <h3 id="fs-rm">rm</h3>
+            <p>Removes a file or directory. Alias of <code>remove</code>.</p>
+
+            <h3 id="fs-copy">copy</h3>
+            <p>Copies a file from one path to another.</p>
+
+            <h3 id="fs-rename">rename</h3>
+            <p>Renames or moves a file or directory.</p>
+
+            <h3 id="fs-is_dir">is_dir</h3>
+            <p>Returns true if the path is a directory.</p>
+
+            <h3 id="fs-read_lines">read_lines</h3>
+            <p>Reads a file and returns an array of strings split by line.</p>
+
+            <h3 id="fs-touch">touch</h3>
+            <p>Creates an empty file or updates the timestamp if it exists.</p>
+
+            <h3 id="fs-append">append</h3>
+            <p>Appends text to the end of a file.</p>
+
+            <h2 id="math">math</h2>
+            <h3 id="math-sqrt">sqrt</h3>
+            <p>Returns the square root of a number.</p>
+
+            <h3 id="math-abs">abs</h3>
+            <p>Returns the absolute value of a number.</p>
+
+            <h3 id="math-sin">sin</h3>
+            <p>Returns the sine of a number in radians.</p>
+
+            <h3 id="math-cos">cos</h3>
+            <p>Returns the cosine of a number in radians.</p>
+
+            <h3 id="math-tan">tan</h3>
+            <p>Returns the tangent of a number in radians.</p>
+
+            <h3 id="math-asin">asin</h3>
+            <p>Returns the arc-sine (in radians) of a value in the range [-1, 1].</p>
+
+            <h3 id="math-acos">acos</h3>
+            <p>Returns the arc-cosine (in radians) of a value in the range [-1, 1].</p>
+
+            <h3 id="math-atan">atan</h3>
+            <p>Returns the arc-tangent (in radians) of a value.</p>
+
+            <h3 id="math-atan2">atan2</h3>
+            <p>Returns the arc-tangent of two variables y and x. Useful for angle from coordinate.</p>
+
+            <h3 id="math-log">log</h3>
+            <p>Returns the natural logarithm (base e) of a number.</p>
+
+            <h3 id="math-log10">log10</h3>
+            <p>Returns the base-10 logarithm of a number.</p>
+
+            <h3 id="math-exp">exp</h3>
+            <p>Returns e raised to the power of a given number.</p>
+
+            <h3 id="math-floor">floor</h3>
+            <p>Rounds a number down to the nearest integer.</p>
+
+            <h3 id="math-ceil">ceil</h3>
+            <p>Rounds a number up to the nearest integer.</p>
+
+            <h3 id="math-round">round</h3>
+            <p>Rounds a number to the nearest integer.</p>
+
+            <h3 id="math-pow">pow</h3>
+            <p>Raises a number to the power of another (base<sup>exponent</sup>).</p>
+
+            <h3 id="math-min">min</h3>
+            <p>Returns the smaller of two numbers.</p>
+
+            <h3 id="math-max">max</h3>
+            <p>Returns the larger of two numbers.</p>
+
+            <h2 id="path">path</h2>
+            <h3 id="path-join">join</h3>
+            <p>Joins multiple path segments into a single path using the platform separator.</p>
+
+            <h3 id="path-basename">basename</h3>
+            <p>Returns the final component of a path (e.g. file name).</p>
+
+            <h3 id="path-dirname">dirname</h3>
+            <p>Returns the directory portion of a path, excluding the final component.</p>
+
+            <h3 id="path-extname">extname</h3>
+            <p>Returns the file extension from a path, including the dot.</p>
+
+            <h3 id="path-stem">stem</h3>
+            <p>Returns the file name without its extension.</p>
+
+            <h3 id="path-is_absolute">is_absolute</h3>
+            <p>Returns true if the path is absolute.</p>
+
+            <h3 id="path-is_relative">is_relative</h3>
+            <p>Returns true if the path is relative.</p>
+
+            <h3 id="path-normalize">normalize</h3>
+            <p>Normalizes a path by resolving <code>.</code>, <code>..</code>, and redundant separators.</p>
+
+            <h3 id="path-split">split</h3>
+            <p>Splits a path into its components (e.g. directories and file).</p>
+
+            <h2 id="random">random</h2>
+            <h3 id="random-rand">rand</h3>
+            <p>Returns a random floating-point number in the range [0, 1).</p>
+
+            <h3 id="random-randint">randint</h3>
+            <p>Returns a random integer between two bounds, inclusive. Usage: <code>randint(min, max)</code>.</p>
+
+            <h3 id="random-choice">choice</h3>
+            <p>Returns a random element from a non-empty array.</p>
+
+            <h2 id="string">string</h2>
+            <h3 id="string-upper">upper</h3>
+            <p>Returns a copy of the string with all letters converted to uppercase.</p>
+
+            <h3 id="string-lower">lower</h3>
+            <p>Returns a copy of the string with all letters converted to lowercase.</p>
+
+            <h3 id="string-slice">slice</h3>
+            <p>Returns a substring from a given start (inclusive) and end (exclusive) index.</p>
+
+            <h3 id="string-find">find</h3>
+            <p>Returns the index of the first occurrence of a substring, or -1 if not found.</p>
+
+            <h3 id="string-replace">replace</h3>
+            <p>Returns a copy of the string with all occurrences of a substring replaced.</p>
+
+            <h3 id="string-split">split</h3>
+            <p>Splits the string into an array of substrings using a delimiter.</p>
+
+            <h3 id="string-trim">trim</h3>
+            <p>Removes leading and trailing whitespace from the string.</p>
+
+            <h3 id="string-contains">contains</h3>
+            <p>Returns true if the string contains a given substring.</p>
+
+            <h2 id="sys">sys</h2>
+            <h3 id="sys-args">args</h3>
+            <p>Returns an array of command-line arguments passed to the program.</p>
+
+            <h3 id="sys-getenv">getenv</h3>
+            <p>Returns the value of an environment variable, or null if not set.</p>
+
+            <h3 id="sys-setenv">setenv</h3>
+            <p>Sets or updates the value of an environment variable.</p>
+
+            <h3 id="sys-unsetenv">unsetenv</h3>
+            <p>Removes an environment variable from the current process.</p>
+
+            <h3 id="sys-run">run</h3>
+            <p>Executes a subprocess with the given command. Returns its output or throws on failure.</p>
+
+            <h2 id="time">time</h2>
+            <h3 id="time-now">now</h3>
+            <p>Returns the current system time in nanoseconds.</p>
+
+            <h3 id="time-millis">millis</h3>
+            <p>Returns the number of milliseconds since an arbitrary fixed point (e.g., program start or epoch).</p>
+
+            <h3 id="time-sleep">sleep</h3>
+            <p>Suspends execution for the given number of seconds.</p>
+
+            <h3 id="time-sleepMs">sleepMs</h3>
+            <p>Suspends execution for the given number of milliseconds.</p>
+
+            <h3 id="time-start">start</h3>
+            <p>Begins a timer for measuring elapsed time. Used with <code>stop</code> and <code>delta</code>.</p>
+
+            <h3 id="time-stop">stop</h3>
+            <p>Stops the timer started by <code>start</code>.</p>
+
+            <h3 id="time-delta">delta</h3>
+            <p>Returns the elapsed time (in seconds) between <code>start</code> and <code>stop</code>.</p>
+
+            <h3 id="time-timestamp">timestamp</h3>
+            <p>Returns the current Unix timestamp in seconds.</p>
+
+            <h3 id="time-constants">Time Constants</h3>
+            <p>The following time constants can be accessed from the time module. These are directly pulled from the zig
+                standard library.</p>
+            <table>
+                <tr>
+                    <td>ns_per_us</td>
+                    <td>ns_per_ms</td>
+                    <td>ns_per_s</td>
+                    <td>ns_per_min</td>
+                    <td>ns_per_hour</td>
+                    <td>ns_per_day</td>
+                    <td>ns_per_week</td>
+                </tr>
+                <tr>
+                    <td>us_per_ms</td>
+                    <td>us_per_s</td>
+                    <td>us_per_min</td>
+                    <td>us_per_hour</td>
+                    <td>us_per_day</td>
+                    <td>us_per_week</td>
+                </tr>
+                <tr>
+                    <td>ms_per_s</td>
+                    <td>ms_per_min</td>
+                    <td>ms_per_hour</td>
+                    <td>ms_per_day</td>
+                    <td>ms_per_week</td>
+                </tr>
+                <tr>
+                    <td>s_per_min</td>
+                    <td>s_per_hour</td>
+                    <td>s_per_day</td>
+                    <td>s_per_week</td>
+                </tr>
+            </table>
+        </section>
+        <h2 id="builtin-functions">Functions</h2>
+        <p>The builtin functions found in ZLX implement reasonably verbose error messages that can be used to guide
+            their usage, but this section can be used for clarity.</p>
+
+        <h3 id="print">print</h3>
+        <p>The <code>print</code> takes in a variable number of values, and prints them as is with no delimiters between
+            arguments.
+            As long as the backend of the language is up to date, all values should implement the print function in some
+            way and can be passed as an argument to this function.</p>
+
+        <h3 id="println">println</h3>
+        <p>The <code>println</code> function is nearly identical to the print function, but print each argument
+            separated by a new
+            line token.</p>
+
+        <h3 id="len">len</h3>
+        <p>The len <code>function</code> returns the length of a string or array. This is self-explanatory</p>
+        <h3 id="ref">ref</h3>
+        <p>The <code>ref</code> function takes in any value and packs it into a heap allocated value. This is
+            particularly useful for
+            arrays, allowing them to be used with the array module and mutated freely. This is a copy of the original
+            value, and does not make the input value an actual reference.</p>
+
+        <h3 id="deref">deref</h3>
+        <p>The <code>deref</code> function takes in a reference and returns the underlying value stored on the heap.
+            This is a copy of the value and does not alter the input.</p>
+
+        <h3 id="detype">detype</h3>
+        <p>The <code>detype</code> function takes in a typed value and returns the raw data underneath. This is useful
+            for functions
+            that cannot operate on typed values, as they contain two types of data.</p>
+
+        <h3 id="range">range</h3>
+        <p>The <code>range</code> expression is similar to the <code>..</code> operator discussed earlier. This function
+            starts at the start index and goes up to (not including) the end index. It increments by the step, returning
+            an array.
+            The way this function is called is by using <code>range(start, end, target)</code>. This can be particularly
+            useful for creating custom arrays for foreach expressions.</p>
+
+        <h3 id="to_string">to_string</h3>
+        <p>The <code>to_string</code> function takes in any value and returns its string representation. This is
+            self-explanatory.</p>
+
+        <h3 id="to_number">to_number</h3>
+        <p>The <code>to_number</code> function takes in any value and returns its number representation. This works
+            similar to parse builtins in other languages, and wil fail if the value is not a string.</p>
+
+        <h3 id="to_bool">to_bool</h3>
+        <p>The <code>to_bool</code> function takes in any value and coerces it into a bool. Most types are considered to
+            be truthy and will return true, but others have specific behavior. Booleans can be passed into this function
+            but are not converted for obvious reasons. Numbers are true if they are strictly positive. Strings are true
+            if they are non-empty. The same applied for arrays. References are true if their underlying value is true.
+            The same is true for typed values. Nil values are false. As mentioned earlier, all other values are true.
+        </p>
 
     </main>
 

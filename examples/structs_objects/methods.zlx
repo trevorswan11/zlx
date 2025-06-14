@@ -13,4 +13,5 @@ struct Greeter {
 let g = new Greeter("Ziggy");
 println(g.name);
 println(g["__struct_name"]);
+println(g["name"]);
 g.greet();

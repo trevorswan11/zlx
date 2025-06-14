@@ -85,7 +85,7 @@ fn assertEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
         if (args.len == 3) {
             const msg_val = try eval.evalExpr(args[2], env);
             if (msg_val != .string) {
-                try writer_err.print("debug.assert(value_1, value_2, message) expects a string as the third argument, got a(n) {s}\n", .{@tagName(msg_val)});
+                try writer_err.print("debug.assertEqual(value_1, value_2, message) expects a string as the third argument, got a(n) {s}\n", .{@tagName(msg_val)});
                 return error.TypeMismatch;
             }
             try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
@@ -104,8 +104,8 @@ fn assertEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
 
 fn assertNotEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("debug.assertNotEqual(...) expects exactly 2 arguments, got {d}\n", .{args.len});
+    if (args.len == 0 or args.len > 3) {
+        try writer_err.print("debug.assertNotEqual(value_1, value_2, optional_message) expects 2 or 3 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -113,8 +113,20 @@ fn assertNotEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *En
     const b = try eval.evalExpr(args[1], env);
 
     if (a.eql(b)) {
-        try writer_err.print("Assertion failed: values unexpectedly equal.\n", .{});
-        try writer_err.print("  Value: {s}\n", .{try a.toString(env.allocator)});
+        if (args.len == 3) {
+            const msg_val = try eval.evalExpr(args[2], env);
+            if (msg_val != .string) {
+                try writer_err.print("debug.assertNotEqual(value_1, value_2, message) expects a string as the third argument, got a(n) {s}\n", .{@tagName(msg_val)});
+                return error.TypeMismatch;
+            }
+            try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
+            try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+            try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
+        } else {
+            try writer_err.print("Assertion failed.\n", .{});
+            try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+            try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
+        }
         return error.AssertionFailed;
     }
 
@@ -124,7 +136,7 @@ fn assertNotEqualHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *En
 fn failHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 0 or args.len != 1) {
-        try writer_err.print("debug.fail(...) expects either 1 or 2 arguments, got {d}\n", .{args.len});
+        try writer_err.print("debug.fail(optional_message) expects either 0 or 1 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 

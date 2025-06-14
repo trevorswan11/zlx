@@ -1,5 +1,6 @@
-let obj1 = { foo: 123 };
+let obj1 = { foo: 123, bar: "baz" };
 println(obj1.foo);
+println(obj1["bar"]);
 
 let obj2 = { 
     foo: 456
