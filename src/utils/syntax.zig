@@ -24,7 +24,7 @@ const colors = struct {
 fn colorForKind(kind: TokenKind) []const u8 {
     return switch (kind) {
         // Core keywords
-        .IF, .ELSE, .WHILE, .FOREACH, .BREAK, .CONTINUE => colors.keyword,
+        .IF, .ELSE, .WHILE, .FOR, .FOREACH, .BREAK, .CONTINUE => colors.keyword,
         .IMPORT, .FROM, .TYPEOF, .DELETE => colors.keyword,
         .LET, .CONST, .FN, .STRUCT, .NEW, .IN, .RETURN, .MATCH => colors.keyword,
 

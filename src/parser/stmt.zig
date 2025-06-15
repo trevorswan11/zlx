@@ -294,7 +294,7 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
 }
 
 pub fn parseForEachStmt(p: *parser.Parser) !ast.Stmt {
-    _ = try p.expect(.FOREACH);
+    _ = try p.expectMany(&[_]token.TokenKind{ .FOREACH, .FOR });
     const value_name = (try p.expect(.IDENTIFIER)).value;
 
     var index: bool = false;

@@ -117,11 +117,11 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     const writer_err = driver.getWriterErr();
 
     if (args.len == 2) {
-        try writer_err.print("range(start, end, step): expected 3 arguments (start, end, step), got {d}\n", .{args.len});
+        try writer_err.print("range(start, end, step): expected 3 arguments, got {d}\n", .{args.len});
         try writer_err.print("  Consider using 'start..end' syntax\n", .{});
         return error.ArgumentCountMismatch;
     } else if (args.len != 3) {
-        try writer_err.print("range(start, end, step): expected 3 arguments (start, end, step), got {d}\n", .{args.len});
+        try writer_err.print("range(start, end, step): expected 3 arguments, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -131,36 +131,34 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
 
     if (a != .number or b != .number or c != .number) {
         try writer_err.print("range(start, end, step): all arguments must be numbers\n", .{});
-        try writer_err.print("  Start = {s}\n", .{try a.toString(env.allocator)});
-        try writer_err.print("  End = {s}\n", .{try b.toString(env.allocator)});
-        try writer_err.print("  Step = {s}\n", .{try c.toString(env.allocator)});
+        try writer_err.print("  Start = {s}\n", .{@tagName(a)});
+        try writer_err.print("  End = {s}\n", .{@tagName(b)});
+        try writer_err.print("  Step = {s}\n", .{@tagName(c)});
         return error.TypeMismatch;
     }
 
-    const start: i64 = @intFromFloat(a.number);
-    const end: i64 = @intFromFloat(b.number);
-    const step: i64 = @intFromFloat(c.number);
+    const start = a.number;
+    const end = b.number;
+    const step = c.number;
 
     if (step == 0) {
         try writer_err.print("range(start, end, step): step cannot be zero\n", .{});
         return error.InvalidStep;
     }
 
+    const diff = end - start;
+    const steps = @floor(diff / step);
+    const count: usize = if ((step > 0 and start >= end) or (step < 0 and start <= end)) 0 else @as(usize, @intFromFloat(steps)) + 1;
+
     var result = std.ArrayList(Value).init(allocator);
-    if (step > 0) {
-        var i = start;
-        while (i < end) : (i += step) {
-            try result.append(.{
-                .number = @floatFromInt(i),
-            });
-        }
-    } else {
-        var i = start;
-        while (i > end) : (i += step) {
-            try result.append(.{
-                .number = @floatFromInt(i),
-            });
-        }
+    for (0..count) |i| {
+        const value = start + step * @as(f64, @floatFromInt(i));
+        const rounded = @round(value * 1e10) / 1e10;
+        try result.append(
+            .{
+                .number = rounded,
+            },
+        );
     }
 
     return .{
@@ -264,7 +262,7 @@ test "core_builtins" {
         \\println(r); // References Val: ["9", "8"]
         \\
         \\// Test range
-        \\println(range(0, 5, 1));    // [0, 1, 2, 3, 4]
+        \\println(range(0, 5, 1));    // [0, 1, 2, 3, 4, 5]
         \\println(range(5, 0, -2));   // [5, 3, 1]
         \\println(range(0, 1, 3));    // [0]
         \\
@@ -297,7 +295,7 @@ test "core_builtins" {
         \\5
         \\4
         \\References Val: ["9", "8"]
-        \\["0", "1", "2", "3", "4"]
+        \\["0", "1", "2", "3", "4", "5"]
         \\["5", "3", "1"]
         \\["0"]
         \\no newline +print

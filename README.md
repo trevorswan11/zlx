@@ -39,7 +39,7 @@ While I originally intended to just build the parser, I ended up going much deep
 This project uses a single external library called [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library.
 
 ## Language Documentation
-Documentation for the language, officially called `zlx`, will be written over time. You can find the language reference in the `doc` folder. The "standard library" has a few built-in functions that work out of the box, and also has built-in modules that must be imported to use their defined functions and constants. While documentation is a WIP, you can view their source code in the `builtins` folder in the `src` directory.
+Documentation for the language, officially called `zlx`, will be written and polished over time. You can find the language reference in the `doc` folder. The "standard library" has a few built-in functions that work out of the box, and also has built-in modules that must be imported to use their defined functions and constants. While documentation is a WIP, you can view their source code in the `builtins` folder in the `src` directory.
 
 ## Naming Conventions
 I’ve slightly altered some of the patterns used in tylerlaceby’s language, resulting in a syntax influenced by Go, Python, Rust, and more! All files should be named with file extension `.zlx`, but this is never enforced and never will be enforced by the interpreter. By convention, all declarations should use `snake_case`, but I really don't care — do what you want.

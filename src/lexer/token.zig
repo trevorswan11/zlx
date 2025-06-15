@@ -73,6 +73,7 @@ pub const TokenKind = enum(u32) {
     FN,
     IF,
     ELSE,
+    FOR,
     FOREACH,
     WHILE,
     TYPEOF,
@@ -165,6 +166,7 @@ pub const Token = struct {
         try reserved.put("fn", .FN);
         try reserved.put("if", .IF);
         try reserved.put("else", .ELSE);
+        try reserved.put("for", .FOR);
         try reserved.put("foreach", .FOREACH);
         try reserved.put("while", .WHILE);
         try reserved.put("return", .RETURN);

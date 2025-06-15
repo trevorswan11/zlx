@@ -126,7 +126,7 @@ fn stopHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
-        try writer_err.print("time.delta() expects 0 arguments but got {d}\n", .{args.len});
+        try writer_err.print("time.delta(start, end) expects 2 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 

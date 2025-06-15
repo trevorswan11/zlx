@@ -382,20 +382,21 @@ y = 2;                  // Error, cannot reassign to constant
                     <td>foreach</td>
                 </tr>
                 <tr>
+                    <td>for</td>
                     <td>while</td>
                     <td>return</td>
                     <td>break</td>
                     <td>continue</td>
-                    <td>typeof</td>
                 </tr>
                 <tr>
+                    <td>typeof</td>
                     <td>delete</td>
                     <td>in</td>
                     <td>true</td>
                     <td>false</td>
-                    <td>match</td>
                 </tr>
                 <tr>
+                    <td>match</td>
                     <td>nil</td>
                 </tr>
             </table>
@@ -480,7 +481,8 @@ println(s);
                 be of length <code>end - start</code>. You can also index into the array by using the
                 syntax: <code>foreach value, index in array</code>. If you are interested in creating an array with a
                 defined start and end value, but with a step value that is not 1, then see the <code>range</code>
-                builtin function. The following examples show proper use of a foreach loop in ZLX:
+                builtin function. <code>for</code> is also a valid token, but is an alias for a foreach loop. The
+                following examples show proper use of a foreach loop in ZLX:
             </p>
             <pre><code>
 foreach val in 0..3 {
@@ -998,9 +1000,9 @@ println(y);                     // 4
 
         <h3 id="range">range</h3>
         <p>The <code>range</code> expression is similar to the <code>..</code> operator discussed earlier. This function
-            starts at the start index and goes up to (not including) the end index. It increments by the step, returning
-            an array.
-            The way this function is called is by using <code>range(start, end, target)</code>. This can be particularly
+            starts at the start index and goes to (including) the end index. It increments by the step, returning
+            an array. Step must be a signed value.
+            The way this function is called is by using <code>range(start, end, step)</code>. This can be particularly
             useful for creating custom arrays for foreach expressions.</p>
 
         <h3 id="to_string">to_string</h3>
