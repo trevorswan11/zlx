@@ -280,6 +280,27 @@
                 </li>
 
                 <li>
+                    <a href="#csv">csv</a>
+                    <ul>
+                        <li><a href="#WIP-csv">WIP</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#http">http</a>
+                    <ul>
+                        <li><a href="#WIP-http">WIP</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#json">json</a>
+                    <ul>
+                        <li><a href="#WIP-json">WIP</a></li>
+                    </ul>
+                </li>
+
+                <li>
                     <a href="#builtin-functions">Functions</a>
                     <ul>
                         <li><a href="#print">print</a></li>
@@ -965,61 +986,81 @@ println(y);                     // 4
                     <td>s_per_week</td>
                 </tr>
             </table>
+            <h2 id="csv">csv</h2>
+            <h3 id="WIP-csv">WIP</h3>
+
+            <h2 id="http">http</h2>
+            <h3 id="WIP-http">WIP</h3>
+
+            <h2 id="json">json</h2>
+            <h3 id="WIP-json">WIP</h3>
+
+            <h2 id="builtin-functions">Functions</h2>
+            <p>The builtin functions found in ZLX implement reasonably verbose error messages that can be used to guide
+                their usage, but this section can be used for clarity.</p>
+
+            <h3 id="print">print</h3>
+            <p>The <code>print</code> takes in a variable number of values, and prints them as is with no delimiters
+                between
+                arguments.
+                As long as the backend of the language is up to date, all values should implement the print function in
+                some
+                way and can be passed as an argument to this function.</p>
+
+            <h3 id="println">println</h3>
+            <p>The <code>println</code> function is nearly identical to the print function, but print each argument
+                separated by a new
+                line token.</p>
+
+            <h3 id="len">len</h3>
+            <p>The len <code>function</code> returns the length of a string or array. This is self-explanatory</p>
+            <h3 id="ref">ref</h3>
+            <p>The <code>ref</code> function takes in any value and packs it into a heap allocated value. This is
+                particularly useful for
+                arrays, allowing them to be used with the array module and mutated freely. This is a copy of the
+                original
+                value, and does not make the input value an actual reference.</p>
+
+            <h3 id="deref">deref</h3>
+            <p>The <code>deref</code> function takes in a reference and returns the underlying value stored on the heap.
+                This is a copy of the value and does not alter the input.</p>
+
+            <h3 id="detype">detype</h3>
+            <p>The <code>detype</code> function takes in a typed value and returns the raw data underneath. This is
+                useful
+                for functions
+                that cannot operate on typed values, as they contain two types of data.</p>
+
+            <h3 id="range">range</h3>
+            <p>The <code>range</code> expression is similar to the <code>..</code> operator discussed earlier. This
+                function
+                starts at the start index and goes to (including) the end index. It increments by the step, returning
+                an array. Step must be a signed value.
+                The way this function is called is by using <code>range(start, end, step)</code>. This can be
+                particularly
+                useful for creating custom arrays for foreach expressions.</p>
+
+            <h3 id="to_string">to_string</h3>
+            <p>The <code>to_string</code> function takes in any value and returns its string representation. This is
+                self-explanatory.</p>
+
+            <h3 id="to_number">to_number</h3>
+            <p>The <code>to_number</code> function takes in any value and returns its number representation. This works
+                similar to parse builtins in other languages, and wil fail if the value is not a string.</p>
+
+            <h3 id="to_bool">to_bool</h3>
+            <p>The <code>to_bool</code> function takes in any value and coerces it into a bool. Most types are
+                considered to
+                be truthy and will return true, but others have specific behavior. Booleans can be passed into this
+                function
+                but are not converted for obvious reasons. Numbers are true if they are strictly positive. Strings are
+                true
+                if they are non-empty. The same applied for arrays. References are true if their underlying value is
+                true.
+                The same is true for typed values. Nil values are false. As mentioned earlier, all other values are
+                true.
+            </p>
         </section>
-        <h2 id="builtin-functions">Functions</h2>
-        <p>The builtin functions found in ZLX implement reasonably verbose error messages that can be used to guide
-            their usage, but this section can be used for clarity.</p>
-
-        <h3 id="print">print</h3>
-        <p>The <code>print</code> takes in a variable number of values, and prints them as is with no delimiters between
-            arguments.
-            As long as the backend of the language is up to date, all values should implement the print function in some
-            way and can be passed as an argument to this function.</p>
-
-        <h3 id="println">println</h3>
-        <p>The <code>println</code> function is nearly identical to the print function, but print each argument
-            separated by a new
-            line token.</p>
-
-        <h3 id="len">len</h3>
-        <p>The len <code>function</code> returns the length of a string or array. This is self-explanatory</p>
-        <h3 id="ref">ref</h3>
-        <p>The <code>ref</code> function takes in any value and packs it into a heap allocated value. This is
-            particularly useful for
-            arrays, allowing them to be used with the array module and mutated freely. This is a copy of the original
-            value, and does not make the input value an actual reference.</p>
-
-        <h3 id="deref">deref</h3>
-        <p>The <code>deref</code> function takes in a reference and returns the underlying value stored on the heap.
-            This is a copy of the value and does not alter the input.</p>
-
-        <h3 id="detype">detype</h3>
-        <p>The <code>detype</code> function takes in a typed value and returns the raw data underneath. This is useful
-            for functions
-            that cannot operate on typed values, as they contain two types of data.</p>
-
-        <h3 id="range">range</h3>
-        <p>The <code>range</code> expression is similar to the <code>..</code> operator discussed earlier. This function
-            starts at the start index and goes to (including) the end index. It increments by the step, returning
-            an array. Step must be a signed value.
-            The way this function is called is by using <code>range(start, end, step)</code>. This can be particularly
-            useful for creating custom arrays for foreach expressions.</p>
-
-        <h3 id="to_string">to_string</h3>
-        <p>The <code>to_string</code> function takes in any value and returns its string representation. This is
-            self-explanatory.</p>
-
-        <h3 id="to_number">to_number</h3>
-        <p>The <code>to_number</code> function takes in any value and returns its number representation. This works
-            similar to parse builtins in other languages, and wil fail if the value is not a string.</p>
-
-        <h3 id="to_bool">to_bool</h3>
-        <p>The <code>to_bool</code> function takes in any value and coerces it into a bool. Most types are considered to
-            be truthy and will return true, but others have specific behavior. Booleans can be passed into this function
-            but are not converted for obvious reasons. Numbers are true if they are strictly positive. Strings are true
-            if they are non-empty. The same applied for arrays. References are true if their underlying value is true.
-            The same is true for typed values. Nil values are false. As mentioned earlier, all other values are true.
-        </p>
 
     </main>
 

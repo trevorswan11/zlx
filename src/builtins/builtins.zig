@@ -127,4 +127,16 @@ pub const builtin_modules = [_]BuiltinModule{
         .name = "path",
         .loader = @import("modules/path.zig").load,
     },
+    .{
+        .name = "csv",
+        .loader = @import("modules/csv.zig").load,
+    },
+    .{
+        .name = "http",
+        .loader = @import("modules/http.zig").load,
+    },
+    .{
+        .name = "json",
+        .loader = @import("modules/json.zig").load,
+    },
 };

@@ -138,6 +138,9 @@ test {
     _ = @import("builtins/modules/string.zig");
     _ = @import("builtins/modules/sys.zig");
     _ = @import("builtins/modules/time.zig");
+    _ = @import("builtins/modules/csv.zig");
+    _ = @import("builtins/modules/http.zig");
+    _ = @import("builtins/modules/json.zig");
 
     // General Behavior - Tests located in `testing` directory
     _ = @import("testing/testing.zig");
