@@ -37,9 +37,6 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "millis", millisHandler);
     try pack(&map, "sleep", sleepHandler);
     try pack(&map, "sleepMs", sleepMsHandler);
-    try pack(&map, "start", startHandler);
-    try pack(&map, "stop", stopHandler);
-    try pack(&map, "delta", deltaHandler);
     try pack(&map, "timestamp", timestampHandler);
 
     // Time constants!
@@ -93,55 +90,6 @@ fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
     return .nil;
 }
 
-fn startHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("time.start() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const now = std.time.nanoTimestamp();
-    return .{
-        .number = @floatFromInt(now),
-    };
-}
-
-fn stopHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    if (args.len == 0) {
-        return .{
-            .number = @as(f64, @floatFromInt(std.time.nanoTimestamp())) / 1_000_000.0,
-        };
-    }
-
-    const start = try expectNumberArg(args, env);
-    const t0: u64 = @intFromFloat(start);
-    const t1 = std.time.nanoTimestamp();
-
-    const elapsed = @as(f64, @floatFromInt(t1 - t0)) / 1_000_000.0;
-    return .{
-        .number = elapsed,
-    };
-}
-
-fn deltaHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("time.delta(start, end) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const t0 = try eval.evalExpr(args[0], env);
-    const t1 = try eval.evalExpr(args[1], env);
-    if (t0 != .number or t1 != .number) {
-        return error.TypeMismatch;
-    }
-
-    const diff = @as(f64, @floatFromInt(@as(i64, @intFromFloat(t1.number)) - @as(i64, @intFromFloat(t0.number)))) / 1_000_000.0;
-    return .{
-        .number = diff,
-    };
-}
-
 fn timestampHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 0) {
@@ -170,31 +118,28 @@ test "time_builtin" {
     const source =
         \\import time;
         \\
-        \\let start = time.start();
+        \\let start = time.millis();
         \\time.sleep(0.1);
-        \\let elapsed = time.stop(start);
+        \\let end = time.millis();
         \\let t1 = time.timestamp();
-        \\let delta = time.delta(start, t1);
+        \\let delta = end - start;
     ;
 
     const block = try testing.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
 
     const start_val = try env.get("start");
-    const elapsed_val = try env.get("elapsed");
+    const end_val = try env.get("end");
     const t1_val = try env.get("t1");
     const delta_val = try env.get("delta");
 
     try testing.expect(start_val == .number);
-    try testing.expect(elapsed_val == .number);
+    try testing.expect(end_val == .number);
     try testing.expect(t1_val == .number);
     try testing.expect(delta_val == .number);
 
-    const elapsed_ms = elapsed_val.number;
-    const delta_ms = delta_val.number;
-
     // a delta of 20ms is not great and should capture variation, but failure is ignored for gh actions
-    testing.expectApproxEqAbs(100.0, elapsed_ms, 20.0) catch {};
+    const delta_ms = delta_val.number;
     testing.expectApproxEqAbs(100.0, delta_ms, 20.0) catch {};
 }
 
