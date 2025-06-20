@@ -187,6 +187,10 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
 
             return result;
         },
+        .bound_std_method => {
+            const bound = callee_val.bound_std_method;
+            return try bound.method(env.allocator, bound.instance, c.arguments.items, env);
+        },
         else => {
             try writer_err.print("Cannot invoke call on type {s}\n", .{@tagName(callee_val)});
             return error.InvalidCallTarget;
@@ -293,40 +297,67 @@ pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     target = target.deref();
 
-    if (target != .object) {
-        try writer_err.print("Member expression expects object target, got {s}\n", .{@tagName(target)});
-        return error.TypeMismatch;
+    switch (target) {
+        .object => |*obj| {
+            if (obj.get(m.property)) |val| {
+                return val;
+            } else if (obj.get("__struct_name")) |cls_name_val| {
+                if (cls_name_val != .string) {
+                    try writer_err.print("Struct name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
+                    return error.InvalidStructRef;
+                }
+
+                const struct_val = try env.get(cls_name_val.string);
+                if (struct_val != .structure) {
+                    try writer_err.print("Struct name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
+                    return error.InvalidStructRef;
+                }
+
+                if (struct_val.structure.methods.get(m.property)) |method_stmt| {
+                    const val = try env.allocator.create(Value);
+                    val.* = target;
+                    return .{
+                        .bound_method = .{
+                            .instance = val,
+                            .method = method_stmt,
+                        },
+                    };
+                }
+            }
+            try writer_err.print("Could not evaluate member expression as property {s} was not found\n", .{m.property});
+            return error.PropertyNotFound;
+        },
+        .std_instance => |inst| {
+            if (inst.fields.get(m.property)) |val_ptr| {
+                return val_ptr.*;
+            }
+
+            // Then try method
+            if (inst.type.* != .std_struct) {
+                try writer_err.print("std_instance.type is not a std_struct\n", .{});
+                return error.InvalidStructRef;
+            }
+
+            const method_map = inst.type.std_struct.methods;
+            if (method_map.get(m.property)) |method_fn| {
+                const val = try env.allocator.create(Value);
+                val.* = target;
+                return .{
+                    .bound_std_method = .{
+                        .instance = val,
+                        .method = method_fn,
+                    },
+                };
+            }
+
+            try writer_err.print("Property \"{s}\" not found on std_instance\n", .{m.property});
+            return error.PropertyNotFound;
+        },
+        else => {
+            try writer_err.print("Member expression expects object or std_instance, got {s}\n", .{@tagName(target)});
+            return error.TypeMismatch;
+        },
     }
-
-    const map = &target.object;
-
-    if (map.get(m.property)) |val| {
-        return val;
-    } else if (map.get("__struct_name")) |cls_name_val| {
-        if (cls_name_val != .string) {
-            try writer_err.print("Struct name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
-            return error.InvalidStructRef;
-        }
-
-        const struct_val = try env.get(cls_name_val.string);
-        if (struct_val != .structure) {
-            try writer_err.print("Struct name was expected to be a string, got {s}\n", .{@tagName(cls_name_val)});
-            return error.InvalidStructRef;
-        }
-
-        if (struct_val.structure.methods.get(m.property)) |method_stmt| {
-            const val = try env.allocator.create(Value);
-            val.* = target;
-            return .{
-                .bound_method = .{
-                    .instance = val,
-                    .method = method_stmt,
-                },
-            };
-        }
-    }
-    try writer_err.print("Could not evaluate member expression as property {s} was not found\n", .{m.property});
-    return error.PropertyNotFound;
 }
 
 pub fn computed(c: *ast.ComputedExpr, env: *Environment) !Value {
@@ -385,48 +416,53 @@ pub fn function(f: *ast.FunctionExpr, env: *Environment) !Value {
 pub fn new(n: *ast.NewExpr, env: *Environment) !Value {
     const struct_val = try evalExpr(n.instantiation.method, env);
     const writer_err = driver.getWriterErr();
-    if (struct_val != .structure) {
-        try writer_err.print("The 'new' keyword can only be used when creating a struct, got {s}\n", .{@tagName(struct_val)});
-        return error.TypeMismatch;
-    }
+    const args = n.instantiation.arguments.items;
 
-    const cls = struct_val.structure;
+    return switch (struct_val) {
+        .structure => |cls| blk: {
+            const instance_ptr = try env.allocator.create(Value);
+            instance_ptr.* = Value{
+                .object = std.StringHashMap(Value).init(env.allocator),
+            };
+            try instance_ptr.*.object.put("__struct_name", .{
+                .string = cls.name,
+            });
 
-    const instance_ptr = try env.allocator.create(Value);
-    instance_ptr.* = Value{
-        .object = std.StringHashMap(Value).init(env.allocator),
+            if (cls.constructor) |ctor_stmt| {
+                var ctor_env = Environment.init(env.allocator, null);
+                defer ctor_env.deinit();
+
+                try ctor_env.define("this", .{
+                    .reference = instance_ptr,
+                });
+
+                const fn_decl = ctor_stmt.function_decl;
+                if (args.len != fn_decl.parameters.items.len) {
+                    try writer_err.print("Constructor expected {d} parameters, but {d} were given\n", .{ fn_decl.parameters.items.len, args.len });
+                    break :blk error.InvalidConstructorArity;
+                }
+
+                for (args, fn_decl.parameters.items) |arg_expr, param| {
+                    const val = try evalExpr(arg_expr, env);
+                    try ctor_env.define(param.name, val);
+                }
+
+                for (fn_decl.body.items) |stmt| {
+                    _ = try evalStmt(stmt, &ctor_env);
+                }
+            }
+
+            break :blk instance_ptr.*;
+        },
+        .std_struct => |std_struct| blk: {
+            const ctor = std_struct.constructor;
+            break :blk try ctor(env.allocator, args, env);
+        },
+        else => blk: {
+            try writer_err.print("The 'new' keyword can only be used when creating a struct, got {s}\n", .{@tagName(struct_val)});
+            break :blk error.TypeMismatch;
+        },
     };
-    try instance_ptr.*.object.put("__struct_name", .{
-        .string = cls.name,
-    });
-
-    if (cls.constructor) |ctor_stmt| {
-        const args = n.instantiation.arguments.items;
-
-        var ctor_env = Environment.init(env.allocator, null);
-        defer ctor_env.deinit();
-
-        try ctor_env.define("this", .{
-            .reference = instance_ptr,
-        });
-
-        const fn_decl = ctor_stmt.function_decl;
-        if (args.len != fn_decl.parameters.items.len) {
-            try writer_err.print("Constructor expected {d} parameters, but {d} were given\n", .{ fn_decl.parameters.items.len, args.len });
-            return error.InvalidConstructorArity;
-        }
-
-        for (args, fn_decl.parameters.items) |arg_expr, param| {
-            const val = try evalExpr(arg_expr, env);
-            try ctor_env.define(param.name, val);
-        }
-
-        for (fn_decl.body.items) |stmt| {
-            _ = try evalStmt(stmt, &ctor_env);
-        }
-    }
-
-    return instance_ptr.*;
 }
 
 pub fn object(o: *ast.ObjectExpr, env: *Environment) !Value {

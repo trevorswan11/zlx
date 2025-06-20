@@ -121,6 +121,7 @@ const BuiltinModule = struct {
 };
 
 pub const builtin_modules = [_]BuiltinModule{
+    // Modules
     .{
         .name = "fs",
         .loader = @import("modules/fs.zig").load,
@@ -164,5 +165,11 @@ pub const builtin_modules = [_]BuiltinModule{
     .{
         .name = "json",
         .loader = @import("modules/json.zig").load,
+    },
+
+    // Types
+    .{
+        .name = "point",
+        .loader = @import("types/point.zig").load,
     },
 };

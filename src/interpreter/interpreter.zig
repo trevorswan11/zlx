@@ -42,7 +42,23 @@ pub const Value = union(enum) {
         value: *Value,
         type: []const u8,
     },
+    std_struct: struct {
+        name: []const u8,
+        constructor: StdCtor,
+        methods: std.StringHashMap(StdMethod),
+    },
+    std_instance: struct {
+        type: *Value,
+        fields: std.StringHashMap(*Value),
+    },
+    bound_std_method: struct {
+        instance: *Value,
+        method: Value.StdMethod,
+    },
     nil,
+
+    pub const StdMethod = *const fn (allocator: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) anyerror!Value;
+    pub const StdCtor = *const fn (allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value;
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
         var str_builder = std.ArrayList(u8).init(allocator);
@@ -176,6 +192,8 @@ pub const Value = union(enum) {
             .continue_signal => |_| try std.fmt.allocPrint(allocator, "continue", .{}),
             .return_value => |r| try stringReturn(r, allocator),
             .typed_val => |t| try stringTyped(t.value, t.type, allocator),
+            .std_struct, .std_instance => try std.fmt.allocPrint(allocator, "<Standard Library Struct>", .{}),
+            .bound_std_method => |bm| try stringBoundMethod(bm.instance, allocator),
             .nil => try std.fmt.allocPrint(allocator, "nil", .{}),
         };
     }
