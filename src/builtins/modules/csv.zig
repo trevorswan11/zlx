@@ -124,15 +124,16 @@ fn stringifyHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: 
 }
 
 fn parseCSV(allocator: std.mem.Allocator, text: []const u8) !Value {
-    var lines = std.mem.splitSequence(u8, text, "\\n");
+    var lines = std.mem.splitSequence(u8, text, "\n");
 
     var rows = std.ArrayList(Value).init(allocator);
     while (lines.next()) |line| {
-        if (line.len == 0) {
+        const trimmed_line = std.mem.trim(u8, line, " \t\r");
+        if (trimmed_line.len == 0) {
             continue;
         }
 
-        var fields = std.mem.splitAny(u8, line, ",");
+        var fields = std.mem.splitAny(u8, trimmed_line, ",");
         var row = std.ArrayList(Value).init(allocator);
         while (fields.next()) |field| {
             const trimmed = std.mem.trim(u8, field, " \t\r");
@@ -141,7 +142,12 @@ fn parseCSV(allocator: std.mem.Allocator, text: []const u8) !Value {
                 .string = str,
             });
         }
-        try rows.append(.{ .array = row });
+        if (row.items.len == 0) {
+            continue;
+        }
+        try rows.append(.{
+            .array = row,
+        });
     }
 
     return .{
@@ -209,7 +215,8 @@ test "csv_builtin" {
     const source =
         \\import csv;
         \\
-        \\let text = "a,b,c\n1,2,3\n";
+        \\let text = """a,b,c
+        \\1,2,3""";
         \\let data = csv.parse(text);
         \\println(data);
         \\println(len(data));
