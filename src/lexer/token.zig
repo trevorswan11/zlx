@@ -202,7 +202,6 @@ pub const Token = struct {
         try reserved.put("time", .IDENTIFIER);
         try reserved.put("csv", .IDENTIFIER);
         try reserved.put("json", .IDENTIFIER);
-        try reserved.put("http", .IDENTIFIER);
 
         return reserved;
     }

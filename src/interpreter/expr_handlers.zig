@@ -86,6 +86,7 @@ pub fn assignment(a: *ast.AssignmentExpr, env: *Environment) !Value {
 
             if (obj_val != .object or key_val != .string) {
                 try writer_err.print("Computed expressions require an object value and string key but found pair: ({s}, {s})\n", .{ @tagName(obj_val), @tagName(key_val) });
+                return error.InvalidComputeTarget;
             }
 
             try obj_val.object.put(key_val.string, value);

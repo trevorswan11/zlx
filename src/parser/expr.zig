@@ -166,9 +166,9 @@ pub fn parsePrimaryExpr(p: *parser.Parser) !ast.Expr {
     }
 }
 
-pub fn parseMemberExpr(p: *parser.Parser, left: ast.Expr, bp: BindingPower) !ast.Expr {
+pub fn parseMemberExpr(p: *parser.Parser, left: ast.Expr, _: BindingPower) !ast.Expr {
     if (p.advance().kind == .OPEN_BRACKET) {
-        const rhs = try parseExpr(p, bp);
+        const rhs = try parseExpr(p, binding.DEFAULT_BP);
         _ = try p.expect(.CLOSE_BRACKET);
         return .{
             .computed = .{
