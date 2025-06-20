@@ -86,7 +86,7 @@ fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     };
 }
 
-fn writeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+pub fn writeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectTwoStrings(args, env);
     const full_path = parts[0];
 
@@ -180,6 +180,7 @@ fn rmHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) a
 }
 
 fn copyHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const writer_err = driver.getWriterErr();
     const parts = try expectTwoStrings(args, env);
     const src_path = parts[0];
     const dst_path = parts[1];
@@ -197,15 +198,13 @@ fn copyHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     defer src_dir.close();
 
     src_dir.access(src_basename, .{}) catch {
-        return .{
-            .string = "Source file not found!",
-        };
+        try writer_err.print("Could not find file {s} to copy\n", .{src_path});
+        return error.FileNotFound;
     };
 
     cwd.makePath(dst_dir_path) catch {
-        return .{
-            .string = "Failed to create destination directory!",
-        };
+        try writer_err.print("Could not create directory {s}\n", .{dst_dir_path});
+        return error.DirectoryCreationError;
     };
 
     var dst_dir = try cwd.openDir(dst_dir_path, .{});

@@ -1,0 +1,11 @@
+import csv;
+
+let text = "a,b,c\n1,2,3\n";
+let data = csv.parse(text);
+println(data);
+println(len(data));
+println(len(data[0]));
+println(data[0][0]);
+println(data[1][1]);
+let out = csv.stringify(data);
+println(out);
