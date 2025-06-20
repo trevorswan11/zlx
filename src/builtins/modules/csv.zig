@@ -13,25 +13,25 @@ const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 const pack = builtins.pack;
 
 fn expectStringArgs(
-    allocator: std.mem.Allocator,
     args: []const *ast.Expr,
     env: *Environment,
     count: usize,
+    func_name: []const u8,
 ) ![]const []const u8 {
     const writer_err = driver.getWriterErr();
 
     if (args.len != count) {
-        try writer_err.print("csv module: expected {d} argument(s), got {d}\n", .{ count, args.len });
+        try writer_err.print("csv module: {s} expected {d} argument(s), got {d}\n", .{ func_name, count, args.len });
         return error.ArgumentCountMismatch;
     }
 
-    var result = std.ArrayList([]const u8).init(allocator);
+    var result = std.ArrayList([]const u8).init(env.allocator);
     defer result.deinit();
 
     for (args, 0..) |arg, idx| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
-            try writer_err.print("csv module: expected a string, got a {s} @ arg {d}\n", .{@tagName(val), idx});
+            try writer_err.print("csv module: {s} expected a string, got a {s} @ arg {d}\n", .{ func_name, @tagName(val), idx });
             return error.TypeMismatch;
         }
         try result.append(val.string);
@@ -40,13 +40,30 @@ fn expectStringArgs(
     return try result.toOwnedSlice();
 }
 
+fn expectArrayArg(args: []const *ast.Expr, env: *Environment) !std.ArrayList(Value) {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("csv module: expected 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const val = try eval.evalExpr(args[0], env);
+    if (val != .array) {
+        try writer_err.print("csv module: expected an array, got a(n) {s}\n", .{@tagName(val)});
+        return error.TypeMismatch;
+    }
+
+    return val.array;
+}
+
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
 
     try pack(&map, "read", readHandler);
-    try pack(&map, "read", writeHandler);
-    try pack(&map, "read", parseHandler);
-    try pack(&map, "read", stringifyHandler);
+    try pack(&map, "write", writeHandler);
+    try pack(&map, "append", appendHandler);
+    try pack(&map, "parse", parseHandler);
+    try pack(&map, "stringify", stringifyHandler);
 
     return .{
         .object = map,
@@ -54,8 +71,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const func_args = try expectStringArgs(allocator, args, env, 1);
-    const filepath = func_args[0];
+    const parts = try expectStringArgs(args, env, 1, "read");
+    const filepath = parts[0];
     const contents = try std.fs.cwd().readFileAlloc(allocator, filepath, 1 << 20);
     defer allocator.free(contents);
 
@@ -63,21 +80,159 @@ fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
 }
 
 fn writeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const func_args = try expectStringArgs(allocator, args, env, 2);
-    const filepath = try func_args[0];
-    const contents = stringifyCSV(allocator, func_args[1]);
-    try std.fs.cwd().openFile(sub_path: []const u8, flags: OpenFlags)
+    const parts = try expectStringArgs(args, env, 2, "write");
+    const filepath = parts[0];
+    const contents = try stringifyCSV(allocator, .{ .string = parts[1] });
 
+    const dir_path = std.fs.path.dirname(filepath) orelse ".";
+    try std.fs.cwd().makePath(dir_path);
+
+    const file = try std.fs.cwd().createFile(filepath, .{});
+    defer file.close();
+
+    try file.writeAll(contents);
+    return .nil;
+}
+
+fn appendHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const parts = try expectStringArgs(args, env, 2, "append");
+    const filepath = parts[0];
+    const contents = try stringifyCSV(allocator, .{ .string = parts[1] });
+
+    const file = try std.fs.cwd().openFile(
+        filepath,
+        .{
+            .mode = .write_only,
+        },
+    );
+    defer file.close();
+
+    try file.writeAll(contents);
+    return .nil;
 }
 
 fn parseHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const input = try expectStringArgs(args, env, 1, "parse");
+    return try parseCSV(allocator, input[0]);
 }
 
 fn stringifyHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const input = try expectArrayArg(args, env);
+    return .{
+        .string = try stringifyCSV(allocator, .{ .array = input }),
+    };
+}
+
+fn parseCSV(allocator: std.mem.Allocator, text: []const u8) !Value {
+    var lines = std.mem.splitSequence(u8, text, "\\n");
+
+    var rows = std.ArrayList(Value).init(allocator);
+    while (lines.next()) |line| {
+        if (line.len == 0) {
+            continue;
+        }
+
+        var fields = std.mem.splitAny(u8, line, ",");
+        var row = std.ArrayList(Value).init(allocator);
+        while (fields.next()) |field| {
+            const trimmed = std.mem.trim(u8, field, " \t\r");
+            const str = try allocator.dupe(u8, trimmed);
+            try row.append(.{
+                .string = str,
+            });
+        }
+        try rows.append(.{ .array = row });
+    }
+
+    return .{
+        .array = rows,
+    };
+}
+
+fn stringifyCSV(allocator: std.mem.Allocator, value: Value) ![]u8 {
+    const writer_err = driver.getWriterErr();
+    if (value != .array) {
+        try writer_err.print("CSV stringify expects type array but found type {s}\n", .{@tagName(value)});
+        return error.ExpectedArray;
+    }
+
+    const rows = value.array;
+    var buf = std.ArrayList(u8).init(allocator);
+
+    for (rows.items, 0..) |row_val, i| {
+        if (row_val != .array) {
+            try writer_err.print("CSV stringify expects nested arrays but found a(n) {s} at index {d}\n", .{ @tagName(row_val), i });
+            return error.ExpectedNestedArray;
+        }
+        const row = row_val.array;
+
+        for (row.items, 0..) |field_val, j| {
+            switch (field_val) {
+                .number, .boolean, .nil, .string => {
+                    try buf.appendSlice(try field_val.toString(allocator));
+                    if (j < row.items.len - 1) {
+                        try buf.append(',');
+                    }
+                },
+                else => {
+                    try writer_err.print("Cannot stringify type {s} at index {d}\n", .{ @tagName(field_val), j });
+                    return error.UnsupportedStringifyType;
+                },
+            }
+        }
+        try buf.append('\n');
+    }
+
+    return buf.toOwnedSlice();
 }
 
 // === TESTING ===
 
 const testing = @import("../../testing/testing.zig");
 
-test "csv_builtin" {}
+test "csv_builtin" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var tmp_dir = std.testing.tmpDir(.{});
+    defer tmp_dir.cleanup();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    driver.setWriters(writer);
+
+    const source =
+        \\import csv;
+        \\
+        \\let text = "a,b,c\n1,2,3\n";
+        \\let data = csv.parse(text);
+        \\println(data);
+        \\println(len(data));
+        \\println(len(data[0]));
+        \\println(data[0][0]);
+        \\println(data[1][1]);
+        \\let out = csv.stringify(data);
+        \\print(out);
+    ;
+
+    const block = try testing.parse(allocator, source);
+    _ = try eval.evalStmt(block, &env);
+
+    const expected =
+        \\["["a", "b", "c"]", "["1", "2", "3"]"]
+        \\2
+        \\3
+        \\a
+        \\2
+        \\a,b,c
+        \\1,2,3
+        \\
+    ;
+
+    try testing.expectEqualStrings(expected, output_buffer.items);
+}

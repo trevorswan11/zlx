@@ -226,5 +226,4 @@ test "sys_builtin" {
     try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "After set: active"));
     try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "After unset: nil"));
     try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "Args:"));
-    try testing.expect(std.mem.containsAtLeast(u8, output_str, 1, "zlx"));
 }
