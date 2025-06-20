@@ -168,8 +168,4 @@ pub const builtin_modules = [_]BuiltinModule{
     },
 
     // Types
-    .{
-        .name = "point",
-        .loader = @import("types/point.zig").load,
-    },
 };
