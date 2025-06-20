@@ -11,34 +11,7 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
-
-fn expectStringArgs(
-    allocator: std.mem.Allocator,
-    args: []const *ast.Expr,
-    env: *Environment,
-    count: usize,
-) ![]const []const u8 {
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != count) {
-        try writer_err.print("path module: expected {d} argument(s), got {d}\n", .{ count, args.len });
-        return error.ArgumentCountMismatch;
-    }
-
-    var result = std.ArrayList([]const u8).init(allocator);
-    defer result.deinit();
-
-    for (args) |arg| {
-        const val = try eval.evalExpr(arg, env);
-        if (val != .string) {
-            try writer_err.print("path module: expected a string, got a {s}\n", .{@tagName(val)});
-            return error.TypeMismatch;
-        }
-        try result.append(val.string);
-    }
-
-    return try result.toOwnedSlice();
-}
+const expectStringArgs = builtins.expectStringArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -77,49 +50,49 @@ fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
 }
 
 fn basenameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const path = (try expectStringArgs(allocator, args, env, 1))[0];
+    const path = (try expectStringArgs(args, env, 1, "path", "basename"))[0];
     return .{
         .string = try allocator.dupe(u8, std.fs.path.basename(path)),
     };
 }
 
 fn dirnameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const path = (try expectStringArgs(allocator, args, env, 1))[0];
+    const path = (try expectStringArgs(args, env, 1, "path", "dirname"))[0];
     return .{
         .string = try allocator.dupe(u8, std.fs.path.dirname(path) orelse "."),
     };
 }
 
 fn extnameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const path = (try expectStringArgs(allocator, args, env, 1))[0];
+    const path = (try expectStringArgs(args, env, 1, "path", "extname"))[0];
     return .{
         .string = try allocator.dupe(u8, std.fs.path.extension(path)),
     };
 }
 
 fn stemHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const path = (try expectStringArgs(allocator, args, env, 1))[0];
+    const path = (try expectStringArgs(args, env, 1, "path", "stem"))[0];
     return .{
         .string = try allocator.dupe(u8, std.fs.path.stem(path)),
     };
 }
 
-fn isAbsoluteHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const path = (try expectStringArgs(allocator, args, env, 1))[0];
+fn isAbsoluteHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const path = (try expectStringArgs(args, env, 1, "path", "is_absolute"))[0];
     return .{
         .boolean = std.fs.path.isAbsolute(path),
     };
 }
 
-fn isRelativeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const path = (try expectStringArgs(allocator, args, env, 1))[0];
+fn isRelativeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const path = (try expectStringArgs(args, env, 1, "path", "is_relative"))[0];
     return .{
         .boolean = !std.fs.path.isAbsolute(path),
     };
 }
 
 fn normalizeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const path = (try expectStringArgs(allocator, args, env, 1))[0];
+    const path = (try expectStringArgs(args, env, 1, "path", "split"))[0];
     const norm = try std.fs.path.resolve(allocator, &[_][]const u8{path});
     return .{
         .string = norm,
@@ -127,7 +100,7 @@ fn normalizeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: 
 }
 
 fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const path = (try expectStringArgs(allocator, args, env, 1))[0];
+    const path = (try expectStringArgs(args, env, 1, "path", "split"))[0];
     const dir = std.fs.path.dirname(path) orelse "";
     const base = std.fs.path.basename(path);
     var list = std.ArrayList(Value).init(allocator);

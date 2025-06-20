@@ -11,34 +11,7 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
-
-fn expectStringArgs(
-    args: []const *ast.Expr,
-    env: *Environment,
-    count: usize,
-    func_name: []const u8,
-) ![]const []const u8 {
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != count) {
-        try writer_err.print("csv module: {s} expected {d} argument(s), got {d}\n", .{ func_name, count, args.len });
-        return error.ArgumentCountMismatch;
-    }
-
-    var result = std.ArrayList([]const u8).init(env.allocator);
-    defer result.deinit();
-
-    for (args, 0..) |arg, idx| {
-        const val = try eval.evalExpr(arg, env);
-        if (val != .string) {
-            try writer_err.print("csv module: {s} expected a string, got a {s} @ arg {d}\n", .{ func_name, @tagName(val), idx });
-            return error.TypeMismatch;
-        }
-        try result.append(val.string);
-    }
-
-    return try result.toOwnedSlice();
-}
+const expectStringArgs = builtins.expectStringArgs;
 
 fn expectArrayArg(args: []const *ast.Expr, env: *Environment) !std.ArrayList(Value) {
     const writer_err = driver.getWriterErr();
@@ -71,7 +44,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const parts = try expectStringArgs(args, env, 1, "read");
+    const parts = try expectStringArgs(args, env, 1, "csv", "read");
     const filepath = parts[0];
     const contents = try std.fs.cwd().readFileAlloc(allocator, filepath, 1 << 20);
     defer allocator.free(contents);
@@ -80,7 +53,7 @@ fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
 }
 
 fn writeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const parts = try expectStringArgs(args, env, 2, "write");
+    const parts = try expectStringArgs(args, env, 2, "csv", "write");
     const filepath = parts[0];
     const contents = try stringifyCSV(allocator, .{ .string = parts[1] });
 
@@ -95,7 +68,7 @@ fn writeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 }
 
 fn appendHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const parts = try expectStringArgs(args, env, 2, "append");
+    const parts = try expectStringArgs(args, env, 2, "csv", "append");
     const filepath = parts[0];
     const contents = try stringifyCSV(allocator, .{ .string = parts[1] });
 
@@ -112,7 +85,7 @@ fn appendHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *En
 }
 
 fn parseHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const input = try expectStringArgs(args, env, 1, "parse");
+    const input = try expectStringArgs(args, env, 1, "csv", "parse");
     return try parseCSV(allocator, input[0]);
 }
 

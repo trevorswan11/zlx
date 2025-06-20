@@ -11,22 +11,7 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
-
-fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("debug module: expected 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .string) {
-        try writer_err.print("debug module: expected a string, got a(n) {s}\n", .{@tagName(val)});
-        return error.TypeMismatch;
-    }
-
-    return val.string;
-}
+const expectStringArgs = builtins.expectStringArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -141,7 +126,7 @@ fn failHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     }
 
     if (args.len == 1) {
-        const message = try expectStringArg(args, env);
+        const message = try expectStringArgs(args, env, 1, "debug", "fail");
         try writer_err.print("{s}\n", .{message});
     }
     return error.Fail;

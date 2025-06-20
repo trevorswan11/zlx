@@ -11,22 +11,7 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
-
-fn expectStringArg(args: []const *ast.Expr, env: *Environment) ![]const u8 {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("string module: expected 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .string) {
-        try writer_err.print("string module: expected a string, got a(n) {s}\n", .{@tagName(val)});
-        return error.TypeMismatch;
-    }
-
-    return val.string;
-}
+const expectStringArgs = builtins.expectStringArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -46,7 +31,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn upperHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const s = try expectStringArg(args, env);
+    const s = (try expectStringArgs(args, env, 1, "string", "upper"))[0];
     const upper = try std.ascii.allocUpperString(allocator, s);
     return .{
         .string = upper,
@@ -54,7 +39,7 @@ fn upperHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 }
 
 fn lowerHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const s = try expectStringArg(args, env);
+    const s = (try expectStringArgs(args, env, 1, "string", "lower"))[0];
     const lower = try std.ascii.allocLowerString(allocator, s);
     return .{
         .string = lower,
@@ -199,7 +184,7 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 }
 
 fn trimHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const s = try expectStringArg(args, env);
+    const s = (try expectStringArgs(args, env, 1, "string", "trim"))[0];
     const trimmed = std.mem.trim(u8, s, " \t\n\r");
     return .{
         .string = try allocator.dupe(u8, trimmed),

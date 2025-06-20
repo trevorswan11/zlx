@@ -1,0 +1,9 @@
+import json;
+
+let obj = json.parse("""{"x": 1, "y": [true, null]}""");
+println(obj);
+println(obj["x"]);
+println(obj["y"][0]);
+println(obj["y"][1]);
+let out = json.stringify(obj);
+println(out);

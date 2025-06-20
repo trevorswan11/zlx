@@ -3,6 +3,7 @@ const std = @import("std");
 const ast = @import("../parser/ast.zig");
 const interpreter = @import("../interpreter/interpreter.zig");
 const eval = @import("../interpreter/eval.zig");
+const driver = @import("../utils/driver.zig");
 const fns = @import("fns.zig");
 
 const Environment = interpreter.Environment;
@@ -15,6 +16,35 @@ pub fn pack(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinMo
             .builtin = builtin,
         },
     );
+}
+
+pub fn expectStringArgs(
+    args: []const *ast.Expr,
+    env: *Environment,
+    count: usize,
+    module_name: []const u8,
+    func_name: []const u8,
+) ![]const []const u8 {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != count) {
+        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
+        return error.ArgumentCountMismatch;
+    }
+
+    var result = std.ArrayList([]const u8).init(env.allocator);
+    defer result.deinit();
+
+    for (args, 0..) |arg, idx| {
+        const val = try eval.evalExpr(arg, env);
+        if (val != .string) {
+            try writer_err.print("{s} module: {s} expected a string, got a {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
+            return error.TypeMismatch;
+        }
+        try result.append(val.string);
+    }
+
+    return try result.toOwnedSlice();
 }
 
 // === Builtin Functions ===
