@@ -1,5 +1,13 @@
 # zlx [![Zig](https://img.shields.io/badge/zig-0.14.0-orange)](https://ziglang.org/) [![License](https://img.shields.io/github/license/trevorswan11/zlx)](LICENSE) [![Last commit](https://img.shields.io/github/last-commit/trevorswan11/zlx)](https://github.com/trevorswan11/zlx) [![Build](https://github.com/trevorswan11/zlx/actions/workflows/main.yml/badge.svg)](https://github.com/trevorswan11/zlx/actions/workflows/main.yml)
 
+<p align="center">
+  <img src="zlx-logo-v2.png" alt="zlx logo" width="250"/>
+</p>
+
+<p align="center">
+  A lexer, parser, language, and interpreter written in Zig.
+</p>
+
 ### Syntax
 ZLX has familiar syntax that can be explored in the language's documentation in the `doc` folder relative to the root directory.
 
