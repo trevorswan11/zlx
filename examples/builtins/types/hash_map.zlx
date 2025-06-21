@@ -3,6 +3,8 @@ import map;
 let m = new map();
 m.put("x", 1);
 m.put("y", 2);
+println(m.str());
+
 let a = m.get("x");
 let b = m.get("y");
 let c = m.get("z");

@@ -212,4 +212,8 @@ pub const builtin_modules = [_]BuiltinModule{
         .name = "stack",
         .loader = @import("types/stack.zig").load,
     },
+    .{
+        .name = "treap",
+        .loader = @import("types/treap.zig").load,
+    },
 };

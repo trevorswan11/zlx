@@ -4,6 +4,7 @@ let g = new adjacency_list();
 g.add_edge(1, 2);
 g.add_edge(1, 3);
 g.add_edge(2, 4);
+println(g.str());
 
 let n1 = g.get_neighbors(1);
 let n2 = g.get_neighbors(2);

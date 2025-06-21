@@ -41,7 +41,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try LIST_METHODS.put("peek_tail", listPeekTail);
     try LIST_METHODS.put("clear", listClear);
     try LIST_METHODS.put("empty", listEmpty);
-    try LIST_METHODS.put("len", listLen);
+    try LIST_METHODS.put("size", listSize);
+    try LIST_METHODS.put("str", listStr);
 
     LIST_TYPE = .{
         .std_struct = .{
@@ -93,8 +94,8 @@ fn listAppend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: 
         return error.ArgumentCountMismatch;
     }
     const val = try interpreter.evalExpr(args[0], env);
-    const list = try getListInstance(this);
-    try list.list.append(val);
+    const inst = try getListInstance(this);
+    try inst.list.append(val);
     return .nil;
 }
 
@@ -105,19 +106,19 @@ fn listPrepend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env:
         return error.ArgumentCountMismatch;
     }
     const val = try interpreter.evalExpr(args[0], env);
-    const list = try getListInstance(this);
-    try list.list.prepend(val);
+    const inst = try getListInstance(this);
+    try inst.list.prepend(val);
     return .nil;
 }
 
 fn listPopHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const list = try getListInstance(this);
-    return list.list.popHead() orelse .nil;
+    const inst = try getListInstance(this);
+    return inst.list.popHead() orelse .nil;
 }
 
 fn listPopTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const list = try getListInstance(this);
-    return list.list.popTail() orelse .nil;
+    const inst = try getListInstance(this);
+    return inst.list.popTail() orelse .nil;
 }
 
 fn listGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
@@ -132,8 +133,8 @@ fn listGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *En
         return error.TypeMismatch;
     }
 
-    const list = try getListInstance(this);
-    return try list.list.get(@intFromFloat(index_val.number));
+    const inst = try getListInstance(this);
+    return try inst.list.get(@intFromFloat(index_val.number));
 }
 
 fn listRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
@@ -148,8 +149,8 @@ fn listRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: 
         return error.TypeMismatch;
     }
 
-    const list = try getListInstance(this);
-    return try list.list.remove(@intFromFloat(index_val.number));
+    const inst = try getListInstance(this);
+    return try inst.list.remove(@intFromFloat(index_val.number));
 }
 
 fn listDiscard(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
@@ -164,39 +165,62 @@ fn listDiscard(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env:
         return error.TypeMismatch;
     }
 
-    const list = try getListInstance(this);
-    try list.list.discard(@intFromFloat(index_val.number));
+    const inst = try getListInstance(this);
+    try inst.list.discard(@intFromFloat(index_val.number));
     return .nil;
 }
 
 fn listPeekHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const list = try getListInstance(this);
-    return list.list.peekHead() orelse .nil;
+    const inst = try getListInstance(this);
+    return inst.list.peekHead() orelse .nil;
 }
 
 fn listPeekTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const list = try getListInstance(this);
-    return list.list.peekTail() orelse .nil;
+    const inst = try getListInstance(this);
+    return inst.list.peekTail() orelse .nil;
 }
 
 fn listClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const list = try getListInstance(this);
-    list.list.clear();
+    const inst = try getListInstance(this);
+    inst.list.clear();
     return .nil;
 }
 
 fn listEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const list = try getListInstance(this);
+    const inst = try getListInstance(this);
     return .{
-        .boolean = list.list.empty(),
+        .boolean = inst.list.empty(),
     };
 }
 
-fn listLen(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const list = try getListInstance(this);
+fn listSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getListInstance(this);
     return .{
-        .number = @floatFromInt(list.list.len),
+        .number = @floatFromInt(inst.list.len),
     };
+}
+
+fn listStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getListInstance(this);
+    return .{
+        .string = try toString(inst.list),
+    };
+}
+
+pub fn toString(list: List) ![]const u8 {
+    var buffer = std.ArrayList(u8).init(list.allocator);
+    defer buffer.deinit();
+    const writer = buffer.writer();
+
+    try writer.print("[ null", .{});
+    var current = list.head;
+    while (current) |node| {
+        try writer.print(" <-> {s}", .{try node.value.toString(list.allocator)});
+        current = node.next;
+    }
+    try writer.print(" <-> null ]", .{});
+
+    return try buffer.toOwnedSlice();
 }
 
 // === TESTING ===
@@ -219,7 +243,7 @@ test "list_builtin" {
         \\l.append("c");
         \\let first = l.get(0);
         \\let last = l.pop_tail();
-        \\let size = l.len();
+        \\let size = l.size();
         \\let is_empty = l.empty();
     ;
 

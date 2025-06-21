@@ -1,9 +1,11 @@
 import deque;
+
 let d = new deque();
 d.push_head(2);
 d.push_tail(3);
 d.push_head(1);
 d.push_tail(4);
+println(d.str());
 
 let h1 = d.peek_head();
 let t1 = d.peek_tail();

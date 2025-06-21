@@ -38,7 +38,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try ARRAY_LIST_METHODS.put("set", arrayListSet);
     try ARRAY_LIST_METHODS.put("clear", arrayListClear);
     try ARRAY_LIST_METHODS.put("empty", arrayListEmpty);
-    try ARRAY_LIST_METHODS.put("len", arrayListLen);
+    try ARRAY_LIST_METHODS.put("size", arrayListSize);
+    try ARRAY_LIST_METHODS.put("str", arrayListStr);
 
     ARRAY_LIST_TYPE = .{
         .std_struct = .{
@@ -192,11 +193,32 @@ fn arrayListEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *
     };
 }
 
-fn arrayListLen(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getArrayListInstance(this);
     return Value{
         .number = @floatFromInt(inst.array.len),
     };
+}
+
+fn arrayListStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getArrayListInstance(this);
+    return .{
+        .string = try toString(inst.array),
+    };
+}
+
+pub fn toString(array_list: ArrayList) ![]const u8 {
+    var buffer = std.ArrayList(u8).init(array_list.allocator);
+    defer buffer.deinit();
+    const writer = buffer.writer();
+
+    try writer.print("[", .{});
+    for (array_list.arr[0..array_list.len]) |value| {
+        try writer.print(" {s}", .{try value.toString(array_list.allocator)});
+    }
+    try writer.print(" ]", .{});
+
+    return try buffer.toOwnedSlice();
 }
 
 // === TESTING ===
@@ -218,7 +240,7 @@ test "array_builtin" {
         \\a.push("second");
         \\let removed = a.pop();
         \\let empty = a.empty();
-        \\let length = a.len();
+        \\let length = a.size();
     ;
 
     const block = try testing.parse(allocator, source);

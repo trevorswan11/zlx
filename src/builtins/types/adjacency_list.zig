@@ -39,6 +39,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try ADJ_LIST_METHODS.put("contains", adjListContains);
     try ADJ_LIST_METHODS.put("clear", adjListClear);
     try ADJ_LIST_METHODS.put("size", adjListSize);
+    try ADJ_LIST_METHODS.put("empty", adjListEmpty);
+    try ADJ_LIST_METHODS.put("str", adjListStr);
 
     ADJ_LIST_TYPE = .{
         .std_struct = .{
@@ -108,7 +110,7 @@ fn adjListGetNeighbors(allocator: std.mem.Allocator, this: *Value, args: []const
     const neighbors = inst.graph.getNeighbors(node);
     if (neighbors) |list| {
         var mut_list = list;
-        const list_slice = try mut_list.toOwnedSlice();
+        const list_slice = try mut_list.toSlice();
         var array_list = std.ArrayList(Value).init(allocator);
         try array_list.appendSlice(list_slice);
         return .{
@@ -143,6 +145,38 @@ fn adjListSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Env
     return .{
         .number = @floatFromInt(inst.graph.size()),
     };
+}
+
+fn adjListEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getGraphInstance(this);
+    return .{
+        .boolean = inst.graph.size() == 0,
+    };
+}
+
+fn adjListStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getGraphInstance(this);
+    return .{
+        .string = try toString(inst.graph),
+    };
+}
+
+pub fn toString(adj_list: AdjacencyList) ![]const u8 {
+    var buffer = std.ArrayList(u8).init(adj_list.allocator);
+    defer buffer.deinit();
+    const writer = buffer.writer();
+
+    var it = adj_list.map.map.iterator();
+    while (it.next()) |entry| {
+        try writer.print("{s}: ", .{try entry.key_ptr.*.toString(adj_list.allocator)});
+        for (entry.value_ptr.*.arr[0..entry.value_ptr.*.len]) |neighbor| {
+            try writer.print("{s} ", .{try neighbor.toString(adj_list.allocator)});
+        }
+        try writer.print("\n", .{});
+    }
+    _ = buffer.pop();
+
+    return try buffer.toOwnedSlice();
 }
 
 // === TESTING ===

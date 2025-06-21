@@ -36,6 +36,10 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try DEQUE_METHODS.put("pop_tail", dequePopTail);
     try DEQUE_METHODS.put("peek_head", dequePeekHead);
     try DEQUE_METHODS.put("peek_tail", dequePeekTail);
+    try DEQUE_METHODS.put("size", dequeSize);
+    try DEQUE_METHODS.put("empty", dequeEmpty);
+    try DEQUE_METHODS.put("clear", dequeClear);
+    try DEQUE_METHODS.put("str", dequeStr);
 
     DEQUE_TYPE = .{
         .std_struct = .{
@@ -88,8 +92,8 @@ fn dequePushHead(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, en
         return error.ArgumentCountMismatch;
     }
     const val = try interpreter.evalExpr(args[0], env);
-    const deque = try getDequeInstance(this);
-    try deque.list.prepend(val);
+    const inst = try getDequeInstance(this);
+    try inst.list.prepend(val);
     return .nil;
 }
 
@@ -100,8 +104,8 @@ fn dequePushTail(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, en
         return error.ArgumentCountMismatch;
     }
     const val = try interpreter.evalExpr(args[0], env);
-    const deque = try getDequeInstance(this);
-    try deque.list.append(val);
+    const inst = try getDequeInstance(this);
+    try inst.list.append(val);
     return .nil;
 }
 
@@ -111,18 +115,46 @@ fn dequePopHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *En
 }
 
 fn dequePopTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const deque = try getDequeInstance(this);
-    return deque.list.popTail() orelse .nil;
+    const inst = try getDequeInstance(this);
+    return inst.list.popTail() orelse .nil;
 }
 
 fn dequePeekHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const deque = try getDequeInstance(this);
-    return deque.list.peekHead() orelse .nil;
+    const inst = try getDequeInstance(this);
+    return inst.list.peekHead() orelse .nil;
 }
 
 fn dequePeekTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const deque = try getDequeInstance(this);
-    return deque.list.peekTail() orelse .nil;
+    const inst = try getDequeInstance(this);
+    return inst.list.peekTail() orelse .nil;
+}
+
+fn dequeClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getDequeInstance(this);
+    inst.list.clear();
+    return .nil;
+}
+
+fn dequeEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getDequeInstance(this);
+    return .{
+        .boolean = inst.list.empty(),
+    };
+}
+
+fn dequeSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getDequeInstance(this);
+    return .{
+        .number = @floatFromInt(inst.list.len),
+    };
+}
+
+fn dequeStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getDequeInstance(this);
+    const strFn = @import("list.zig").toString;
+    return .{
+        .string = try strFn(inst.list),
+    };
 }
 
 // === TESTING ===

@@ -33,6 +33,10 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try STACK_METHODS.put("push", stackPush);
     try STACK_METHODS.put("pop", stackPop);
     try STACK_METHODS.put("peek", stackPeek);
+    try STACK_METHODS.put("size", stackSize);
+    try STACK_METHODS.put("empty", stackEmpty);
+    try STACK_METHODS.put("clear", stackClear);
+    try STACK_METHODS.put("str", stackStr);
 
     STACK_TYPE = .{
         .std_struct = .{
@@ -100,6 +104,34 @@ fn stackPeek(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Envir
     const inst = try getStackInstance(this);
     const result = inst.stack.peek();
     return result orelse .nil;
+}
+
+fn stackSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getStackInstance(this);
+    return .{
+        .number = @floatFromInt(inst.stack.list.len),
+    };
+}
+
+fn stackEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getStackInstance(this);
+    return .{
+        .boolean = inst.stack.list.empty(),
+    };
+}
+
+fn stackClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getStackInstance(this);
+    inst.stack.list.clear();
+    return .nil;
+}
+
+fn stackStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getStackInstance(this);
+    const strFn = @import("list.zig").toString;
+    return .{
+        .string = try strFn(inst.stack.list),
+    };
 }
 
 // === TESTING ===

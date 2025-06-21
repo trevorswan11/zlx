@@ -37,6 +37,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try PRIORITY_QUEUE_METHODS.put("size", pqSize);
     try PRIORITY_QUEUE_METHODS.put("empty", pqEmpty);
     try PRIORITY_QUEUE_METHODS.put("clear", pqClear);
+    try PRIORITY_QUEUE_METHODS.put("str", pqStr);
 
     PRIORITY_QUEUE_TYPE = .{
         .std_struct = .{
@@ -195,6 +196,14 @@ fn pqClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environ
     const inst = try getPriorityQueueInstance(this);
     inst.array.clear();
     return .nil;
+}
+
+fn pqStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getPriorityQueueInstance(this);
+    const strFn = @import("array_list.zig").toString;
+    return .{
+        .string = try strFn(inst.array),
+    };
 }
 
 // === TESTING ===

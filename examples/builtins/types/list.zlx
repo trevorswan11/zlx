@@ -4,9 +4,11 @@ let l = new list();
 l.append("a");
 l.append("b");
 l.append("c");
+println(l.str());
+
 let first = l.get(0);
 let last = l.pop_tail();
-let size = l.len();
+let size = l.size();
 let is_empty = l.empty();
 
 println(first, last, size, is_empty);

@@ -36,6 +36,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try SET_METHODS.put("clear", setClear);
     try SET_METHODS.put("size", setSize);
     try SET_METHODS.put("empty", setEmpty);
+    try SET_METHODS.put("str", setStr);
 
     SET_TYPE = .{
         .std_struct = .{
@@ -154,6 +155,28 @@ fn setEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Enviro
     return .{
         .boolean = inst.set.empty(),
     };
+}
+
+fn setStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getSetInstance(this);
+    return .{
+        .string = try toString(inst.set),
+    };
+}
+
+pub fn toString(set: HashSet) ![]const u8 {
+    var buffer = std.ArrayList(u8).init(set.allocator);
+    defer buffer.deinit();
+    const writer = buffer.writer();
+
+    try writer.print("[", .{});
+    var it = set.map.iterator();
+    while (it.next()) |entry| {
+        try writer.print(" {s}", .{try entry.key_ptr.*.toString(set.allocator)});
+    }
+    try writer.print(" ]", .{});
+
+    return try buffer.toOwnedSlice();
 }
 
 // === TESTING ===

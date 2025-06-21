@@ -4,6 +4,7 @@ let g = new graph();
 g.add_edge("a", "b");
 g.add_edge("a", "c");
 g.add_edge("b", "d");
+println(g.str());
 
 let has1 = g.has_node("a");
 let has2 = g.has_node("z");

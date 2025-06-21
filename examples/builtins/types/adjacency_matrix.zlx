@@ -3,6 +3,8 @@ import adjacency_matrix;
 let m = new adjacency_matrix(4);
 m.add_edge(0, 1);
 m.add_edge(1, 2);
+println(m.str());
+
 m.remove_edge(1, 2);
 let has01 = m.contains_edge(0, 1);
 let has12 = m.contains_edge(1, 2);

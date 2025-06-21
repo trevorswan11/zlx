@@ -37,6 +37,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try GRAPH_METHODS.put("has_node", graphHasNode);
     try GRAPH_METHODS.put("has_edge", graphHasEdge);
     try GRAPH_METHODS.put("clear", graphClear);
+    try GRAPH_METHODS.put("str", graphStr);
 
     GRAPH_TYPE = .{
         .std_struct = .{
@@ -136,6 +137,14 @@ fn graphClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Envi
     const inst = try getGraphInstance(this);
     inst.graph.clear();
     return .nil;
+}
+
+fn graphStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getGraphInstance(this);
+    const strFn = @import("adjacency_list.zig").toString;
+    return .{
+        .string = try strFn(inst.graph),
+    };
 }
 
 // === TESTING ===

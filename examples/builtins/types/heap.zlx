@@ -4,6 +4,8 @@ let q = new heap(true);
 q.insert(10);
 q.insert(3);
 q.insert(8);
+println(q.str());
+
 let a = q.poll();
 let b = q.poll();
 let c = q.poll();

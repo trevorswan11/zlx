@@ -392,7 +392,7 @@ pub fn computed(c: *ast.ComputedExpr, env: *Environment) !Value {
             }
         },
         else => {
-            try writer_err.print("Target type {d} does not support computed expressions\n", .{@tagName(target)});
+            try writer_err.print("Target type {s} does not support computed expressions\n", .{@tagName(target)});
             return error.InvalidAccess;
         },
     }

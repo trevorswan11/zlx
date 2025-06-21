@@ -153,6 +153,7 @@ test {
     _ = @import("builtins/types/priority_queue.zig");
     _ = @import("builtins/types/queue.zig");
     _ = @import("builtins/types/stack.zig");
+    _ = @import("builtins/types/treap.zig");
 
     // General Behavior - Tests located in `testing` directory
     _ = @import("testing/testing.zig");

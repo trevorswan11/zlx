@@ -31,8 +31,14 @@ var QUEUE_TYPE: Value = undefined;
 pub fn load(allocator: std.mem.Allocator) !Value {
     QUEUE_METHODS = std.StringHashMap(StdMethod).init(allocator);
     try QUEUE_METHODS.put("push", queuePush);
+    try QUEUE_METHODS.put("enqueue", queuePush);
     try QUEUE_METHODS.put("poll", queuePoll);
+    try QUEUE_METHODS.put("dequeue", queuePoll);
+    try QUEUE_METHODS.put("size", queueSize);
+    try QUEUE_METHODS.put("empty", queueEmpty);
     try QUEUE_METHODS.put("peek", queuePeek);
+    try QUEUE_METHODS.put("clear", queueClear);
+    try QUEUE_METHODS.put("str", queueStr);
 
     QUEUE_TYPE = .{
         .std_struct = .{
@@ -98,6 +104,34 @@ fn queuePeek(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Envir
     const inst = try getQueueInstance(this);
     const result = inst.queue.peek();
     return result orelse .nil;
+}
+
+fn queueSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getQueueInstance(this);
+    return .{
+        .number = @floatFromInt(inst.queue.list.len),
+    };
+}
+
+fn queueEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getQueueInstance(this);
+    return .{
+        .boolean = inst.queue.list.empty(),
+    };
+}
+
+fn queueClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getQueueInstance(this);
+    inst.queue.list.clear();
+    return .nil;
+}
+
+fn queueStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getQueueInstance(this);
+    const strFn = @import("list.zig").toString;
+    return .{
+        .string = try strFn(inst.queue.list),
+    };
 }
 
 // === TESTING ===

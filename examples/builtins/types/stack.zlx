@@ -4,6 +4,8 @@ let s = new stack();
 s.push(1);
 s.push(2);
 s.push(3);
+println(s.str());
+
 let a = s.peek();
 let b = s.pop();
 let c = s.pop();

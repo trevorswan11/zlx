@@ -279,14 +279,19 @@
                 <li>
                     <a href="#csv">csv</a>
                     <ul>
-                        <li><a href="#WIP-csv">WIP</a></li>
+                        <li><a href="#csv-read">read(path)</a></li>
+                        <li><a href="#csv-write">write(path, csv_string)</a></li>
+                        <li><a href="#csv-append">append(path, csv_string)</a></li>
+                        <li><a href="#csv-parse">parse(text)</a></li>
+                        <li><a href="#csv-stringify">stringify(array)</a></li>
                     </ul>
                 </li>
 
                 <li>
                     <a href="#json">json</a>
                     <ul>
-                        <li><a href="#WIP-json">WIP</a></li>
+                        <li><a href="#json-parse">parse(text)</a></li>
+                        <li><a href="#json-stringify">stringify(value)</a></li>
                     </ul>
                 </li>
 
@@ -303,6 +308,24 @@
                         <li><a href="#to_string">to_string</a></li>
                         <li><a href="#to_number">to_number</a></li>
                         <li><a href="#to_bool">to_bool</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#dsa">Data Structures</a>
+                    <ul>
+                        <li><a href="#std_array_list">ArrayList</a></li>
+                        <li><a href="#std_set">HashSet</a></li>
+                        <li><a href="#std_map">HashMap</a></li>
+                        <li><a href="#std_adjacency_list">AdjacencyList</a></li>
+                        <li><a href="#std_graph">Graph</a></li>
+                        <li><a href="#std_adjacency_matrix">AdjacencyMatrix</a></li>
+                        <li><a href="#std_heap">PriorityQueue</a></li>
+                        <li><a href="#std_treap">Treap</a></li>
+                        <li><a href="#std_stack">Stack</a></li>
+                        <li><a href="#std_queue">Queue</a></li>
+                        <li><a href="#std_list">List</a></li>
+                        <li><a href="#std_deque">Deque</a></li>
                     </ul>
                 </li>
             </ul>
@@ -695,242 +718,316 @@ println(y);                     // 4
                 For example usage of these modules, see the <code>examples/builtins</code> folder. The builtin functions
                 can be seen spread out over all examples.
             </p>
+            <!-- Array Module Docs -->
             <h2 id="array">array</h2>
-            <h3 id="array-push">push</h3>
-            <p>Adds a value to the end of the array.</p>
+            <h3 id="array-push">push(ref(arr), value)</h3>
+            <p>Appends <code>value</code> to the end of the array, increasing its length by 1. This is equivalent to
+                adding an item to the tail.</p>
 
-            <h3 id="array-pop">pop</h3>
-            <p>Removes and returns the last element of the array.</p>
+            <h3 id="array-pop">pop(ref(arr))</h3>
+            <p>Removes and returns the last element of the array. Throws an error if the array is empty.</p>
 
-            <h3 id="array-insert">insert</h3>
-            <p>Inserts a value at a specified index, shifting others right.</p>
+            <h3 id="array-insert">insert(ref(arr), index, value)</h3>
+            <p>Inserts <code>value</code> at the specified <code>index</code>. All elements at or after the index are
+                shifted one position to the right. Index must be in range <code>[0, len]</code>.</p>
 
-            <h3 id="array-remove">remove</h3>
-            <p>Removes an element at a specified index, shifting others left.</p>
+            <h3 id="array-remove">remove(ref(arr), index)</h3>
+            <p>Removes the element at the given <code>index</code>, shifting remaining elements to the left to fill the
+                gap. Throws an error if the index is invalid.</p>
 
-            <h3 id="array-clear">clear</h3>
-            <p>Removes all elements from the array.</p>
+            <h3 id="array-clear">clear(ref(arr))</h3>
+            <p>Deletes all elements in the array, making it empty but still usable.</p>
 
-            <h3 id="array-get">get</h3>
-            <p>Retrieves the value at a specified index.</p>
+            <h3 id="array-get">get(ref(arr), index)</h3>
+            <p>Returns the value at the given <code>index</code>. Does not modify the array. Throws an error if the
+                index is out of bounds.</p>
 
-            <h3 id="array-set">set</h3>
-            <p>Sets the value at a specified index.</p>
+            <h3 id="array-set">set(ref(arr), index, value)</h3>
+            <p>Overwrites the element at the specified <code>index</code> with <code>value</code>. Throws an error if
+                the index is out of bounds.</p>
 
-            <h3 id="array-slice">slice</h3>
-            <p>Returns a subarray between two indices (inclusive start, exclusive end).</p>
+            <h3 id="array-slice">slice(ref(arr), start, end)</h3>
+            <p>Returns a subarray starting at <code>start</code> (inclusive) and ending at <code>end</code> (exclusive).
+                The resulting slice is a new array. Throws an error if the indices are invalid or out of bounds.</p>
 
+            <!-- Debug Module Docs -->
             <h2 id="debug">debug</h2>
-            <p>You can specify a message to be printed as the last argument for all of these functions. This last
-                argument will be printed on failure, and must be a string.</p>
+            <p>Each of these functions optionally accepts a message string as the last argument. If provided, the
+                message is displayed when the assertion fails. These tools are primarily used in testing and debugging
+                to catch logical errors early.</p>
 
-            <h3 id="debug-assert">assert</h3>
-            <p>Throws an error if the given condition is false. Used to enforce invariants.</p>
+            <h3 id="debug-assert">assert(condition, message?)</h3>
+            <p>Throws an error if <code>condition</code> is false. Optionally prints <code>message</code> if the
+                assertion fails. This is useful for enforcing program invariants during development or testing.</p>
 
-            <h3 id="debug-assertEqual">assertEqual</h3>
-            <p>Throws an error if two values are not equal.</p>
+            <h3 id="debug-assertEqual">assertEqual(expected, actual, message?)</h3>
+            <p>Throws an error if <code>expected</code> and <code>actual</code> are not equal. Optionally prints
+                <code>message</code> on failure. This is commonly used in unit tests to check correctness.
+            </p>
 
-            <h3 id="debug-assertNotEqual">assertNotEqual</h3>
-            <p>Throws an error if two values are equal. Useful for negative tests.</p>
+            <h3 id="debug-assertNotEqual">assertNotEqual(a, b, message?)</h3>
+            <p>Throws an error if <code>a</code> and <code>b</code> are equal. Optionally prints <code>message</code> on
+                failure. Useful for testing that two values differ.</p>
 
-            <h3 id="debug-fail">fail</h3>
-            <p>Unconditionally triggers a failure. Useful for stubs or deliberate test breaks.</p>
+            <h3 id="debug-fail">fail(message?)</h3>
+            <p>Unconditionally triggers a failure. Optionally prints <code>message</code>. This can be used to mark code
+                that should never be reached, or to deliberately trigger test failures.</p>
 
+            <!-- Fs Module Docs -->
             <h2 id="fs">fs</h2>
-            <h3 id="fs-read">read</h3>
-            <p>Reads the contents of a file and returns it as a string.</p>
+            <h3 id="fs-read">read(path)</h3>
+            <p>Reads the contents of the file at <code>path</code> and returns it as a string. Throws an error if the
+                file does not exist or cannot be opened.</p>
 
-            <h3 id="fs-write">write</h3>
-            <p>Writes a string to a file, overwriting if it already exists.</p>
+            <h3 id="fs-write">write(path, text)</h3>
+            <p>Writes the string <code>text</code> to the file at <code>path</code>, overwriting the file if it already
+                exists. Creates the file if it does not exist.</p>
 
-            <h3 id="fs-exists">exists</h3>
-            <p>Returns true if the specified file or directory exists.</p>
+            <h3 id="fs-exists">exists(path)</h3>
+            <p>Returns <code>true</code> if the file or directory at <code>path</code> exists, otherwise returns
+                <code>false</code>.
+            </p>
 
-            <h3 id="fs-remove">remove</h3>
-            <p>Removes a specified file or directory. Alias of <code>rm</code>.</p>
+            <h3 id="fs-remove">remove(path)</h3>
+            <p>Deletes the file or directory at <code>path</code>. If the target is a non-empty directory, this will
+                fail unless handled recursively. Alias of <code>rm</code>.</p>
 
-            <h3 id="fs-list">list</h3>
-            <p>Returns the entries in a directory (non-recursive).</p>
+            <h3 id="fs-list">list(path)</h3>
+            <p>Returns an array of names of entries (files and directories) in the given directory <code>path</code>.
+                This is a non-recursive listing.</p>
 
-            <h3 id="fs-list_all_files">list_all_files</h3>
-            <p>Recursively lists all files in a directory.</p>
+            <h3 id="fs-list_all_files">list_all_files(path)</h3>
+            <p>Recursively returns an array of all file paths within the directory <code>path</code>, including files in
+                nested subdirectories.</p>
 
-            <h3 id="fs-mkdir">mkdir</h3>
-            <p>Creates a directory at the given path.</p>
+            <h3 id="fs-mkdir">mkdir(path)</h3>
+            <p>Creates a new directory at <code>path</code>. If parent directories do not exist, an error is thrown
+                unless explicitly handled.</p>
 
-            <h3 id="fs-rmdir">rmdir</h3>
-            <p>Removes an empty directory.</p>
+            <h3 id="fs-rmdir">rmdir(path)</h3>
+            <p>Removes the empty directory at <code>path</code>. Will throw an error if the directory is not empty.</p>
 
-            <h3 id="fs-rm">rm</h3>
-            <p>Removes a file or directory. Alias of <code>remove</code>.</p>
+            <h3 id="fs-rm">rm(path)</h3>
+            <p>Alias of <code>remove</code>. Removes a file or directory at the given path.</p>
 
-            <h3 id="fs-copy">copy</h3>
-            <p>Copies a file from one path to another.</p>
+            <h3 id="fs-copy">copy(src, dest)</h3>
+            <p>Copies the file from <code>src</code> to <code>dest</code>. The destination will be overwritten if it
+                already exists. Directories are not supported.</p>
 
-            <h3 id="fs-rename">rename</h3>
-            <p>Renames or moves a file or directory.</p>
+            <h3 id="fs-rename">rename(old_path, new_path)</h3>
+            <p>Moves or renames a file or directory from <code>old_path</code> to <code>new_path</code>. If
+                <code>new_path</code> already exists, it will be overwritten.
+            </p>
 
-            <h3 id="fs-is_dir">is_dir</h3>
-            <p>Returns true if the path is a directory.</p>
+            <h3 id="fs-is_dir">is_dir(path)</h3>
+            <p>Returns <code>true</code> if the path points to a directory, otherwise returns <code>false</code>.</p>
 
-            <h3 id="fs-read_lines">read_lines</h3>
-            <p>Reads a file and returns an array of strings split by line.</p>
+            <h3 id="fs-read_lines">read_lines(path)</h3>
+            <p>Reads the file at <code>path</code> and returns an array of lines as strings. Throws an error if the file
+                cannot be opened.</p>
 
-            <h3 id="fs-touch">touch</h3>
-            <p>Creates an empty file or updates the timestamp if it exists.</p>
+            <h3 id="fs-touch">touch(path)</h3>
+            <p>Creates an empty file at <code>path</code> if it does not exist. If the file already exists, its
+                modification timestamp is updated.</p>
 
-            <h3 id="fs-append">append</h3>
-            <p>Appends text to the end of a file.</p>
+            <h3 id="fs-append">append(path, text)</h3>
+            <p>Appends the string <code>text</code> to the end of the file at <code>path</code>. Creates the file if it
+                does not already exist.</p>
 
+            <!-- Math Module Docs -->
             <h2 id="math">math</h2>
-            <h3 id="math-sqrt">sqrt</h3>
-            <p>Returns the square root of a number.</p>
+            <h3 id="math-sqrt">sqrt(x)</h3>
+            <p>Returns the square root of <code>x</code>. The input must be a non-negative number.</p>
 
-            <h3 id="math-abs">abs</h3>
-            <p>Returns the absolute value of a number.</p>
+            <h3 id="math-abs">abs(x)</h3>
+            <p>Returns the absolute value of <code>x</code>, stripping any negative sign.</p>
 
-            <h3 id="math-sin">sin</h3>
-            <p>Returns the sine of a number in radians.</p>
+            <h3 id="math-sin">sin(x)</h3>
+            <p>Returns the sine of <code>x</code>, where <code>x</code> is interpreted as radians.</p>
 
-            <h3 id="math-cos">cos</h3>
-            <p>Returns the cosine of a number in radians.</p>
+            <h3 id="math-cos">cos(x)</h3>
+            <p>Returns the cosine of <code>x</code>, where <code>x</code> is in radians.</p>
 
-            <h3 id="math-tan">tan</h3>
-            <p>Returns the tangent of a number in radians.</p>
+            <h3 id="math-tan">tan(x)</h3>
+            <p>Returns the tangent of <code>x</code>, where <code>x</code> is in radians.</p>
 
-            <h3 id="math-asin">asin</h3>
-            <p>Returns the arc-sine (in radians) of a value in the range [-1, 1].</p>
+            <h3 id="math-asin">asin(x)</h3>
+            <p>Returns the arc-sine of <code>x</code>, in radians. The input must be within the range [-1, 1].</p>
 
-            <h3 id="math-acos">acos</h3>
-            <p>Returns the arc-cosine (in radians) of a value in the range [-1, 1].</p>
+            <h3 id="math-acos">acos(x)</h3>
+            <p>Returns the arc-cosine of <code>x</code>, in radians. The input must be within the range [-1, 1].</p>
 
-            <h3 id="math-atan">atan</h3>
-            <p>Returns the arc-tangent (in radians) of a value.</p>
+            <h3 id="math-atan">atan(x)</h3>
+            <p>Returns the arc-tangent of <code>x</code>, in radians. The result lies in the range [-π/2, π/2].</p>
 
-            <h3 id="math-atan2">atan2</h3>
-            <p>Returns the arc-tangent of two variables y and x. Useful for angle from coordinate.</p>
+            <h3 id="math-atan2">atan2(y, x)</h3>
+            <p>Returns the arc-tangent of <code>y / x</code>, considering the quadrant of the point (x, y). The result
+                is in radians.</p>
 
-            <h3 id="math-log">log</h3>
-            <p>Returns the natural logarithm (base e) of a number.</p>
+            <h3 id="math-log">log(x)</h3>
+            <p>Returns the natural logarithm of <code>x</code>, i.e., the logarithm base <code>e</code>.</p>
 
-            <h3 id="math-log10">log10</h3>
-            <p>Returns the base-10 logarithm of a number.</p>
+            <h3 id="math-log10">log10(x)</h3>
+            <p>Returns the base-10 logarithm of <code>x</code>.</p>
 
-            <h3 id="math-exp">exp</h3>
-            <p>Returns e raised to the power of a given number.</p>
+            <h3 id="math-exp">exp(x)</h3>
+            <p>Returns Euler’s number <code>e</code> raised to the power of <code>x</code>.</p>
 
-            <h3 id="math-floor">floor</h3>
-            <p>Rounds a number down to the nearest integer.</p>
+            <h3 id="math-floor">floor(x)</h3>
+            <p>Rounds <code>x</code> down to the largest integer less than or equal to <code>x</code>.</p>
 
-            <h3 id="math-ceil">ceil</h3>
-            <p>Rounds a number up to the nearest integer.</p>
+            <h3 id="math-ceil">ceil(x)</h3>
+            <p>Rounds <code>x</code> up to the smallest integer greater than or equal to <code>x</code>.</p>
 
-            <h3 id="math-round">round</h3>
-            <p>Rounds a number to the nearest integer.</p>
+            <h3 id="math-round">round(x)</h3>
+            <p>Rounds <code>x</code> to the nearest integer. Halfway values are rounded away from zero.</p>
 
-            <h3 id="math-pow">pow</h3>
-            <p>Raises a number to the power of another (base<sup>exponent</sup>).</p>
+            <h3 id="math-pow">pow(base, exponent)</h3>
+            <p>Returns <code>base</code> raised to the power of <code>exponent</code> (i.e., base<sup>exponent</sup>).
+            </p>
 
-            <h3 id="math-min">min</h3>
-            <p>Returns the smaller of two numbers.</p>
+            <h3 id="math-min">min(a, b)</h3>
+            <p>Returns the smaller of the two numbers <code>a</code> and <code>b</code>.</p>
 
-            <h3 id="math-max">max</h3>
-            <p>Returns the larger of two numbers.</p>
+            <h3 id="math-max">max(a, b)</h3>
+            <p>Returns the larger of the two numbers <code>a</code> and <code>b</code>.</p>
 
+            <!-- Path Module Docs -->
             <h2 id="path">path</h2>
-            <h3 id="path-join">join</h3>
-            <p>Joins multiple path segments into a single path using the platform separator.</p>
+            <h3 id="path-join">join(...segments)</h3>
+            <p>Joins multiple path <code>segments</code> into a single path string using the appropriate
+                platform-specific separator (e.g., <code>/</code> or <code>\</code>). Handles empty segments and
+                redundant slashes gracefully.</p>
 
-            <h3 id="path-basename">basename</h3>
-            <p>Returns the final component of a path (e.g. file name).</p>
+            <h3 id="path-basename">basename(path)</h3>
+            <p>Returns the final component of the given <code>path</code>. This is typically the file or directory name
+                at the end of the path.</p>
 
-            <h3 id="path-dirname">dirname</h3>
-            <p>Returns the directory portion of a path, excluding the final component.</p>
+            <h3 id="path-dirname">dirname(path)</h3>
+            <p>Returns the directory portion of the given <code>path</code>, excluding the last component. Useful for
+                extracting the parent directory.</p>
 
-            <h3 id="path-extname">extname</h3>
-            <p>Returns the file extension from a path, including the dot.</p>
+            <h3 id="path-extname">extname(path)</h3>
+            <p>Returns the file extension from <code>path</code>, including the leading dot (e.g., <code>".txt"</code>).
+                If the file has no extension, returns an empty string.</p>
 
-            <h3 id="path-stem">stem</h3>
-            <p>Returns the file name without its extension.</p>
+            <h3 id="path-stem">stem(path)</h3>
+            <p>Returns the file name without its extension from <code>path</code>. For example, given
+                <code>"file.txt"</code>, returns <code>"file"</code>.
+            </p>
 
-            <h3 id="path-is_absolute">is_absolute</h3>
-            <p>Returns true if the path is absolute.</p>
+            <h3 id="path-is_absolute">is_absolute(path)</h3>
+            <p>Returns <code>true</code> if the given <code>path</code> is an absolute path, meaning it starts from the
+                root of the filesystem.</p>
 
-            <h3 id="path-is_relative">is_relative</h3>
-            <p>Returns true if the path is relative.</p>
+            <h3 id="path-is_relative">is_relative(path)</h3>
+            <p>Returns <code>true</code> if the given <code>path</code> is relative to the current working directory.
+                Returns <code>false</code> for absolute paths.</p>
 
-            <h3 id="path-normalize">normalize</h3>
-            <p>Normalizes a path by resolving <code>.</code>, <code>..</code>, and redundant separators.</p>
+            <h3 id="path-normalize">normalize(path)</h3>
+            <p>Returns a cleaned-up version of <code>path</code> by resolving <code>.</code> (current directory),
+                <code>..</code> (parent directory), and removing redundant separators.
+            </p>
 
-            <h3 id="path-split">split</h3>
-            <p>Splits a path into its components (e.g. directories and file).</p>
+            <h3 id="path-split">split(path)</h3>
+            <p>Splits <code>path</code> into an array of its individual components, such as directories and the file
+                name. Does not resolve absolute or relative semantics.</p>
 
+            <!-- Random Module Docs -->
             <h2 id="random">random</h2>
-            <h3 id="random-rand">rand</h3>
-            <p>Returns a random floating-point number in the range [0, 1).</p>
+            <h3 id="random-rand">rand()</h3>
+            <p>Returns a random floating-point number in the range <code>[0, 1)</code>. This is useful for probabilistic
+                branching, scaling, or seeding.</p>
 
-            <h3 id="random-randint">randint</h3>
-            <p>Returns a random integer between two bounds, inclusive. Usage: <code>randint(min, max)</code>.</p>
+            <h3 id="random-randint">randint(min, max)</h3>
+            <p>Returns a random integer between <code>min</code> and <code>max</code>, inclusive. Both bounds must be
+                integers, and <code>min</code> must be less than or equal to <code>max</code>.</p>
 
-            <h3 id="random-choice">choice</h3>
-            <p>Returns a random element from a non-empty array.</p>
+            <h3 id="random-choice">choice(array)</h3>
+            <p>Returns a random element from a non-empty <code>array</code>. Throws an error if the array is empty.
+                Useful for sampling or randomized selection.</p>
 
+            <!-- String Module Docs -->
             <h2 id="string">string</h2>
-            <h3 id="string-upper">upper</h3>
-            <p>Returns a copy of the string with all letters converted to uppercase.</p>
+            <h3 id="string-upper">upper(str)</h3>
+            <p>Returns a new string with all alphabetic characters in <code>str</code> converted to uppercase.
+                Non-letter characters are unaffected.</p>
 
-            <h3 id="string-lower">lower</h3>
-            <p>Returns a copy of the string with all letters converted to lowercase.</p>
+            <h3 id="string-lower">lower(str)</h3>
+            <p>Returns a new string with all alphabetic characters in <code>str</code> converted to lowercase.</p>
 
-            <h3 id="string-slice">slice</h3>
-            <p>Returns a substring from a given start (inclusive) and end (exclusive) index.</p>
+            <h3 id="string-slice">slice(str, start, end)</h3>
+            <p>Returns a substring of <code>str</code> from index <code>start</code> (inclusive) to <code>end</code>
+                (exclusive). Indices must be within the string bounds.</p>
 
-            <h3 id="string-find">find</h3>
-            <p>Returns the index of the first occurrence of a substring, or -1 if not found.</p>
+            <h3 id="string-find">find(str, substr)</h3>
+            <p>Searches <code>str</code> for the first occurrence of <code>substr</code> and returns its starting index.
+                Returns <code>-1</code> if not found.</p>
 
-            <h3 id="string-replace">replace</h3>
-            <p>Returns a copy of the string with all occurrences of a substring replaced.</p>
+            <h3 id="string-replace">replace(str, target, replacement)</h3>
+            <p>Returns a copy of <code>str</code> with all occurrences of <code>target</code> replaced by
+                <code>replacement</code>.
+            </p>
 
-            <h3 id="string-split">split</h3>
-            <p>Splits the string into an array of substrings using a delimiter.</p>
+            <h3 id="string-split">split(str, delimiter)</h3>
+            <p>Splits <code>str</code> into an array of substrings, using <code>delimiter</code> as the separator.
+                Returns an array of strings.</p>
 
-            <h3 id="string-trim">trim</h3>
-            <p>Removes leading and trailing whitespace from the string.</p>
+            <h3 id="string-trim">trim(str)</h3>
+            <p>Removes leading and trailing whitespace characters from <code>str</code>. Does not affect internal
+                spacing.</p>
 
-            <h3 id="string-contains">contains</h3>
-            <p>Returns true if the string contains a given substring.</p>
+            <h3 id="string-contains">contains(str, substr)</h3>
+            <p>Returns <code>true</code> if <code>substr</code> appears anywhere within <code>str</code>, otherwise
+                returns <code>false</code>.</p>
 
+            <!-- Sys module Docs -->
             <h2 id="sys">sys</h2>
-            <h3 id="sys-args">args</h3>
-            <p>Returns an array of command-line arguments passed to the program.</p>
+            <h3 id="sys-args">args()</h3>
+            <p>Returns an array of strings representing the command-line arguments passed to the program. The first
+                argument is typically the script name or path.</p>
 
-            <h3 id="sys-getenv">getenv</h3>
-            <p>Returns the value of an environment variable, or null if not set.</p>
+            <h3 id="sys-getenv">getenv(name)</h3>
+            <p>Returns the value of the environment variable named <code>name</code> as a string. Returns
+                <code>null</code> if the variable is not defined in the current environment.
+            </p>
 
-            <h3 id="sys-setenv">setenv</h3>
-            <p>Sets or updates the value of an environment variable.</p>
+            <h3 id="sys-setenv">setenv(name, value)</h3>
+            <p>Sets or updates the environment variable <code>name</code> to the string <code>value</code> for the
+                current process. This change is not persistent beyond the process lifetime.</p>
 
-            <h3 id="sys-unsetenv">unsetenv</h3>
-            <p>Removes an environment variable from the current process.</p>
+            <h3 id="sys-unsetenv">unsetenv(name)</h3>
+            <p>Removes the environment variable <code>name</code> from the current process's environment. Subsequent
+                calls to <code>getenv(name)</code> will return <code>null</code>.</p>
 
-            <h3 id="sys-run">run</h3>
-            <p>Executes a subprocess with the given command. Returns its output or throws on failure.</p>
+            <h3 id="sys-run">run(cmds)</h3>
+            <p>Executes a subprocess using the packed array of command strings <code>cmds</code>. Returns the standard
+                output of the command on success, or throws an error on failure. Equivalent to spawning a shell command.
+            </p>
 
+            <!-- Time Module Docs -->
             <h2 id="time">time</h2>
-            <h3 id="time-now">now</h3>
-            <p>Returns the current system time in nanoseconds.</p>
+            <h3 id="time-now">now()</h3>
+            <p>Returns the current high-resolution system time in nanoseconds as an integer. Useful for benchmarking or
+                fine-grained profiling. The reference point is unspecified and may vary across systems.</p>
 
-            <h3 id="time-millis">millis</h3>
-            <p>Returns the number of milliseconds since an arbitrary fixed point (e.g., program start or epoch).</p>
+            <h3 id="time-millis">millis()</h3>
+            <p>Returns the number of milliseconds elapsed since an arbitrary fixed point, such as program start or
+                system boot. Often used for timing logic that doesn't need absolute wall time.</p>
 
-            <h3 id="time-sleep">sleep</h3>
-            <p>Suspends execution for the given number of seconds.</p>
+            <h3 id="time-sleep">sleep(seconds)</h3>
+            <p>Pauses program execution for the specified number of <code>seconds</code>. Fractional values (e.g.,
+                <code>0.5</code>) are supported for sub-second sleeps.
+            </p>
 
-            <h3 id="time-sleepMs">sleepMs</h3>
-            <p>Suspends execution for the given number of milliseconds.</p>
+            <h3 id="time-sleepMs">sleepMs(milliseconds)</h3>
+            <p>Suspends execution for the specified number of <code>milliseconds</code>. Equivalent to
+                <code>sleep(ms / 1000)</code>, but with clearer intent for short waits.
+            </p>
 
-            <h3 id="time-timestamp">timestamp</h3>
-            <p>Returns the current Unix timestamp in seconds.</p>
+            <h3 id="time-timestamp">timestamp()</h3>
+            <p>Returns the current Unix timestamp in seconds, representing the number of seconds since January 1, 1970
+                (UTC). Useful for logging, file naming, or expiration logic.</p>
 
             <h3 id="time-constants">Time Constants</h3>
             <p>The following time constants can be accessed from the time module. These are directly pulled from the zig
@@ -967,11 +1064,43 @@ println(y);                     // 4
                     <td>s_per_week</td>
                 </tr>
             </table>
-            <h2 id="csv">csv</h2>
-            <h3 id="WIP-csv">WIP</h3>
 
+            <!-- CSV Module Docs -->
+            <h2 id="csv">csv</h2>
+            <h3 id="csv-read">read(path)</h3>
+            <p>Reads a CSV file from the specified file <code>path</code> and parses its content into a nested array of
+                strings. Each line becomes a row, and each comma-separated entry becomes a cell.</p>
+
+            <h3 id="csv-write">write(path, csv_string)</h3>
+            <p>Writes the provided <code>csv_string</code> to a file at the specified <code>path</code>. If the file
+                exists, it is overwritten. Automatically creates parent directories if needed.</p>
+
+            <h3 id="csv-append">append(path, csv_string)</h3>
+            <p>Appends the provided <code>csv_string</code> to the file at <code>path</code>. Does not overwrite the
+                existing file. Creates the file if it does not exist.</p>
+
+            <h3 id="csv-parse">parse(text)</h3>
+            <p>Parses a CSV-formatted string into an array of rows, where each row is an array of strings. Empty lines
+                are ignored. Whitespace is trimmed.</p>
+
+            <h3 id="csv-stringify">stringify(array)</h3>
+            <p>Converts a nested array of strings into a CSV-formatted string. Each subarray becomes a row, and each
+                element is separated by commas. Supports <code>string</code>, <code>number</code>, <code>boolean</code>,
+                and <code>nil</code> as cell types.</p>
+
+            <!-- JSON Module Docs -->
             <h2 id="json">json</h2>
-            <h3 id="WIP-json">WIP</h3>
+            <h3 id="json-parse">parse(text)</h3>
+            <p>Parses the JSON-formatted string <code>text</code> and returns the corresponding ZLX value. Supports all
+                standard JSON types: <code>null</code>, <code>boolean</code>, <code>number</code>, <code>string</code>,
+                <code>array</code>, and <code>object</code>. Throws an error if the input is not valid JSON.
+            </p>
+
+            <h3 id="json-stringify">stringify(value)</h3>
+            <p>Converts a ZLX value into a JSON-formatted string. Supports serializing <code>string</code>,
+                <code>number</code>, <code>boolean</code>, <code>nil</code>, <code>array</code>, and <code>object</code>
+                types. Throws an error if the input contains unsupported types such as functions or class instances.
+            </p>
 
             <h2 id="builtin-functions">Functions</h2>
             <p>The builtin functions found in ZLX implement reasonably verbose error messages that can be used to guide
@@ -1038,6 +1167,299 @@ println(y);                     // 4
                 The same is true for typed values. Nil values are false. As mentioned earlier, all other values are
                 true.
             </p>
+        </section>
+
+        <section id="dsa">
+            <h2>Standard Library Data Structures</h2>
+            <p>
+                ZLX includes a rich set of built-in data structures, such as arrays, sets, maps, and graphs. They are
+                accessible
+                via simple imports like <code>import array;</code> or <code>import hashmap;</code>. Each structure is
+                instantiated using <code>new</code> and provides standard methods (e.g., <code>insert</code>,
+                <code>remove</code>, <code>size</code>, <code>clear</code>) via dot notation. These data structures are
+                fully integrated into the language and designed to be intuitive, memory-safe, and efficient for
+                general-purpose use.
+            </p>
+            <h3 id="std_array_list">ArrayList</h3>
+            <p><strong>Summary:</strong> A dynamic, resizable array similar to Python's `list` or JavaScript's `Array`,
+                implemented using Zig's manual memory model. This is similar to the array module, but acts as an object
+                instead of a function interface.</p>
+            <p><strong>Constructor:</strong><br><code>let arr = new array_list();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>arr.push(value)</code>: Appends a value to the end.</li>
+                <li><code>arr.insert(index, value)</code>: Inserts a value at a given index.</li>
+                <li><code>arr.remove(index)</code>: Removes and returns the value at the given index.</li>
+                <li><code>arr.set(index, value)</code>: Overwrites the value at the given index.</li>
+                <li><code>arr.pop()</code>: Removes and returns the last value.</li>
+                <li><code>arr.get(index)</code>: Returns the value at the given index.</li>
+                <li><code>arr.clear()</code>: Empties the array.</li>
+                <li><code>arr.empty()</code>: Returns true if the array is empty.</li>
+                <li><code>arr.size()</code>: Returns the size of the array.</li>
+                <li><code>arr.str()</code>: Returns the string representation of the array.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let a = new array_list();
+a.push(10);
+a.insert(0, 5);
+let val = a.get(1);  // val == 10
+a.remove(1);
+            </code></pre>
+
+            <h3 id="std_set">HashSet</h3>
+            <p><strong>Summary:</strong> A collection of unique values, similar to sets in Python, implemented using
+                hashing.</p>
+            <p><strong>Constructor:</strong><br><code>let s = new set();  // or: new set([1, 2, 3])</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>s.insert(value)</code>: Inserts a value into the set.</li>
+                <li><code>s.remove(value)</code>: Removes a value from the set.</li>
+                <li><code>s.contains(value)</code>: Returns true if the value is in the set.</li>
+                <li><code>s.clear()</code>: Empties the set.</li>
+                <li><code>s.size()</code>: Returns the number of elements.</li>
+                <li><code>s.empty()</code>: Returns true if the set is empty.</li>
+                <li><code>s.str()</code>: Returns the string representation of the set.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let s = new set();
+s.insert("a");
+s.insert("b");
+s.remove("a");
+let has_b = s.contains("b");
+            </code></pre>
+
+            <h3 id="std_map">HashMap</h3>
+            <p><strong>Summary:</strong> A key-value mapping structure, similar to Python's `dict` or JavaScript's
+                `Object`.</p>
+            <p><strong>Constructor:</strong><br><code>let m = new map();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>m.put(key, value)</code>: Associates a key with a value.</li>
+                <li><code>m.get(key)</code>: Retrieves the value associated with the key.</li>
+                <li><code>m.remove(key)</code>: Deletes the key-value pair.</li>
+                <li><code>m.contains(key)</code>: Checks if the key exists.</li>
+                <li><code>m.clear()</code>: Removes all key-value pairs.</li>
+                <li><code>m.size()</code>: Returns the number of pairs.</li>
+                <li><code>m.empty()</code>: Returns true if the map is empty.</li>
+                <li><code>m.str()</code>: Returns the string representation of the map.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let m = new map();
+m.put("a", 1);
+let x = m.get("a");
+m.remove("a");
+            </code></pre>
+
+            <h3 id="std_adjacency_list">AdjacencyList</h3>
+            <p><strong>Summary:</strong> A graph structure using adjacency lists. Keys represent nodes; values are lists
+                of neighbors.</p>
+            <p><strong>Constructor:</strong><br><code>let g = new adjacency_list();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>g.add_edge(from, to)</code>: Adds a directed edge.</li>
+                <li><code>g.get_neighbors(node)</code>: Returns the neighbor list.</li>
+                <li><code>g.contains(node)</code>: Returns true if the node exists.</li>
+                <li><code>g.empty()</code>: Returns true if the adjacency list is empty.</li>
+                <li><code>g.clear()</code>: Removes all nodes and edges.</li>
+                <li><code>g.size()</code>: Returns number of nodes.</li>
+                <li><code>g.str()</code>: Returns the string representation of the adjacency list.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let g = new adjacency_list();
+g.add_edge(1, 2);
+g.add_edge(1, 3);
+let n = g.get_neighbors(1);
+            </code></pre>
+
+            <h3 id="std_graph">Graph</h3>
+            <p><strong>Summary:</strong> An alias for AdjacencyList for now: structured graph APIs.</p>
+            <p><strong>Constructor:</strong><br><code>let g = new graph();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li>Same as adjacency_list</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let g = new graph();
+g.add_edge("a", "b");
+            </code></pre>
+
+            <h3 id="std_adjacency_matrix">AdjacencyMatrix</h3>
+            <p><strong>Summary:</strong> A graph structure backed by a 2D matrix where each node is stored as an index.
+                Supports weighted and
+                unweighted edges.</p>
+            <p><strong>Constructor:</strong><br><code>let g = new adjacency_matrix();</code></p>
+            <p><strong>Methods:</strong></p>
+
+            <ul>
+                <li><code>g.add_edge(i, j)</code>: add an unweighted edge from node <code>i</code> to <code>j</code>.
+                </li>
+                <li><code>g.add_weighted_edge(i, j, weight)</code>: Add a weighted edge from <code>i</code> to
+                    <code>j</code>.
+                </li>
+                <li><code>g.get_weight(i, j)</code>: Gets the weight of an edge from <code>i</code> to
+                    <code>j</code>, returning 1.0 if unweighted and nil if not present.
+                </li>
+                <li><code>g.contains_edge(i, j)</code>: Return whether there's an edge from <code>i</code> to
+                    <code>j</code>.
+                </li>
+                <li><code>g.clear()</code>: Clear the graph.</li>
+                <li><code>g.size()</code>: Return the number of nodes in the graph.</li>
+                <li><code>g.size()</code>: Returns true if the graph is empty.</li>
+                <li><code>g.edges()</code>: Return the number of edges in the graph.</li>
+                <li><code>g.str()</code>: Returns the string representation of the adjacency matrix.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let g = new adjacency_matrix();
+g.add_weighted_edge(i, j, 3.14);
+            </code></pre>
+
+            <h3 id="std_heap">PriorityQueue</h3>
+            <p><strong>Summary:</strong> A binary heap implementation of a priority queue. Can be min or max based.</p>
+            <p><strong>Constructor:</strong><br><code>let q = new heap();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>q.insert(value)</code>: Adds a value to the heap.</li>
+                <li><code>q.poll()</code>: Removes and returns the highest-priority item.</li>
+                <li><code>q.peek()</code>: Returns the top value without removing it.</li>
+                <li><code>q.size()</code>: Returns the number of items.</li>
+                <li><code>q.empty()</code>: Returns true if the queue is empty.</li>
+                <li><code>q.clear()</code>: Prints the queue state.</li>
+                <li><code>q.str()</code>: Returns the string representation of the heap.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let q = new heap();
+q.insert(10);
+q.insert(5);
+let top = q.peek();
+let removed = q.poll();
+            </code></pre>
+
+            <h3 id="std_treap">Treap</h3>
+            <p><strong>Summary:</strong> A randomized balanced binary search tree using priorities and rotations.</p>
+            <p><strong>Constructor:</strong><br><code>let t = new treap();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>t.insert(value)</code>: Inserts a new value.</li>
+                <li><code>t.remove(value)</code>: Removes a value.</li>
+                <li><code>t.contains(value)</code>: Checks membership.</li>
+                <li><code>t.size()</code>: Returns number of nodes.</li>
+                <li><code>t.height()</code>: Returns the tree height.</li>
+                <li><code>t.min()</code>: Finds minimum value.</li>
+                <li><code>t.max()</code>: Finds maximum value.</li>
+                <li><code>t.clear()</code>: Removes all elements.</li>
+                <li><code>t.empty()</code>: Returns true if the treap is empty.</li>
+                <li><code>1.str()</code>: Returns the string representation of the treap.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let t = new treap();
+t.insert(5);
+t.insert(2);
+t.insert(8);
+            </code></pre>
+
+            <h3 id="std_stack">Stack</h3>
+            <p><strong>Summary:</strong> A LIFO stack for value pushing and popping.</p>
+            <p><strong>Constructor:</strong><br><code>let s = new stack();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>s.push(value)</code>: Pushes a value.</li>
+                <li><code>s.pop()</code>: Removes and returns the top value.</li>
+                <li><code>s.peek()</code>: Returns the top value without removing it.</li>
+                <li><code>s.size()</code>: Returns count of items.</li>
+                <li><code>s.empty()</code>: Returns true if the stack is empty.</li>
+                <li><code>s.clear()</code>: Clears the stack's contents.</li>
+                <li><code>s.str()</code>: Returns the string representation of the stack.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let s = new stack();
+s.push(10);
+let x = s.pop();
+            </code></pre>
+
+            <h3 id="std_queue">Queue</h3>
+            <p><strong>Summary:</strong> A FIFO queue with enqueue/dequeue operations.</p>
+            <p><strong>Constructor:</strong><br><code>let q = new queue();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>q.enqueue(value)</code>: Adds to the end.</li>
+                <li><code>q.push(value)</code>: Alias for enqueue.</li>
+                <li><code>q.dequeue()</code>: Removes from the front.</li>
+                <li><code>q.poll()</code>: Alias for dequeue.</li>
+                <li><code>q.peek()</code>: Views the front item.</li>
+                <li><code>q.size()</code>: Current length.</li>
+                <li><code>q.empty()</code>: Returns true if the queue is empty.</li>
+                <li><code>q.clear()</code>: Clears the queue's contents.</li>
+                <li><code>s.str()</code>: Returns the string representation of the queue.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let q = new queue();
+q.enqueue(5);
+let x = q.dequeue();
+            </code></pre>
+
+            <h3 id="std_list">List</h3>
+            <p><strong>Summary:</strong> A doubly linked list for bi-directional traversal.</p>
+            <p><strong>Constructor:</strong><br><code>let l = new list();</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>l.append(value)</code>: Adds to tail.</li>
+                <li><code>l.prepend(value)</code>: Adds to head.</li>
+                <li><code>l.pop_head()</code>: Removes and returns the head.</li>
+                <li><code>l.pop_tail()</code>: Removes and returns the tail.</li>
+                <li><code>l.get(index)</code>: Gets and returns the value at the index.</li>
+                <li><code>l.remove(index)</code>: Removes and returns the value at the index.</li>
+                <li><code>l.discard(index)</code>: Removes the value at the index.</li>
+                <li><code>l.peek_head()</code>: Returns the current head without removing.</li>
+                <li><code>l.peek_tail()</code>: Returns the current tail without removing.</li>
+                <li><code>l.clear()</code>: Empties the list.</li>
+                <li><code>l.empty()</code>: Returns true if the list is empty.</li>
+                <li><code>l.size()</code>: Number of nodes.</li>
+                <li><code>l.str()</code>: Returns the string representation of the list.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let l = new list();
+l.append(10);
+let x = l.pop_head();
+            </code></pre>
+
+            <h3 id="std_deque">Deque</h3>
+            <p><strong>Summary:</strong> A double-ended queue structure supporting push/pop operations from both ends.
+            </p>
+            <p><strong>Constructor:</strong><br><code>let d = new deque();</code></p>
+            <p><strong>Methods:</strong></p>
+
+            <ul>
+                <li><code>d.push_tail(value)</code>: Add an element to the tail.</li>
+                <li><code>d.push_head(value)</code>: Add an element to the head.</li>
+                <li><code>d.pop_tail()</code>: Remove and return the element from the tail.</li>
+                <li><code>d.pop_head()</code>: Remove and return the element from the head.</li>
+                <li><code>d.peek_tail()</code>: Peek at the tail element.</li>
+                <li><code>d.peek_head()</code>: Peek at the head element.</li>
+                <li><code>d.size()</code>: Return the number of elements in the deque.</li>
+                <li><code>d.empty()</code>: Returns true if the queue is empty.</li>
+                <li><code>d.clear()</code>: Remove all elements from the deque.</li>
+                <li><code>d.str()</code>: Returns the string representation of the queue.</li>
+            </ul>
+
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let d = new deque();
+d.push_back(1);
+d.push_front(2);
+let front = d.pop_front();
+            </code></pre>
+
         </section>
 
     </main>

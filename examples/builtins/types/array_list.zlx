@@ -3,8 +3,10 @@ import array_list;
 let a = new array_list(5);
 a.push("first");
 a.push("second");
+println(a.str());
+
 let removed = a.pop();
 let empty = a.empty();
-let length = a.len();
+let length = a.size();
 
 println(removed, empty, length);

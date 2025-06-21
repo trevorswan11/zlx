@@ -36,6 +36,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try MAP_METHODS.put("contains", mapContains);
     try MAP_METHODS.put("clear", mapClear);
     try MAP_METHODS.put("size", mapSize);
+    try MAP_METHODS.put("empty", mapEmpty);
+    try MAP_METHODS.put("str", mapStr);
 
     MAP_TYPE = .{
         .std_struct = .{
@@ -138,6 +140,38 @@ fn mapSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environ
     return .{
         .number = @floatFromInt(inst.map.size()),
     };
+}
+
+fn mapEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getMapInstance(this);
+    return .{
+        .boolean = inst.map.size() == 0,
+    };
+}
+
+fn mapStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getMapInstance(this);
+    return .{
+        .string = try toString(inst.map),
+    };
+}
+
+pub fn toString(map: HashMap) ![]const u8 {
+    var buffer = std.ArrayList(u8).init(map.allocator);
+    defer buffer.deinit();
+    const writer = buffer.writer();
+
+    var it = map.map.iterator();
+    while (it.next()) |entry| {
+        try writer.print("Key {s}, Value {s}", .{
+            try entry.key_ptr.*.toString(map.allocator),
+            try entry.value_ptr.*.toString(map.allocator),
+        });
+        try writer.print("\n", .{});
+    }
+    _ = buffer.pop();
+
+    return try buffer.toOwnedSlice();
 }
 
 // === TESTING ===

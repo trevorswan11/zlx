@@ -1,19 +1,23 @@
 import set;
+
 let s = new set();
 s.insert("a");
 s.insert("b");
+println(s.str());
+
 let c = s.contains("a");
 let d = s.contains("z");
 let x = s.remove("a");
 let y = s.contains("a");
 let n = s.size();
 let e = s.empty();
+println(c, d, x, y, n, e);
 
 let s2 = new set(["x", "y", "x"]);
 let v1 = s2.contains("x");
 let v2 = s2.contains("y");
 let v3 = s2.contains("z");
 let sz = s2.size();
+println(s2.str());
 
-println(c, d, x, y, n, e);
 println(v1, v2, v3, sz);

@@ -4,6 +4,8 @@ let q = new queue();
 q.push(1);
 q.push(2);
 q.push(3);
+println(q.str());
+
 let a = q.peek();
 let b = q.poll();
 let c = q.poll();

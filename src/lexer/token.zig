@@ -215,6 +215,7 @@ pub const Token = struct {
         try reserved.put("heap", .IDENTIFIER);
         try reserved.put("queue", .IDENTIFIER);
         try reserved.put("stack", .IDENTIFIER);
+        try reserved.put("treap", .IDENTIFIER);
 
         return reserved;
     }

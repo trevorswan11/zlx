@@ -1,0 +1,20 @@
+import treap;
+
+let t = new treap();
+t.insert(5);
+t.insert(3);
+t.insert(7);
+t.insert(2);
+t.insert(6);
+println(t.str());
+
+let c1 = t.contains(5);
+let c2 = t.contains(9);
+let s = t.size();
+let h = t.height();
+let mn = t.min();
+let mx = t.max();
+t.remove(5);
+let c3 = t.contains(5);
+
+println(c1, c2, s, h, mn, mx, c3);
