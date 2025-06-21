@@ -1,0 +1,94 @@
+{
+  "scopeName": "source.zlx",
+  "name": "ZLX",
+  "patterns": [
+    { "include": "#keywords" },
+    { "include": "#builtin_functions" },
+    { "include": "#builtin_modules" },
+    { "include": "#builtin_structs" },
+    { "include": "#operators" },
+    { "include": "#numbers" },
+    { "include": "#strings" },
+    { "include": "#comments" }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "match": "\\b(let|const|struct|new|import|from|fn|if|else|for|foreach|while|typeof|delete|in|break|continue|return|match)\\b",
+          "name": "keyword.control.zlx"
+        },
+        {
+          "match": "\\b(nil|true|false)\\b",
+          "name": "constant.language.zlx"
+        }
+      ]
+    },
+    "builtin_functions": {
+      "patterns": [
+        {
+          "match": "\\b(print|println|len|ref|range|to_string|to_number|to_bool)\\b",
+          "name": "support.function.builtin.zlx"
+        }
+      ]
+    },
+    "builtin_modules": {
+      "patterns": [
+        {
+          "match": "\\b(array|debug|fs|math|path|random|string|sys|time|csv|json)\\b",
+          "name": "support.module.builtin.zlx"
+        }
+      ]
+    },
+    "builtin_structs": {
+      "patterns": [
+        {
+          "match": "\\b(adjacency_list|adjacency_matrix|array_list|deque|graph|map|set|list|heap|queue|stack|treap)\\b",
+          "name": "support.type.struct.builtin.zlx"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "match": "(\\+\\+|--|\\+=|-=|\\*=|/=|%=|==|!=|<=|>=|=|\\+|-|\\*|/|%|<|>|\\|\\||&&|\\||&|\\^|!|\\?|:|\\.|\\.\\.|,|;|->)",
+          "name": "keyword.operator.zlx"
+        },
+        {
+          "match": "(\\(|\\)|\\{|\\}|\\[|\\])",
+          "name": "meta.brace.zlx"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "match": "\\b\\d+(\\.\\d+)?\\b",
+          "name": "constant.numeric.zlx"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "name": "string.quoted.multiline.zlx"
+        },
+        {
+          "begin": "\"",
+          "end": "\"",
+          "name": "string.quoted.double.zlx"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "match": "//.*$",
+          "name": "comment.line.double-slash.zlx"
+        }
+      ]
+    }
+  }
+}

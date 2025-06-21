@@ -1,0 +1,31 @@
+{
+  "name": "zlx-syntax",
+  "displayName": "zlx-syntax",
+  "description": "Syntax highlighting for the ZLX language",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "publisher": "kyoshi11",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trevorswan11/zlx.git"
+  },
+  "license": "MIT",
+  "contributes": {
+    "languages": [{
+      "id": "zlx",
+      "aliases": ["ZLX", "zlx"],
+      "extensions": [".zlx"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "zlx",
+      "scopeName": "source.zlx",
+      "path": "./syntaxes/zlx.tmLanguage.json"
+    }]
+  }
+}
