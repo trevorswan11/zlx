@@ -6,3 +6,6 @@ zig-out/
 reference/
 test_dir/
 update.bat
+
+**.vsix
+vsc-extension-quickstart.md

@@ -36,7 +36,7 @@
       "patterns": [
         {
           "match": "\\b(array|debug|fs|math|path|random|string|sys|time|csv|json)\\b",
-          "name": "support.module.builtin.zlx"
+          "name": "support.type.builtin.zlx"
         }
       ]
     },
@@ -85,7 +85,8 @@
     "comments": {
       "patterns": [
         {
-          "match": "//.*$",
+          "begin": "//",
+          "end": "\\n",
           "name": "comment.line.double-slash.zlx"
         }
       ]
