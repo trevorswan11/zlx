@@ -42,6 +42,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try LIST_METHODS.put("clear", listClear);
     try LIST_METHODS.put("empty", listEmpty);
     try LIST_METHODS.put("size", listSize);
+    try LIST_METHODS.put("items", listItems);
     try LIST_METHODS.put("str", listStr);
 
     LIST_TYPE = .{
@@ -81,7 +82,7 @@ fn listConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -197,6 +198,20 @@ fn listSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Enviro
     const inst = try getListInstance(this);
     return .{
         .number = @floatFromInt(inst.list.len),
+    };
+}
+
+pub fn listItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getListInstance(this);
+    var vals = std.ArrayList(Value).init(allocator);
+
+    var itr = inst.list.begin();
+    while (itr.next()) |val| {
+        try vals.append(val.*);
+    }
+
+    return .{
+        .array = vals,
     };
 }
 

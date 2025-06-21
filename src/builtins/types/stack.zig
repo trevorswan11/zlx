@@ -36,6 +36,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try STACK_METHODS.put("size", stackSize);
     try STACK_METHODS.put("empty", stackEmpty);
     try STACK_METHODS.put("clear", stackClear);
+    try STACK_METHODS.put("items", stackItems);
     try STACK_METHODS.put("str", stackStr);
 
     STACK_TYPE = .{
@@ -76,7 +77,7 @@ fn stackConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -124,6 +125,20 @@ fn stackClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Envi
     const inst = try getStackInstance(this);
     inst.stack.list.clear();
     return .nil;
+}
+
+pub fn stackItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getStackInstance(this);
+    var vals = std.ArrayList(Value).init(allocator);
+
+    var itr = inst.stack.list.begin();
+    while (itr.next()) |val| {
+        try vals.append(val.*);
+    }
+
+    return .{
+        .array = vals,
+    };
 }
 
 fn stackStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {

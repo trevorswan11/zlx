@@ -217,3 +217,19 @@ pub const builtin_modules = [_]BuiltinModule{
         .loader = @import("types/treap.zig").load,
     },
 };
+
+pub fn getStdStructName(value: *Value) ![]const u8 {
+    const writer_err = driver.getWriterErr();
+    if (value.* != .std_instance) {
+        try writer_err.print("Value type {s} does not derive from a standard struct\n", .{@tagName(value.*)});
+        return error.IncorrectTarget;
+    }
+    const instance = value.std_instance;
+
+    if (instance._type.* != .std_struct) {
+        try writer_err.print("Instance type {s} does not derive from a standard struct\n", .{@tagName(value.*)});
+        return error.IncorrectTarget;
+    }
+    const result = instance._type.std_struct;
+    return result.name;
+}

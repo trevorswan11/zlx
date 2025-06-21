@@ -48,12 +48,16 @@ pub const Value = union(enum) {
         methods: std.StringHashMap(StdMethod),
     },
     std_instance: struct {
-        type: *Value,
+        _type: *Value,
         fields: std.StringHashMap(*Value),
     },
     bound_std_method: struct {
         instance: *Value,
         method: Value.StdMethod,
+    },
+    pair: struct {
+        first: *Value,
+        second: *Value,
     },
     nil,
 
@@ -176,6 +180,13 @@ pub const Value = union(enum) {
         return try std.fmt.allocPrint(allocator, "Value: {s}, Type {s}", .{ inner, type_string });
     }
 
+    fn stringPair(first: *Value, second: *Value, allocator: std.mem.Allocator) ![]u8 {
+        return try std.fmt.allocPrint(allocator, "Pair: First = {s}; Second = {s}", .{
+            try first.toString(allocator),
+            try second.toString(allocator),
+        });
+    }
+
     pub fn toString(self: Value, allocator: std.mem.Allocator) anyerror![]u8 {
         return switch (self) {
             .number => |n| try std.fmt.allocPrint(allocator, "{d}", .{n}),
@@ -192,8 +203,10 @@ pub const Value = union(enum) {
             .continue_signal => |_| try std.fmt.allocPrint(allocator, "continue", .{}),
             .return_value => |r| try stringReturn(r, allocator),
             .typed_val => |t| try stringTyped(t.value, t.type, allocator),
-            .std_struct, .std_instance => try std.fmt.allocPrint(allocator, "<Standard Library Struct>", .{}),
+            .std_struct => try std.fmt.allocPrint(allocator, "<Standard Library Struct>", .{}),
+            .std_instance => try std.fmt.allocPrint(allocator, "<Standard Library Instance>", .{}),
             .bound_std_method => |bm| try stringBoundMethod(bm.instance, allocator),
+            .pair => |p| try stringPair(p.first, p.second, allocator),
             .nil => try std.fmt.allocPrint(allocator, "nil", .{}),
         };
     }

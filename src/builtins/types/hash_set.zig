@@ -36,6 +36,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try SET_METHODS.put("clear", setClear);
     try SET_METHODS.put("size", setSize);
     try SET_METHODS.put("empty", setEmpty);
+    try SET_METHODS.put("items", setItems);
     try SET_METHODS.put("str", setStr);
 
     SET_TYPE = .{
@@ -93,7 +94,7 @@ fn setConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -154,6 +155,20 @@ fn setEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Enviro
     const inst = try getSetInstance(this);
     return .{
         .boolean = inst.set.empty(),
+    };
+}
+
+pub fn setItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getSetInstance(this);
+    var vals = std.ArrayList(Value).init(allocator);
+
+    var itr = inst.set.map.iterator();
+    while (itr.next()) |entry| {
+        try vals.append(entry.key_ptr.*);
+    }
+
+    return .{
+        .array = vals,
     };
 }
 

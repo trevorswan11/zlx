@@ -12,6 +12,7 @@ const Value = interpreter.Value;
 const evalBinary = eval.evalBinary;
 const evalExpr = eval.evalExpr;
 const evalStmt = eval.evalStmt;
+const getStdStructName = builtins.getStdStructName;
 
 pub fn variable(v: *ast.VarDeclarationStmt, env: *Environment) !Value {
     const val: Value = if (v.assigned_value) |a| try evalExpr(a, env) else .nil;
@@ -91,12 +92,28 @@ pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
 }
 
 pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
-    const iterable = try evalExpr(f.iterable, env);
+    var iterable = try evalExpr(f.iterable, env);
     const writer_err = driver.getWriterErr();
-    if (iterable != .array) {
+
+    if (iterable == .std_instance) {
+        const instance = iterable.std_instance;
+        if (instance._type.std_struct.methods.get("items")) |items_fn| {
+            var mut_instance = iterable;
+            const result = try items_fn(env.allocator, &mut_instance, &[_]*ast.Expr{}, env);
+            if (result != .array) {
+                try writer_err.print("std_instance.items() must return an array, got a(n) {s}\n", .{@tagName(result)});
+                return error.TypeMismatch;
+            }
+            iterable = result;
+        } else {
+            try writer_err.print("Standard library type {s} does not implement items()\n", .{try getStdStructName(&iterable)});
+            return error.TypeMismatch;
+        }
+    } else if (iterable != .array) {
         try writer_err.print("Can only iterate over array values, got {s}\n", .{@tagName(iterable)});
         return error.TypeMismatch;
     }
+    iterable = iterable.deref();
 
     for (iterable.array.items, 0..) |item, i| {
         var child_env = Environment.init(env.allocator, env);

@@ -135,7 +135,12 @@ pub fn boolAnd(_: Token, lhs: Value, rhs: Value) !Value {
                 .boolean = l and rhs.boolean,
             },
             .number => return .{
-                .boolean = l and coerceBool(.{ .number = rhs.number }),
+                .boolean = l and coerceBool(
+                    .{
+                        .number = rhs.number,
+                    },
+                    null,
+                ),
             },
             else => {
                 try writer_err.print("Cannot apply 'and' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
@@ -144,14 +149,29 @@ pub fn boolAnd(_: Token, lhs: Value, rhs: Value) !Value {
         },
         .number => |l| switch (rhs) {
             .boolean => return .{
-                .boolean = coerceBool(.{ .number = l }) and rhs.boolean,
+                .boolean = coerceBool(
+                    .{
+                        .number = l,
+                    },
+                    null,
+                ) and rhs.boolean,
             },
             else => {
                 try writer_err.print("Cannot apply 'and' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
             .number => return .{
-                .boolean = coerceBool(.{ .number = l }) and coerceBool(.{ .number = rhs.number }),
+                .boolean = coerceBool(
+                    .{
+                        .number = l,
+                    },
+                    null,
+                ) and coerceBool(
+                    .{
+                        .number = rhs.number,
+                    },
+                    null,
+                ),
             },
         },
         else => {
@@ -169,7 +189,12 @@ pub fn boolOr(_: Token, lhs: Value, rhs: Value) !Value {
                 .boolean = l or rhs.boolean,
             },
             .number => return .{
-                .boolean = l or coerceBool(.{ .number = rhs.number }),
+                .boolean = l or coerceBool(
+                    .{
+                        .number = rhs.number,
+                    },
+                    null,
+                ),
             },
             else => {
                 try writer_err.print("Cannot apply 'or' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
@@ -178,14 +203,29 @@ pub fn boolOr(_: Token, lhs: Value, rhs: Value) !Value {
         },
         .number => |l| switch (rhs) {
             .boolean => return .{
-                .boolean = coerceBool(.{ .number = l }) or rhs.boolean,
+                .boolean = coerceBool(
+                    .{
+                        .number = l,
+                    },
+                    null,
+                ) or rhs.boolean,
             },
             else => {
                 try writer_err.print("Cannot apply 'or' to type {s} and type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
                 return error.TypeMismatch;
             },
             .number => return .{
-                .boolean = coerceBool(.{ .number = l }) or coerceBool(.{ .number = rhs.number }),
+                .boolean = coerceBool(
+                    .{
+                        .number = l,
+                    },
+                    null,
+                ) or coerceBool(
+                    .{
+                        .number = rhs.number,
+                    },
+                    null,
+                ),
             },
         },
         else => {

@@ -60,9 +60,9 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     if (str != .string or start != .number or end != .number) {
         try writer_err.print("string.slice(str, start, end) requires a string and two numbers\n", .{});
         try writer_err.print("  Got: str = {s}, start = {s}, end = {s}\n", .{
-            try str.toString(env.allocator),
-            try start.toString(env.allocator),
-            try end.toString(env.allocator),
+            try str.toString(allocator),
+            try start.toString(allocator),
+            try end.toString(allocator),
         });
         return error.TypeMismatch;
     }
@@ -76,7 +76,7 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     };
 }
 
-fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn findHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("string.find(str, pattern) expects 2 arguments, got {d}\n", .{args.len});
@@ -88,8 +88,8 @@ fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 
     if (haystack != .string or needle != .string) {
         try writer_err.print("string.find(str, pattern) expects two strings\n", .{});
-        try writer_err.print("  Left: {s}\n", .{try haystack.toString(env.allocator)});
-        try writer_err.print("  Right: {s}\n", .{try needle.toString(env.allocator)});
+        try writer_err.print("  Left: {s}\n", .{try haystack.toString(allocator)});
+        try writer_err.print("  Right: {s}\n", .{try needle.toString(allocator)});
         return error.TypeMismatch;
     }
 
@@ -102,7 +102,7 @@ fn findHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     }
 }
 
-fn containsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn containsHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("string.contains(str, pattern) expects 2 arguments, got {d}\n", .{args.len});
@@ -114,8 +114,8 @@ fn containsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
 
     if (haystack != .string or needle != .string) {
         try writer_err.print("string.contains(str, pattern) expects two strings\n", .{});
-        try writer_err.print("  Left: {s}\n", .{try haystack.toString(env.allocator)});
-        try writer_err.print("  Right: {s}\n", .{try needle.toString(env.allocator)});
+        try writer_err.print("  Left: {s}\n", .{try haystack.toString(allocator)});
+        try writer_err.print("  Right: {s}\n", .{try needle.toString(allocator)});
         return error.TypeMismatch;
     }
 
@@ -137,9 +137,9 @@ fn replaceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
 
     if (haystack != .string or needle != .string or replacement != .string) {
         try writer_err.print("string.replace(str, original, replacement) expects three string arguments\n", .{});
-        try writer_err.print("  Haystack: {s}\n", .{try haystack.toString(env.allocator)});
-        try writer_err.print("  Needle: {s}\n", .{try needle.toString(env.allocator)});
-        try writer_err.print("  Replacement: {s}\n", .{try replacement.toString(env.allocator)});
+        try writer_err.print("  Haystack: {s}\n", .{try haystack.toString(allocator)});
+        try writer_err.print("  Needle: {s}\n", .{try needle.toString(allocator)});
+        try writer_err.print("  Replacement: {s}\n", .{try replacement.toString(allocator)});
         return error.TypeMismatch;
     }
 
@@ -161,8 +161,8 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 
     if (input != .string or delim != .string) {
         try writer_err.print("string.split(str, delimiter) expects two string arguments\n", .{});
-        try writer_err.print("  Input: {s}\n", .{try input.toString(env.allocator)});
-        try writer_err.print("  Delimiter: {s}\n", .{try delim.toString(env.allocator)});
+        try writer_err.print("  Input: {s}\n", .{try input.toString(allocator)});
+        try writer_err.print("  Delimiter: {s}\n", .{try delim.toString(allocator)});
         return error.TypeMismatch;
     }
 

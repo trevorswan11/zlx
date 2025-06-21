@@ -39,6 +39,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try DEQUE_METHODS.put("size", dequeSize);
     try DEQUE_METHODS.put("empty", dequeEmpty);
     try DEQUE_METHODS.put("clear", dequeClear);
+    try DEQUE_METHODS.put("items", dequeItems);
     try DEQUE_METHODS.put("str", dequeStr);
 
     DEQUE_TYPE = .{
@@ -79,7 +80,7 @@ fn dequeConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -146,6 +147,20 @@ fn dequeSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Envir
     const inst = try getDequeInstance(this);
     return .{
         .number = @floatFromInt(inst.list.len),
+    };
+}
+
+pub fn dequeItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getDequeInstance(this);
+    var vals = std.ArrayList(Value).init(allocator);
+
+    var itr = inst.list.begin();
+    while (itr.next()) |val| {
+        try vals.append(val.*);
+    }
+
+    return .{
+        .array = vals,
     };
 }
 

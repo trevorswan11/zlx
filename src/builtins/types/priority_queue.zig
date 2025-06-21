@@ -37,6 +37,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try PRIORITY_QUEUE_METHODS.put("size", pqSize);
     try PRIORITY_QUEUE_METHODS.put("empty", pqEmpty);
     try PRIORITY_QUEUE_METHODS.put("clear", pqClear);
+    try PRIORITY_QUEUE_METHODS.put("items", pqItems);
     try PRIORITY_QUEUE_METHODS.put("str", pqStr);
 
     PRIORITY_QUEUE_TYPE = .{
@@ -90,7 +91,7 @@ fn pqConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -196,6 +197,19 @@ fn pqClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environ
     const inst = try getPriorityQueueInstance(this);
     inst.array.clear();
     return .nil;
+}
+
+pub fn pqItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getPriorityQueueInstance(this);
+    var vals = std.ArrayList(Value).init(allocator);
+
+    for (inst.array.arr[0..inst.array.len]) |val| {
+        try vals.append(val);
+    }
+
+    return .{
+        .array = vals,
+    };
 }
 
 fn pqStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {

@@ -1196,6 +1196,7 @@ println(y);                     // 4
                 <li><code>arr.clear()</code>: Empties the array.</li>
                 <li><code>arr.empty()</code>: Returns true if the array is empty.</li>
                 <li><code>arr.size()</code>: Returns the size of the array.</li>
+                <li><code>arr.items()</code>: Returns the items in the array as an iterable array.</li>
                 <li><code>arr.str()</code>: Returns the string representation of the array.</li>
             </ul>
             <p><strong>Example:</strong></p>
@@ -1219,6 +1220,7 @@ a.remove(1);
                 <li><code>s.clear()</code>: Empties the set.</li>
                 <li><code>s.size()</code>: Returns the number of elements.</li>
                 <li><code>s.empty()</code>: Returns true if the set is empty.</li>
+                <li><code>s.items()</code>: Returns the items in the set as an iterable array.</li>
                 <li><code>s.str()</code>: Returns the string representation of the set.</li>
             </ul>
             <p><strong>Example:</strong></p>
@@ -1243,6 +1245,7 @@ let has_b = s.contains("b");
                 <li><code>m.clear()</code>: Removes all key-value pairs.</li>
                 <li><code>m.size()</code>: Returns the number of pairs.</li>
                 <li><code>m.empty()</code>: Returns true if the map is empty.</li>
+                <li><code>m.items()</code>: Returns the items in the map as an iterable array.</li>
                 <li><code>m.str()</code>: Returns the string representation of the map.</li>
             </ul>
             <p><strong>Example:</strong></p>
@@ -1330,6 +1333,7 @@ g.add_weighted_edge(i, j, 3.14);
                 <li><code>q.size()</code>: Returns the number of items.</li>
                 <li><code>q.empty()</code>: Returns true if the queue is empty.</li>
                 <li><code>q.clear()</code>: Prints the queue state.</li>
+                <li><code>q.items()</code>: Returns the items in the heap as an iterable array.</li>
                 <li><code>q.str()</code>: Returns the string representation of the heap.</li>
             </ul>
             <p><strong>Example:</strong></p>
@@ -1355,7 +1359,8 @@ let removed = q.poll();
                 <li><code>t.max()</code>: Finds maximum value.</li>
                 <li><code>t.clear()</code>: Removes all elements.</li>
                 <li><code>t.empty()</code>: Returns true if the treap is empty.</li>
-                <li><code>1.str()</code>: Returns the string representation of the treap.</li>
+                <li><code>t.items()</code>: Returns the items in the treap as an iterable array (preorder).</li>
+                <li><code>t.str()</code>: Returns the string representation of the treap.</li>
             </ul>
             <p><strong>Example:</strong></p>
             <pre><code>
@@ -1376,6 +1381,7 @@ t.insert(8);
                 <li><code>s.size()</code>: Returns count of items.</li>
                 <li><code>s.empty()</code>: Returns true if the stack is empty.</li>
                 <li><code>s.clear()</code>: Clears the stack's contents.</li>
+                <li><code>s.items()</code>: Returns the items in the stack as an iterable array.</li>
                 <li><code>s.str()</code>: Returns the string representation of the stack.</li>
             </ul>
             <p><strong>Example:</strong></p>
@@ -1398,7 +1404,8 @@ let x = s.pop();
                 <li><code>q.size()</code>: Current length.</li>
                 <li><code>q.empty()</code>: Returns true if the queue is empty.</li>
                 <li><code>q.clear()</code>: Clears the queue's contents.</li>
-                <li><code>s.str()</code>: Returns the string representation of the queue.</li>
+                <li><code>q.items()</code>: Returns the items in the queue as an iterable array.</li>
+                <li><code>q.str()</code>: Returns the string representation of the queue.</li>
             </ul>
             <p><strong>Example:</strong></p>
             <pre><code>
@@ -1424,6 +1431,7 @@ let x = q.dequeue();
                 <li><code>l.clear()</code>: Empties the list.</li>
                 <li><code>l.empty()</code>: Returns true if the list is empty.</li>
                 <li><code>l.size()</code>: Number of nodes.</li>
+                <li><code>l.items()</code>: Returns the items in the list as an iterable array.</li>
                 <li><code>l.str()</code>: Returns the string representation of the list.</li>
             </ul>
             <p><strong>Example:</strong></p>
@@ -1449,6 +1457,7 @@ let x = l.pop_head();
                 <li><code>d.size()</code>: Return the number of elements in the deque.</li>
                 <li><code>d.empty()</code>: Returns true if the queue is empty.</li>
                 <li><code>d.clear()</code>: Remove all elements from the deque.</li>
+                <li><code>d.items()</code>: Returns the items in the deque as an iterable array.</li>
                 <li><code>d.str()</code>: Returns the string representation of the queue.</li>
             </ul>
 

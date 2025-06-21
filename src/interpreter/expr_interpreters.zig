@@ -333,12 +333,12 @@ pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
             }
 
             // Then try method
-            if (inst.type.* != .std_struct) {
+            if (inst._type.* != .std_struct) {
                 try writer_err.print("std_instance.type is not a std_struct\n", .{});
                 return error.InvalidStructRef;
             }
 
-            const method_map = inst.type.std_struct.methods;
+            const method_map = inst._type.std_struct.methods;
             if (method_map.get(m.property)) |method_fn| {
                 const val = try env.allocator.create(Value);
                 val.* = target;
@@ -350,8 +350,18 @@ pub fn member(m: *ast.MemberExpr, env: *Environment) !Value {
                 };
             }
 
-            try writer_err.print("Property \"{s}\" not found on std_instance\n", .{m.property});
+            try writer_err.print("Property \"{s}\" not found on std_instance of {s}\n", .{ m.property, inst._type.std_struct.name });
             return error.PropertyNotFound;
+        },
+        .pair => |pair| {
+            if (std.mem.eql(u8, "first", m.property)) {
+                return pair.first.*;
+            } else if (std.mem.eql(u8, "second", m.property)) {
+                return pair.second.*;
+            } else {
+                try writer_err.print("Pair values contain only fields 'first' and 'second', found {s}\n", .{m.property});
+                return error.PropertyNotFound;
+            }
         },
         else => {
             try writer_err.print("Member expression expects object or std_instance, got {s}\n", .{@tagName(target)});
@@ -388,6 +398,21 @@ pub fn computed(c: *ast.ComputedExpr, env: *Environment) !Value {
                 return val;
             } else {
                 try writer_err.print("Could not evaluate compute expression as property {s} was not found\n", .{key.string});
+                return error.PropertyNotFound;
+            }
+        },
+        .pair => |pair| {
+            if (key != .string) {
+                try writer_err.print("Can only perform compute expression on a pair with a string key, got {s}\n", .{@tagName(key)});
+                return error.TypeMismatch;
+            }
+
+            if (std.mem.eql(u8, "first", key.string)) {
+                return pair.first.*;
+            } else if (std.mem.eql(u8, "second", key.string)) {
+                return pair.second.*;
+            } else {
+                try writer_err.print("Pair values contain only fields 'first' and 'second', found {s}\n", .{key.string});
                 return error.PropertyNotFound;
             }
         },

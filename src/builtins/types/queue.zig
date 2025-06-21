@@ -38,6 +38,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try QUEUE_METHODS.put("empty", queueEmpty);
     try QUEUE_METHODS.put("peek", queuePeek);
     try QUEUE_METHODS.put("clear", queueClear);
+    try QUEUE_METHODS.put("items", queueItems);
     try QUEUE_METHODS.put("str", queueStr);
 
     QUEUE_TYPE = .{
@@ -76,7 +77,7 @@ fn queueConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -124,6 +125,20 @@ fn queueClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Envi
     const inst = try getQueueInstance(this);
     inst.queue.list.clear();
     return .nil;
+}
+
+pub fn queueItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getQueueInstance(this);
+    var vals = std.ArrayList(Value).init(allocator);
+
+    var itr = inst.queue.list.begin();
+    while (itr.next()) |val| {
+        try vals.append(val.*);
+    }
+
+    return .{
+        .array = vals,
+    };
 }
 
 fn queueStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {

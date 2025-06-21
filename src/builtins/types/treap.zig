@@ -45,6 +45,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try TREAP_METHODS.put("min", treapMin);
     try TREAP_METHODS.put("max", treapMax);
     try TREAP_METHODS.put("remove", treapRemove);
+    try TREAP_METHODS.put("items", treapItems);
     try TREAP_METHODS.put("str", treapStr);
 
     TREAP_TYPE = Value{
@@ -83,7 +84,7 @@ fn treapConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -163,6 +164,27 @@ fn treapClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Envi
     return .nil;
 }
 
+fn preorderList(allocator: std.mem.Allocator, t: Treap) !std.ArrayList(Value) {
+    var list = std.ArrayList(Value).init(allocator);
+    try preorderListImpl(t, t.root, &list);
+    return list;
+}
+
+fn preorderListImpl(t: Treap, node: ?*Treap.Node, list: *std.ArrayList(Value)) !void {
+    if (node) |n| {
+        try list.append(n.key);
+        try preorderListImpl(t, n.left, list);
+        try preorderListImpl(t, n.right, list);
+    }
+}
+
+pub fn treapItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getTreapInstance(this);
+    return .{
+        .array = try preorderList(allocator, inst.treap),
+    };
+}
+
 fn treapStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getTreapInstance(this);
     return .{
@@ -170,26 +192,26 @@ fn treapStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Enviro
     };
 }
 
-pub fn preorder(t: Treap) ![]const u8 {
+fn preorderWriter(t: Treap) ![]const u8 {
     var buffer = std.ArrayList(u8).init(t.allocator);
     defer buffer.deinit();
     const writer = buffer.writer().any();
-    try preorderImpl(t, t.root, writer);
+    try preorderWriterImpl(t, t.root, writer);
     _ = buffer.pop();
     return buffer.toOwnedSlice();
 }
 
-fn preorderImpl(t: Treap, node: ?*Treap.Node, writer: std.io.AnyWriter) !void {
+fn preorderWriterImpl(t: Treap, node: ?*Treap.Node, writer: std.io.AnyWriter) !void {
     if (node) |n| {
-        try preorderImpl(t, n.left, writer);
         try writer.print("key: {s}, priority: {d}", .{ try n.key.toString(t.allocator), n.priority });
         try writer.print("\n", .{});
-        try preorderImpl(t, n.right, writer);
+        try preorderWriterImpl(t, n.left, writer);
+        try preorderWriterImpl(t, n.right, writer);
     }
 }
 
 pub fn toString(self: Treap) ![]const u8 {
-    return try preorder(self);
+    return try preorderWriter(self);
 }
 
 // === TESTING ===

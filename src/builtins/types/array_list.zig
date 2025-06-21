@@ -39,6 +39,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try ARRAY_LIST_METHODS.put("clear", arrayListClear);
     try ARRAY_LIST_METHODS.put("empty", arrayListEmpty);
     try ARRAY_LIST_METHODS.put("size", arrayListSize);
+    try ARRAY_LIST_METHODS.put("items", arrayListItems);
     try ARRAY_LIST_METHODS.put("str", arrayListStr);
 
     ARRAY_LIST_TYPE = .{
@@ -89,7 +90,7 @@ fn arrayListConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -197,6 +198,19 @@ fn arrayListSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *E
     const inst = try getArrayListInstance(this);
     return Value{
         .number = @floatFromInt(inst.array.len),
+    };
+}
+
+pub fn arrayListItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getArrayListInstance(this);
+    var vals = std.ArrayList(Value).init(allocator);
+
+    for (inst.array.arr[0..inst.array.len]) |val| {
+        try vals.append(val);
+    }
+
+    return .{
+        .array = vals,
     };
 }
 

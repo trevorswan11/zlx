@@ -3,16 +3,19 @@ const std = @import("std");
 const ast = @import("../parser/ast.zig");
 const interpreter = @import("../interpreter/interpreter.zig");
 const driver = @import("../utils/driver.zig");
-const eval = interpreter.eval;
+const builtins = @import("builtins.zig");
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
+
+const getStdStructName = builtins.getStdStructName;
 
 pub fn print(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_out = driver.getWriterOut();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
-        const str = try val.toString(allocator);
+        const str = try toPrintableString(allocator, val, env);
         defer allocator.free(str);
         try writer_out.print("{s}", .{str});
     }
@@ -27,35 +30,75 @@ pub fn println(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
 
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
-        const str = try val.toString(allocator);
+        const str = try toPrintableString(allocator, val, env);
         defer allocator.free(str);
         try writer_out.print("{s}\n", .{str});
     }
     return .nil;
 }
 
-pub fn len(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("len(arr|str): expected exactly 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-    const val = try eval.evalExpr(args[0], env);
-    return switch (val) {
-        .array => |a| .{
-            .number = @floatFromInt(a.items.len),
+fn toPrintableString(allocator: std.mem.Allocator, val: Value, env: *Environment) ![]u8 {
+    switch (val) {
+        .std_instance => |instance| {
+            if (instance._type.std_struct.methods.get("str")) |str_fn| {
+                var mut_val = val;
+                const result = try str_fn(allocator, &mut_val, &[_]*ast.Expr{}, env);
+                return try result.toString(allocator);
+            } else {
+                return try allocator.dupe(u8, "<std_instance: no .str()>");
+            }
         },
-        .string => |s| .{
-            .number = @floatFromInt(s.len),
+        .std_struct => |_| {
+            return try allocator.dupe(u8, "<std_struct>");
         },
         else => {
-            try writer_err.print("len(arr|str): only operates on strings and arrays, got a(n) {s}\n", .{@tagName(val)});
-            return error.TypeMismatch;
+            return try val.toString(allocator);
         },
-    };
+    }
 }
 
-pub fn ref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn len(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    var val = try eval.evalExpr(args[0], env);
+    switch (val) {
+        .std_instance => |instance| {
+            if (instance._type.std_struct.methods.get("size")) |size_fn| {
+                var mut_val = val;
+                const result = try size_fn(allocator, &mut_val, &[_]*ast.Expr{}, env);
+                if (result != .number) {
+                    try writer_err.print("len(arr|str|std_instance) cannot return a {s}\n", .{@tagName(result)});
+                    return error.MalformedStdInstance;
+                }
+                return .{
+                    .number = result.number,
+                };
+            } else {
+                try writer_err.print("len(arr|str|std_instance) cannot be used on standard library type {s} without size method defined\n", .{try getStdStructName(&val)});
+                return error.MalformedStdInstance;
+            }
+        },
+        else => {
+            if (args.len != 1) {
+                try writer_err.print("len(arr|str|std_instance): expected exactly 1 argument, got {d}\n", .{args.len});
+                return error.ArgumentCountMismatch;
+            }
+            return switch (val) {
+                .array => |a| .{
+                    .number = @floatFromInt(a.items.len),
+                },
+                .string => |s| .{
+                    .number = @floatFromInt(s.len),
+                },
+                else => {
+                    try writer_err.print("len(arr|str|std_instance): only operates on strings and arrays, got a(n) {s}\n", .{@tagName(val)});
+                    return error.TypeMismatch;
+                },
+            };
+        },
+    }
+}
+
+pub fn ref(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
@@ -69,7 +112,7 @@ pub fn ref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Va
         return val;
     }
 
-    const heap_val = try env.allocator.create(Value);
+    const heap_val = try allocator.create(Value);
     heap_val.* = val;
 
     return .{
@@ -215,21 +258,42 @@ pub fn to_bool(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 
     const val = try eval.evalExpr(args[0], env);
     return .{
-        .boolean = coerceBool(val),
+        .boolean = coerceBool(val, env),
     };
 }
 
-pub fn coerceBool(val: Value) bool {
+pub fn coerceBool(val: Value, env: ?*Environment) bool {
     return switch (val) {
         .boolean => val.boolean,
         .number => val.number > 0,
         .string => val.string.len != 0,
         .array => val.array.items.len != 0,
-        .reference => coerceBool(val.reference.*),
-        .typed_val => |tv| coerceBool(tv.value.*),
-        .nil => false,
+        .reference => coerceBool(val.reference.*, env),
+        .typed_val => |tv| coerceBool(tv.value.*, env),
+        .std_instance => |_| coerceStdInstance(val, env.?),
+        .pair => |p| coerceBool(p.first.*, env) and coerceBool(p.second.*, env),
+        .continue_signal => true,
+        .nil, .std_struct, .break_signal => false,
         else => true, // objects, references, functions, etc. will be considered 'truthy'
     };
+}
+
+fn coerceStdInstance(val: Value, env: *Environment) bool {
+    var instance = val.std_instance;
+    if (instance._type.std_struct.methods.get("size")) |size_fn| {
+        var mut_val = val;
+        const result = size_fn(env.allocator, &mut_val, &[_]*ast.Expr{}, env) catch {
+            return false;
+        };
+
+        if (result == .number) {
+            return result.number != 0;
+        } else {
+            return false;
+        }
+    } else {
+        return false;
+    }
 }
 
 // === TESTING ===

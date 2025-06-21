@@ -37,6 +37,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try MAP_METHODS.put("clear", mapClear);
     try MAP_METHODS.put("size", mapSize);
     try MAP_METHODS.put("empty", mapEmpty);
+    try MAP_METHODS.put("items", mapItems);
     try MAP_METHODS.put("str", mapStr);
 
     MAP_TYPE = .{
@@ -75,7 +76,7 @@ fn mapConstructor(
 
     return .{
         .std_instance = .{
-            .type = type_ptr,
+            ._type = type_ptr,
             .fields = fields,
         },
     };
@@ -146,6 +147,25 @@ fn mapEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Enviro
     const inst = try getMapInstance(this);
     return .{
         .boolean = inst.map.size() == 0,
+    };
+}
+
+pub fn mapItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getMapInstance(this);
+    var vals = std.ArrayList(Value).init(allocator);
+
+    var itr = inst.map.map.iterator();
+    while (itr.next()) |entry| {
+        try vals.append(.{
+            .pair = .{
+                .first = entry.key_ptr,
+                .second = entry.value_ptr,
+            },
+        });
+    }
+
+    return .{
+        .array = vals,
     };
 }
 

@@ -64,7 +64,7 @@ fn getenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     };
 }
 
-fn setenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn setenvHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("sys.setenv(key, value) expects 2 arguments but got {d}\n", .{args.len});
@@ -76,8 +76,8 @@ fn setenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
 
     if (key != .string or val != .string) {
         try writer_err.print("sys.setenv(key, value) expects two string arguments\n", .{});
-        try writer_err.print("  Key: {s}\n", .{try key.toString(env.allocator)});
-        try writer_err.print("  Value: {s}\n", .{try val.toString(env.allocator)});
+        try writer_err.print("  Key: {s}\n", .{try key.toString(allocator)});
+        try writer_err.print("  Value: {s}\n", .{try val.toString(allocator)});
         return error.TypeMismatch;
     }
 
