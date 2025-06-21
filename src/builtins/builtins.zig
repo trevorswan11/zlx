@@ -168,4 +168,28 @@ pub const builtin_modules = [_]BuiltinModule{
     },
 
     // Types
+    .{
+        .name = "adjacency_list",
+        .loader = @import("types/adjacency_list.zig").load,
+    },
+    .{
+        .name = "adjacency_matrix",
+        .loader = @import("types/adjacency_matrix.zig").load,
+    },
+    .{
+        .name = "array_list",
+        .loader = @import("types/array_list.zig").load,
+    },
+    .{
+        .name = "deque",
+        .loader = @import("types/deque.zig").load,
+    },
+    .{
+        .name = "graph",
+        .loader = @import("types/graph.zig").load,
+    },
+    .{
+        .name = "list",
+        .loader = @import("types/list.zig").load,
+    },
 };

@@ -1,0 +1,14 @@
+import deque;
+
+let d = new deque();
+d.pushHead(2);
+d.pushTail(3);
+d.pushHead(1);
+d.pushTail(4);
+
+let h1 = d.peekHead();
+let t1 = d.peekTail();
+let pop1 = d.popHead();
+let pop2 = d.popTail();
+
+println(h1, t1, pop1, pop2);

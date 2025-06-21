@@ -1,0 +1,10 @@
+import array_list;
+
+let a = new array_list(5);
+a.push("first");
+a.push("second");
+let removed = a.pop();
+let empty = a.empty();
+let length = a.len();
+
+println(removed, empty, length);

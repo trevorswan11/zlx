@@ -1,3 +1,0 @@
-import debug;
-
-debug.assertEqual(1, 2, "help me im not equal");

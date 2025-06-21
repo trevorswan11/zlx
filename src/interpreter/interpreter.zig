@@ -256,6 +256,48 @@ pub const Value = union(enum) {
     }
 };
 
+pub const ValueContext = struct {
+    pub fn hash(self: @This(), key: Value) u64 {
+        var hasher = std.hash.Wyhash.init(0);
+        switch (key) {
+            .number => |n| hasher.update(&std.mem.toBytes(n)),
+            .string => |s| hasher.update(s),
+            .boolean => |b| hasher.update(&std.mem.toBytes(b)),
+            .nil => hasher.update("nil"),
+            .reference => |r| hasher.update(&std.mem.toBytes(@intFromPtr(r))),
+            .typed_val => |tv| hasher.update(&std.mem.toBytes(@intFromPtr(tv.value))),
+            .bound_method => |bm| {
+                hasher.update(&std.mem.toBytes(@intFromPtr(bm.instance)));
+                hasher.update(&std.mem.toBytes(@intFromPtr(bm.method)));
+            },
+            .return_value => |rv| hasher.update(&std.mem.toBytes(@intFromPtr(rv))),
+            .break_signal => hasher.update("break"),
+            .continue_signal => hasher.update("continue"),
+            .array => |arr| {
+                for (arr.items) |v| {
+                    hasher.update(&std.mem.toBytes(hash(self, v)));
+                }
+            },
+            .object => |obj| {
+                var it = obj.iterator();
+                while (it.next()) |e| {
+                    hasher.update(e.key_ptr.*);
+                    hasher.update(&std.mem.toBytes(hash(self, e.value_ptr.*)));
+                }
+            },
+            else => {
+                // fallback: hash the tag only
+                hasher.update(&std.mem.toBytes(@intFromEnum(key)));
+            },
+        }
+        return hasher.final();
+    }
+
+    pub fn eql(_: @This(), a: Value, b: Value) bool {
+        return a.eql(b);
+    }
+};
+
 pub const Environment = struct {
     const Self = @This();
 

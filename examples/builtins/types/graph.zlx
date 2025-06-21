@@ -1,0 +1,11 @@
+import graph;
+
+let g = new graph();
+g.addEdge("a", "b");
+g.addEdge("a", "c");
+g.addEdge("b", "d");
+
+let has1 = g.hasNode("a");
+let has2 = g.hasNode("z");
+let edge1 = g.hasEdge("a", "b");
+let edge2 = g.hasEdge("b", "a");

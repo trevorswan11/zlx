@@ -141,6 +141,14 @@ test {
     _ = @import("builtins/modules/csv.zig");
     _ = @import("builtins/modules/json.zig");
 
+    // Builtin Standard Library Structs
+    _ = @import("builtins/types/adjacency_list.zig");
+    _ = @import("builtins/types/adjacency_matrix.zig");
+    _ = @import("builtins/types/array_list.zig");
+    _ = @import("builtins/types/deque.zig");
+    _ = @import("builtins/types/graph.zig");
+    _ = @import("builtins/types/list.zig");
+
     // General Behavior - Tests located in `testing` directory
     _ = @import("testing/testing.zig");
     _ = @import("testing/structs_objects.zig");

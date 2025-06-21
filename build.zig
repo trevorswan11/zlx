@@ -22,6 +22,12 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("regxp", regex_mod);
 
+    // zig-containers module
+    const dsa_mod = b.addModule("dsa", .{
+        .root_source_file = b.path("libs/zig-containers/src/root.zig"),
+    });
+    exe.root_module.addImport("dsa", dsa_mod);
+
     // Add steps
     addRunStep(b, exe);
     addTestStep(b, exe_mod);

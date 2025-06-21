@@ -36,7 +36,7 @@ While I originally intended to just build the parser, I ended up going much deep
 - You can run the projects tests, which mimic the code found in the `examples` folder, with `zig build test`
 
 ## External Libraries
-This project uses a single external library called [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library.
+This project uses a two external librarys, the main one being [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. The second dependency is my [zig-containers](https://github.com/trevorswan11/zig-containers) library that drives the standard libraries builtin data structures.
 
 ## Language Documentation
 Documentation for the language, officially called `zlx`, will be written and polished over time. You can find the language reference in the `doc` folder. The "standard library" has a few built-in functions that work out of the box, and also has built-in modules that must be imported to use their defined functions and constants. While documentation is a WIP, you can view their source code in the `builtins` folder in the `src` directory.
@@ -49,6 +49,7 @@ I’ve slightly altered some of the patterns used in tylerlaceby’s language, r
 - This is a personal project, and will likely be put off to the side when I stop finding things to implement or get sick of writing documentation
     - If you find something glaringly wrong or would just like to contribute, feel free to open an issue or pull request!
 - ChatGPT was used during some parts of the development process, specifically with writing the example language 'tests', writing some redundant code/tests for the builtin modules, creating the outline for the documentation html page, and debugging some stubborn bugs. ChatGPT was also used to make the logo found at the top of this file!
+- ChatGPT was used in the generation of the builtin standard library types, but not in the creation of the underlying dependency. I created the template `list.zig` and provided ChatGPT with it and the source code in the module to avoid the mindless repetition of linking the data structures to the interpreter
 - While ChatGPT was used in the creation of the documentation outline, it was only used to write the basic documentation for some builtin modules
 
 ## Acknowledgements

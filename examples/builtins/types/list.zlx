@@ -1,0 +1,12 @@
+import list;
+
+let l = new list();
+l.append("a");
+l.append("b");
+l.append("c");
+let first = l.get(0);
+let last = l.popTail();
+let size = l.len();
+let is_empty = l.empty();
+
+println(first, last, size, is_empty);

@@ -1,0 +1,10 @@
+import adjacency_matrix;
+
+let m = new adjacency_matrix(4);
+m.addEdge(0, 1);
+m.addEdge(1, 2);
+m.removeEdge(1, 2);
+let has01 = m.containsEdge(0, 1);
+let has12 = m.containsEdge(1, 2);
+let s = m.size();
+let e = m.edges();

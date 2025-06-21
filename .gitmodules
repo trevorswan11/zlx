@@ -1,3 +1,6 @@
 [submodule "libs/zig-regex"]
 	path = libs/zig-regex
 	url = https://github.com/tiehuis/zig-regex
+[submodule "libs/zig-containers"]
+	path = libs/zig-containers
+	url = https://github.com/trevorswan11/zig-containers

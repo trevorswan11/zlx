@@ -1,0 +1,12 @@
+import adjacency_list;
+
+let g = new adjacency_list();
+g.addEdge(1, 2);
+g.addEdge(1, 3);
+g.addEdge(2, 4);
+
+let n1 = g.getNeighbors(1);
+let n2 = g.getNeighbors(2);
+let has1 = g.contains(1);
+let has9 = g.contains(9);
+let count = g.size();
