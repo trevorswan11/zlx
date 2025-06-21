@@ -29,43 +29,52 @@ fn getMatrixInstance(this: *Value) !*AdjacencyMatrixInstance {
     return @ptrCast(internal.*.typed_val.value);
 }
 
-var MATRIX_METHODS: std.StringHashMap(StdMethod) = undefined;
-var MATRIX_TYPE: Value = undefined;
+var ADJ_MATRIX_METHODS: std.StringHashMap(StdMethod) = undefined;
+var ADJ_MATRIX_TYPE: Value = undefined;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
-    MATRIX_METHODS = std.StringHashMap(StdMethod).init(allocator);
-    try MATRIX_METHODS.put("addEdge", addEdge);
-    try MATRIX_METHODS.put("removeEdge", removeEdge);
-    try MATRIX_METHODS.put("containsEdge", containsEdge);
-    try MATRIX_METHODS.put("size", getSize);
-    try MATRIX_METHODS.put("edges", getEdgeCount);
+    ADJ_MATRIX_METHODS = std.StringHashMap(StdMethod).init(allocator);
+    try ADJ_MATRIX_METHODS.put("add_edge", adjMatrixAddEdge);
+    try ADJ_MATRIX_METHODS.put("remove_edge", adjMatrixRemoveEdge);
+    try ADJ_MATRIX_METHODS.put("contains_edge", adjMatrixContainsEdge);
+    try ADJ_MATRIX_METHODS.put("size", getSize);
+    try ADJ_MATRIX_METHODS.put("edges", getEdgeCount);
 
-    MATRIX_TYPE = Value{
+    ADJ_MATRIX_TYPE = .{
         .std_struct = .{
-            .name = "AdjacencyMatrix",
-            .constructor = matrixConstructor,
-            .methods = MATRIX_METHODS,
+            .name = "adjacency_matrix",
+            .constructor = adjMatrixConstructor,
+            .methods = ADJ_MATRIX_METHODS,
         },
     };
 
-    return MATRIX_TYPE;
+    return ADJ_MATRIX_TYPE;
 }
 
-fn matrixConstructor(
+fn adjMatrixConstructor(
     allocator: std.mem.Allocator,
     args: []const *ast.Expr,
     env: *Environment,
 ) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("adj_matrix(size) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const size_val = try interpreter.evalExpr(args[0], env);
-    if (size_val != .number) return error.TypeMismatch;
+    if (size_val != .number) {
+        try writer_err.print("adj_matrix(size) expects a number argument but got a(n) {s}\n", .{@tagName(size_val)});
+        return error.TypeMismatch;
+    }
 
     const size: usize = @intFromFloat(size_val.number);
     const outer = try allocator.alloc([]Node, size);
     for (outer) |*row| {
         row.* = try allocator.alloc(Node, size);
         for (0..size) |i| {
-            row.*[i] = Node{ .flag = false };
+            row.*[i] = Node{
+                .flag = false,
+            };
         }
     }
 
@@ -80,7 +89,7 @@ fn matrixConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(wrapped),
-            .type = "AdjacencyMatrix",
+            .type = "adjacency_matrix",
         },
     };
 
@@ -88,7 +97,7 @@ fn matrixConstructor(
     try fields.put("__internal", internal_ptr);
 
     const type_ptr = try allocator.create(Value);
-    type_ptr.* = MATRIX_TYPE;
+    type_ptr.* = ADJ_MATRIX_TYPE;
 
     return .{
         .std_instance = .{
@@ -98,16 +107,28 @@ fn matrixConstructor(
     };
 }
 
-fn addEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+fn adjMatrixAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("adj_matrix.add_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
-    if (from != .number or to != .number) return error.TypeMismatch;
+    if (from != .number or to != .number) {
+        try writer_err.print("adj_matrix.add_edge(val_from, val_to) expects two number arguments but got:\n", .{});
+        try writer_err.print("  From: {s}\n", .{@tagName(from)});
+        try writer_err.print("  To: {s}\n", .{@tagName(to)});
+        return error.TypeMismatch;
+    }
 
     const inst = try getMatrixInstance(this);
     const i: usize = @intFromFloat(from.number);
     const j: usize = @intFromFloat(to.number);
-    if (i >= inst.size or j >= inst.size) return error.IndexOutOfBounds;
+    if (i >= inst.size or j >= inst.size) {
+        try writer_err.print("adj_matrix.add_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.size });
+        return error.IndexOutOfBounds;
+    }
 
     if (!inst.matrix[i][j].flag) {
         inst.matrix[i][j].flag = true;
@@ -117,16 +138,28 @@ fn addEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *En
     return .nil;
 }
 
-fn removeEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+fn adjMatrixRemoveEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("adj_matrix.remove_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
-    if (from != .number or to != .number) return error.TypeMismatch;
+    if (from != .number or to != .number) {
+        try writer_err.print("adj_matrix.remove_edge(val_from, val_to) expects two number arguments but got:\n", .{});
+        try writer_err.print("  From: {s}\n", .{@tagName(from)});
+        try writer_err.print("  To: {s}\n", .{@tagName(to)});
+        return error.TypeMismatch;
+    }
 
     const inst = try getMatrixInstance(this);
     const i: usize = @intFromFloat(from.number);
     const j: usize = @intFromFloat(to.number);
-    if (i >= inst.size or j >= inst.size) return error.IndexOutOfBounds;
+    if (i >= inst.size or j >= inst.size) {
+        try writer_err.print("adj_matrix.remove_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, args.len });
+        return error.IndexOutOfBounds;
+    }
 
     if (inst.matrix[i][j].flag) {
         inst.matrix[i][j].flag = false;
@@ -136,28 +169,46 @@ fn removeEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: 
     return .nil;
 }
 
-fn containsEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+fn adjMatrixContainsEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("adj_matrix.contains_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
-    if (from != .number or to != .number) return error.TypeMismatch;
+    if (from != .number or to != .number) {
+        try writer_err.print("adj_matrix.contains_edge(val_from, val_to) expects two number arguments but got:\n", .{});
+        try writer_err.print("  From: {s}\n", .{@tagName(from)});
+        try writer_err.print("  To: {s}\n", .{@tagName(to)});
+        return error.TypeMismatch;
+    }
 
     const inst = try getMatrixInstance(this);
     const i: usize = @intFromFloat(from.number);
     const j: usize = @intFromFloat(to.number);
-    if (i >= inst.size or j >= inst.size) return error.IndexOutOfBounds;
+    if (i >= inst.size or j >= inst.size) {
+        try writer_err.print("adj_matrix.contains_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.size });
+        return error.IndexOutOfBounds;
+    }
 
-    return Value{ .boolean = inst.matrix[i][j].flag };
+    return .{
+        .boolean = inst.matrix[i][j].flag,
+    };
 }
 
 fn getSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMatrixInstance(this);
-    return Value{ .number = @floatFromInt(inst.size) };
+    return .{
+        .number = @floatFromInt(inst.size),
+    };
 }
 
 fn getEdgeCount(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMatrixInstance(this);
-    return Value{ .number = @floatFromInt(inst.edge_count) };
+    return .{
+        .number = @floatFromInt(inst.edge_count),
+    };
 }
 
 // === TESTING ===
@@ -175,11 +226,11 @@ test "adjacency_matrix_builtin" {
     const source =
         \\import adjacency_matrix;
         \\let m = new adjacency_matrix(4);
-        \\m.addEdge(0, 1);
-        \\m.addEdge(1, 2);
-        \\m.removeEdge(1, 2);
-        \\let has01 = m.containsEdge(0, 1);
-        \\let has12 = m.containsEdge(1, 2);
+        \\m.add_edge(0, 1);
+        \\m.add_edge(1, 2);
+        \\m.remove_edge(1, 2);
+        \\let has01 = m.contains_edge(0, 1);
+        \\let has12 = m.contains_edge(1, 2);
         \\let s = m.size();
         \\let e = m.edges();
     ;

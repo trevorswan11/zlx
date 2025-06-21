@@ -244,6 +244,38 @@ pub const Value = union(enum) {
         };
     }
 
+    pub fn compare(self: Value, other: Value) std.math.Order {
+        const std_order = std.math.Order;
+
+        const a = self.raw();
+        const b = other.raw();
+
+        return switch (a) {
+            .number => |x| switch (b) {
+                .number => std.math.order(x, b.number),
+                else => std_order.gt,
+            },
+            .string => |x| switch (b) {
+                .string => std.mem.order(u8, x, b.string),
+                else => std_order.gt,
+            },
+            .boolean => |x| switch (b) {
+                .boolean => std.math.order(@intFromBool(x), @intFromBool(b.boolean)),
+                else => std_order.gt,
+            },
+            .nil => switch (b) {
+                .nil => std_order.eq,
+                else => std_order.lt,
+            },
+            else => blk: {
+                // fallback to address comparison for non-comparable types
+                const a_ptr = @intFromPtr(&a);
+                const b_ptr = @intFromPtr(&b);
+                break :blk std.math.order(a_ptr, b_ptr);
+            },
+        };
+    }
+
     pub fn raw(self: *const Value) Value {
         var current = self.*;
         while (true) {

@@ -33,14 +33,14 @@ var GRAPH_TYPE: Value = undefined;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     GRAPH_METHODS = std.StringHashMap(StdMethod).init(allocator);
-    try GRAPH_METHODS.put("addEdge", graphAddEdge);
-    try GRAPH_METHODS.put("hasNode", graphHasNode);
-    try GRAPH_METHODS.put("hasEdge", graphHasEdge);
+    try GRAPH_METHODS.put("add_edge", graphAddEdge);
+    try GRAPH_METHODS.put("has_node", graphHasNode);
+    try GRAPH_METHODS.put("has_edge", graphHasEdge);
     try GRAPH_METHODS.put("clear", graphClear);
 
-    GRAPH_TYPE = Value{
+    GRAPH_TYPE = .{
         .std_struct = .{
-            .name = "Graph",
+            .name = "graph",
             .constructor = graphConstructor,
             .methods = GRAPH_METHODS,
         },
@@ -56,13 +56,15 @@ fn graphConstructor(
 ) !Value {
     const graph = AdjacencyList.init(allocator);
     const wrapped = try allocator.create(GraphInstance);
-    wrapped.* = .{ .graph = graph };
+    wrapped.* = .{
+        .graph = graph,
+    };
 
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(wrapped),
-            .type = "Graph",
+            .type = "graph",
         },
     };
 
@@ -81,7 +83,11 @@ fn graphConstructor(
 }
 
 fn graphAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("graph.add_edge(val_from, val_to) expects 2 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     const inst = try getGraphInstance(this);
@@ -92,24 +98,38 @@ fn graphAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env
 }
 
 fn graphHasNode(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("graph.has_node(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const id = try interpreter.evalExpr(args[0], env);
     const inst = try getGraphInstance(this);
-    return Value{ .boolean = inst.graph.containsNode(id) };
+    return .{
+        .boolean = inst.graph.containsNode(id),
+    };
 }
 
 fn graphHasEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("graph.has_edge(val_from, val_to) expects 2 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     const inst = try getGraphInstance(this);
 
     if (inst.graph.getNeighbors(from)) |list| {
         for (list.arr) |v| {
-            if (v.eql(to)) return Value{ .boolean = true };
+            if (v.eql(to)) return .{
+                .boolean = true,
+            };
         }
     }
-    return Value{ .boolean = false };
+    return .{
+        .boolean = false,
+    };
 }
 
 fn graphClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
@@ -133,14 +153,14 @@ test "graph_builtin" {
     const source =
         \\import graph;
         \\let g = new graph();
-        \\g.addEdge("a", "b");
-        \\g.addEdge("a", "c");
-        \\g.addEdge("b", "d");
+        \\g.add_edge("a", "b");
+        \\g.add_edge("a", "c");
+        \\g.add_edge("b", "d");
         \\
-        \\let has1 = g.hasNode("a");
-        \\let has2 = g.hasNode("z");
-        \\let edge1 = g.hasEdge("a", "b");
-        \\let edge2 = g.hasEdge("b", "a");
+        \\let has1 = g.has_node("a");
+        \\let has2 = g.has_node("z");
+        \\let edge1 = g.has_edge("a", "b");
+        \\let edge2 = g.has_edge("b", "a");
     ;
 
     const block = try testing.parse(allocator, source);

@@ -32,20 +32,20 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     LIST_METHODS = std.StringHashMap(StdMethod).init(allocator);
     try LIST_METHODS.put("append", listAppend);
     try LIST_METHODS.put("prepend", listPrepend);
-    try LIST_METHODS.put("popHead", listPopHead);
-    try LIST_METHODS.put("popTail", listPopTail);
+    try LIST_METHODS.put("pop_head", listPopHead);
+    try LIST_METHODS.put("pop_tail", listPopTail);
     try LIST_METHODS.put("get", listGet);
     try LIST_METHODS.put("remove", listRemove);
     try LIST_METHODS.put("discard", listDiscard);
-    try LIST_METHODS.put("peekHead", listPeekHead);
-    try LIST_METHODS.put("peekTail", listPeekTail);
+    try LIST_METHODS.put("peek_head", listPeekHead);
+    try LIST_METHODS.put("peek_tail", listPeekTail);
     try LIST_METHODS.put("clear", listClear);
     try LIST_METHODS.put("empty", listEmpty);
     try LIST_METHODS.put("len", listLen);
 
-    LIST_TYPE = Value{
+    LIST_TYPE = .{
         .std_struct = .{
-            .name = "List",
+            .name = "list",
             .constructor = listConstructor,
             .methods = LIST_METHODS,
         },
@@ -61,24 +61,20 @@ fn listConstructor(
 ) anyerror!Value {
     const list = try List.init(allocator);
 
-    // Wrap it in a heap-allocated struct
     const wrapped = try allocator.create(ListInstance);
     wrapped.* = .{ .list = list };
 
-    // Allocate a Value to hold the pointer to `wrapped`
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(wrapped),
-            .type = "List",
+            .type = "list",
         },
     };
 
-    // Prepare instance fields
     var fields = std.StringHashMap(*Value).init(allocator);
     try fields.put("__internal", internal_ptr);
 
-    // Allocate the type pointer
     const type_ptr = try allocator.create(Value);
     type_ptr.* = LIST_TYPE;
 
@@ -91,7 +87,11 @@ fn listConstructor(
 }
 
 fn listAppend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("list.append(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const val = try interpreter.evalExpr(args[0], env);
     const list = try getListInstance(this);
     try list.list.append(val);
@@ -99,49 +99,70 @@ fn listAppend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: 
 }
 
 fn listPrepend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("list.prepend(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const val = try interpreter.evalExpr(args[0], env);
     const list = try getListInstance(this);
     try list.list.prepend(val);
     return .nil;
 }
 
-fn listPopHead(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    _ = args;
-    _ = env;
+fn listPopHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const list = try getListInstance(this);
     return list.list.popHead() orelse .nil;
 }
 
-fn listPopTail(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    _ = args;
-    _ = env;
+fn listPopTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const list = try getListInstance(this);
     return list.list.popTail() orelse .nil;
 }
 
 fn listGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("list.get(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) return error.TypeMismatch;
+    if (index_val != .number) {
+        try writer_err.print("list.get(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
+        return error.TypeMismatch;
+    }
 
     const list = try getListInstance(this);
     return try list.list.get(@intFromFloat(index_val.number));
 }
 
 fn listRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("list.remove(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) return error.TypeMismatch;
+    if (index_val != .number) {
+        try writer_err.print("list.remove(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
+        return error.TypeMismatch;
+    }
 
     const list = try getListInstance(this);
     return try list.list.remove(@intFromFloat(index_val.number));
 }
 
 fn listDiscard(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("list.discard(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) return error.TypeMismatch;
+    if (index_val != .number) {
+        try writer_err.print("list.discard(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
+        return error.TypeMismatch;
+    }
 
     const list = try getListInstance(this);
     try list.list.discard(@intFromFloat(index_val.number));
@@ -166,12 +187,16 @@ fn listClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Envir
 
 fn listEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const list = try getListInstance(this);
-    return Value{ .boolean = list.list.empty() };
+    return .{
+        .boolean = list.list.empty(),
+    };
 }
 
 fn listLen(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const list = try getListInstance(this);
-    return Value{ .number = @floatFromInt(list.list.len) };
+    return .{
+        .number = @floatFromInt(list.list.len),
+    };
 }
 
 // === TESTING ===
@@ -193,7 +218,7 @@ test "list_builtin" {
         \\l.append("b");
         \\l.append("c");
         \\let first = l.get(0);
-        \\let last = l.popTail();
+        \\let last = l.pop_tail();
         \\let size = l.len();
         \\let is_empty = l.empty();
     ;

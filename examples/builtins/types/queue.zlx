@@ -1,0 +1,13 @@
+import queue;
+
+let q = new queue();
+q.push(1);
+q.push(2);
+q.push(3);
+let a = q.peek();
+let b = q.poll();
+let c = q.poll();
+let d = q.poll();
+let e = q.poll();
+
+println(a, b, c, d, e);

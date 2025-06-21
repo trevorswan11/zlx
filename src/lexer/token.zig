@@ -203,6 +203,19 @@ pub const Token = struct {
         try reserved.put("csv", .IDENTIFIER);
         try reserved.put("json", .IDENTIFIER);
 
+        // Built-in Structs
+        try reserved.put("adjacency_list", .IDENTIFIER);
+        try reserved.put("adjacency_matrix", .IDENTIFIER);
+        try reserved.put("array_list", .IDENTIFIER);
+        try reserved.put("deque", .IDENTIFIER);
+        try reserved.put("graph", .IDENTIFIER);
+        try reserved.put("map", .IDENTIFIER);
+        try reserved.put("set", .IDENTIFIER);
+        try reserved.put("list", .IDENTIFIER);
+        try reserved.put("heap", .IDENTIFIER);
+        try reserved.put("queue", .IDENTIFIER);
+        try reserved.put("stack", .IDENTIFIER);
+
         return reserved;
     }
 

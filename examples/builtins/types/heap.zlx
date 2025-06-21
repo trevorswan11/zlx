@@ -1,0 +1,12 @@
+import heap;
+
+let q = new heap(true);
+q.insert(10);
+q.insert(3);
+q.insert(8);
+let a = q.poll();
+let b = q.poll();
+let c = q.poll();
+let empty = q.empty();
+
+println(a, b, c, empty);

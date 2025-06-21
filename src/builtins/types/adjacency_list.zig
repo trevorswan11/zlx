@@ -29,42 +29,44 @@ fn getGraphInstance(this: *Value) !*AdjacencyListInstance {
     return @ptrCast(internal.*.typed_val.value);
 }
 
-var ADJ_METHODS: std.StringHashMap(StdMethod) = undefined;
-var ADJ_TYPE: Value = undefined;
+var ADJ_LIST_METHODS: std.StringHashMap(StdMethod) = undefined;
+var ADJ_LIST_TYPE: Value = undefined;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
-    ADJ_METHODS = std.StringHashMap(StdMethod).init(allocator);
-    try ADJ_METHODS.put("addEdge", addEdge);
-    try ADJ_METHODS.put("getNeighbors", getNeighbors);
-    try ADJ_METHODS.put("contains", contains);
-    try ADJ_METHODS.put("clear", clear);
-    try ADJ_METHODS.put("size", size);
+    ADJ_LIST_METHODS = std.StringHashMap(StdMethod).init(allocator);
+    try ADJ_LIST_METHODS.put("add_edge", adjListAddEdge);
+    try ADJ_LIST_METHODS.put("get_neighbors", adjListGetNeighbors);
+    try ADJ_LIST_METHODS.put("contains", adjListContains);
+    try ADJ_LIST_METHODS.put("clear", adjListClear);
+    try ADJ_LIST_METHODS.put("size", adjListSize);
 
-    ADJ_TYPE = Value{
+    ADJ_LIST_TYPE = .{
         .std_struct = .{
-            .name = "AdjacencyList",
-            .constructor = adjConstructor,
-            .methods = ADJ_METHODS,
+            .name = "adjacency_list",
+            .constructor = adjListConstructor,
+            .methods = ADJ_LIST_METHODS,
         },
     };
 
-    return ADJ_TYPE;
+    return ADJ_LIST_TYPE;
 }
 
-fn adjConstructor(
+fn adjListConstructor(
     allocator: std.mem.Allocator,
     _: []const *ast.Expr,
     _: *Environment,
 ) !Value {
     const graph = GraphType.init(allocator);
     const wrapped = try allocator.create(AdjacencyListInstance);
-    wrapped.* = .{ .graph = graph };
+    wrapped.* = .{
+        .graph = graph,
+    };
 
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(wrapped),
-            .type = "AdjacencyList",
+            .type = "adjacency_list",
         },
     };
 
@@ -72,7 +74,7 @@ fn adjConstructor(
     try fields.put("__internal", internal_ptr);
 
     const type_ptr = try allocator.create(Value);
-    type_ptr.* = ADJ_TYPE;
+    type_ptr.* = ADJ_LIST_TYPE;
 
     return .{
         .std_instance = .{
@@ -82,8 +84,12 @@ fn adjConstructor(
     };
 }
 
-fn addEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+fn adjListAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("adj_list.add_edge(val_from, val_to) expects 2 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     const inst = try getGraphInstance(this);
@@ -91,8 +97,12 @@ fn addEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *En
     return .nil;
 }
 
-fn getNeighbors(allocator: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+fn adjListGetNeighbors(allocator: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("adj_list.get_neighbors(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const node = try interpreter.evalExpr(args[0], env);
     const inst = try getGraphInstance(this);
     const neighbors = inst.graph.getNeighbors(node);
@@ -101,28 +111,38 @@ fn getNeighbors(allocator: std.mem.Allocator, this: *Value, args: []const *ast.E
         const list_slice = try mut_list.toOwnedSlice();
         var array_list = std.ArrayList(Value).init(allocator);
         try array_list.appendSlice(list_slice);
-        return Value{ .array = array_list };
+        return .{
+            .array = array_list,
+        };
     } else {
         return .nil;
     }
 }
 
-fn contains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+fn adjListContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("adj_list.contains(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const node = try interpreter.evalExpr(args[0], env);
     const inst = try getGraphInstance(this);
-    return Value{ .boolean = inst.graph.containsNode(node) };
+    return .{
+        .boolean = inst.graph.containsNode(node),
+    };
 }
 
-fn clear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjListClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getGraphInstance(this);
     inst.graph.clear();
     return .nil;
 }
 
-fn size(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjListSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getGraphInstance(this);
-    return Value{ .number = @floatFromInt(inst.graph.size()) };
+    return .{
+        .number = @floatFromInt(inst.graph.size()),
+    };
 }
 
 // === TESTING ===
@@ -140,12 +160,12 @@ test "adjacency_list_builtin" {
     const source =
         \\import adjacency_list;
         \\let g = new adjacency_list();
-        \\g.addEdge(1, 2);
-        \\g.addEdge(1, 3);
-        \\g.addEdge(2, 4);
+        \\g.add_edge(1, 2);
+        \\g.add_edge(1, 3);
+        \\g.add_edge(2, 4);
         \\
-        \\let n1 = g.getNeighbors(1);
-        \\let n2 = g.getNeighbors(2);
+        \\let n1 = g.get_neighbors(1);
+        \\let n2 = g.get_neighbors(2);
         \\let has1 = g.contains(1);
         \\let has9 = g.contains(9);
         \\let count = g.size();

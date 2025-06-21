@@ -1,0 +1,14 @@
+import map;
+
+let m = new map();
+m.put("x", 1);
+m.put("y", 2);
+let a = m.get("x");
+let b = m.get("y");
+let c = m.get("z");
+let has = m.contains("y");
+let gone = m.remove("y");
+let empty = m.contains("y");
+let size = m.size();
+
+println(a, b, c, has, gone, empty, size);

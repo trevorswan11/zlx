@@ -147,7 +147,12 @@ test {
     _ = @import("builtins/types/array_list.zig");
     _ = @import("builtins/types/deque.zig");
     _ = @import("builtins/types/graph.zig");
+    _ = @import("builtins/types/hash_map.zig");
+    _ = @import("builtins/types/hash_set.zig");
     _ = @import("builtins/types/list.zig");
+    _ = @import("builtins/types/priority_queue.zig");
+    _ = @import("builtins/types/queue.zig");
+    _ = @import("builtins/types/stack.zig");
 
     // General Behavior - Tests located in `testing` directory
     _ = @import("testing/testing.zig");

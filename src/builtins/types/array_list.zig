@@ -9,7 +9,7 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const ArrayList = @import("dsa").Array(Value); // Replace with actual dsa location
+const ArrayList = @import("dsa").Array(Value);
 
 const StdMethod = Value.StdMethod;
 const StdCtor = Value.StdCtor;
@@ -18,59 +18,65 @@ pub const ArrayListInstance = struct {
     array: ArrayList,
 };
 
-fn getArrayInstance(this: *Value) !*ArrayListInstance {
+fn getArrayListInstance(this: *Value) !*ArrayListInstance {
     const internal = this.std_instance.fields.get("__internal") orelse
         return error.MissingInternalField;
 
     return @ptrCast(internal.*.typed_val.value);
 }
 
-var ARRAY_METHODS: std.StringHashMap(StdMethod) = undefined;
-var ARRAY_TYPE: Value = undefined;
+var ARRAY_LIST_METHODS: std.StringHashMap(StdMethod) = undefined;
+var ARRAY_LIST_TYPE: Value = undefined;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
-    ARRAY_METHODS = std.StringHashMap(StdMethod).init(allocator);
-    try ARRAY_METHODS.put("push", arrayPush);
-    try ARRAY_METHODS.put("insert", arrayInsert);
-    try ARRAY_METHODS.put("remove", arrayRemove);
-    try ARRAY_METHODS.put("pop", arrayPop);
-    try ARRAY_METHODS.put("get", arrayGet);
-    try ARRAY_METHODS.put("set", arraySet);
-    try ARRAY_METHODS.put("clear", arrayClear);
-    try ARRAY_METHODS.put("empty", arrayEmpty);
-    try ARRAY_METHODS.put("len", arrayLen);
+    ARRAY_LIST_METHODS = std.StringHashMap(StdMethod).init(allocator);
+    try ARRAY_LIST_METHODS.put("push", arrayListPush);
+    try ARRAY_LIST_METHODS.put("insert", arrayListInsert);
+    try ARRAY_LIST_METHODS.put("remove", arrayListRemove);
+    try ARRAY_LIST_METHODS.put("pop", arrayListPop);
+    try ARRAY_LIST_METHODS.put("get", arrayListGet);
+    try ARRAY_LIST_METHODS.put("set", arrayListSet);
+    try ARRAY_LIST_METHODS.put("clear", arrayListClear);
+    try ARRAY_LIST_METHODS.put("empty", arrayListEmpty);
+    try ARRAY_LIST_METHODS.put("len", arrayListLen);
 
-    ARRAY_TYPE = Value{
+    ARRAY_LIST_TYPE = .{
         .std_struct = .{
-            .name = "Array",
-            .constructor = arrayConstructor,
-            .methods = ARRAY_METHODS,
+            .name = "array_list",
+            .constructor = arrayListConstructor,
+            .methods = ARRAY_LIST_METHODS,
         },
     };
 
-    return ARRAY_TYPE;
+    return ARRAY_LIST_TYPE;
 }
 
-fn arrayConstructor(
+fn arrayListConstructor(
     allocator: std.mem.Allocator,
     args: []const *ast.Expr,
     env: *Environment,
 ) !Value {
+    const writer_err = driver.getWriterErr();
     const capacity: usize = if (args.len == 1) blk: {
         const val = try interpreter.evalExpr(args[0], env);
-        if (val != .number) return error.TypeMismatch;
+        if (val != .number) {
+            try writer_err.print("array_list(initial_capacity) expects a number arg but got a(n) {s}\n", .{@tagName(val)});
+            return error.TypeMismatch;
+        }
         break :blk @intFromFloat(val.number);
     } else 8;
 
     const array = try ArrayList.init(allocator, capacity);
     const wrapped = try allocator.create(ArrayListInstance);
-    wrapped.* = .{ .array = array };
+    wrapped.* = .{
+        .array = array,
+    };
 
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(wrapped),
-            .type = "Array",
+            .type = "array_list",
         },
     };
 
@@ -78,7 +84,7 @@ fn arrayConstructor(
     try fields.put("__internal", internal_ptr);
 
     const type_ptr = try allocator.create(Value);
-    type_ptr.* = ARRAY_TYPE;
+    type_ptr.* = ARRAY_LIST_TYPE;
 
     return .{
         .std_instance = .{
@@ -88,74 +94,112 @@ fn arrayConstructor(
     };
 }
 
-fn arrayPush(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+fn arrayListPush(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("array_list.push(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const val = try interpreter.evalExpr(args[0], env);
-    const inst = try getArrayInstance(this);
+    const inst = try getArrayListInstance(this);
     try inst.array.push(val);
     return .nil;
 }
 
-fn arrayInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+fn arrayListInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("array_list.insert(index, value) expects 2 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const index_val = try interpreter.evalExpr(args[0], env);
     const value = try interpreter.evalExpr(args[1], env);
-    if (index_val != .number) return error.TypeMismatch;
+    if (index_val != .number) {
+        try writer_err.print("array_list.insert(index, value) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
+        return error.TypeMismatch;
+    }
 
-    const inst = try getArrayInstance(this);
+    const inst = try getArrayListInstance(this);
     try inst.array.insert(@intFromFloat(index_val.number), value);
     return .nil;
 }
 
-fn arrayRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+fn arrayListRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("array_list.remove(index) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) return error.TypeMismatch;
+    if (index_val != .number) {
+        try writer_err.print("array_list.remove(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
+        return error.TypeMismatch;
+    }
 
-    const inst = try getArrayInstance(this);
+    const inst = try getArrayListInstance(this);
     return try inst.array.remove(@intFromFloat(index_val.number));
 }
 
-fn arrayPop(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const inst = try getArrayInstance(this);
+fn arrayListPop(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getArrayListInstance(this);
     return try inst.array.pop();
 }
 
-fn arrayGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+fn arrayListGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("array_list.get(index) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) return error.TypeMismatch;
+    if (index_val != .number) {
+        try writer_err.print("array_list.get(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
+        return error.TypeMismatch;
+    }
 
-    const inst = try getArrayInstance(this);
+    const inst = try getArrayListInstance(this);
     return try inst.array.get(@intFromFloat(index_val.number));
 }
 
-fn arraySet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 2) return error.ArgumentCountMismatch;
+fn arrayListSet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("array_list.set(index, value) expects 2 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const index_val = try interpreter.evalExpr(args[0], env);
     const value = try interpreter.evalExpr(args[1], env);
-    if (index_val != .number) return error.TypeMismatch;
+    if (index_val != .number) {
+        try writer_err.print("array_list.set(index, value) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
+        return error.TypeMismatch;
+    }
 
-    const inst = try getArrayInstance(this);
+    const inst = try getArrayListInstance(this);
     try inst.array.set(@intFromFloat(index_val.number), value);
     return .nil;
 }
 
-fn arrayClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const inst = try getArrayInstance(this);
+fn arrayListClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getArrayListInstance(this);
     inst.array.clear();
     return .nil;
 }
 
-fn arrayEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const inst = try getArrayInstance(this);
-    return Value{ .boolean = inst.array.empty() };
+fn arrayListEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getArrayListInstance(this);
+    return Value{
+        .boolean = inst.array.empty(),
+    };
 }
 
-fn arrayLen(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
-    const inst = try getArrayInstance(this);
-    return Value{ .number = @floatFromInt(inst.array.len) };
+fn arrayListLen(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+    const inst = try getArrayListInstance(this);
+    return Value{
+        .number = @floatFromInt(inst.array.len),
+    };
 }
+
+// === TESTING ===
 
 const testing = @import("../../testing/testing.zig");
 

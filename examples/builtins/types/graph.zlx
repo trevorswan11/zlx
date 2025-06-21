@@ -1,11 +1,13 @@
 import graph;
 
 let g = new graph();
-g.addEdge("a", "b");
-g.addEdge("a", "c");
-g.addEdge("b", "d");
+g.add_edge("a", "b");
+g.add_edge("a", "c");
+g.add_edge("b", "d");
 
-let has1 = g.hasNode("a");
-let has2 = g.hasNode("z");
-let edge1 = g.hasEdge("a", "b");
-let edge2 = g.hasEdge("b", "a");
+let has1 = g.has_node("a");
+let has2 = g.has_node("z");
+let edge1 = g.has_edge("a", "b");
+let edge2 = g.has_edge("b", "a");
+
+println(has1, has2, edge1, edge2);

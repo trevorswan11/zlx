@@ -30,16 +30,16 @@ var DEQUE_TYPE: Value = undefined;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     DEQUE_METHODS = std.StringHashMap(StdMethod).init(allocator);
-    try DEQUE_METHODS.put("pushHead", dequePushHead);
-    try DEQUE_METHODS.put("pushTail", dequePushTail);
-    try DEQUE_METHODS.put("popHead", dequePopHead);
-    try DEQUE_METHODS.put("popTail", dequePopTail);
-    try DEQUE_METHODS.put("peekHead", dequePeekHead);
-    try DEQUE_METHODS.put("peekTail", dequePeekTail);
+    try DEQUE_METHODS.put("push_head", dequePushHead);
+    try DEQUE_METHODS.put("push_tail", dequePushTail);
+    try DEQUE_METHODS.put("pop_head", dequePopHead);
+    try DEQUE_METHODS.put("pop_tail", dequePopTail);
+    try DEQUE_METHODS.put("peek_head", dequePeekHead);
+    try DEQUE_METHODS.put("peek_tail", dequePeekTail);
 
-    DEQUE_TYPE = Value{
+    DEQUE_TYPE = .{
         .std_struct = .{
-            .name = "Deque",
+            .name = "deque",
             .constructor = dequeConstructor,
             .methods = DEQUE_METHODS,
         },
@@ -55,13 +55,15 @@ fn dequeConstructor(
 ) !Value {
     const list = try List.init(allocator);
     const wrapped = try allocator.create(DequeInstance);
-    wrapped.* = .{ .list = list };
+    wrapped.* = .{
+        .list = list,
+    };
 
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(wrapped),
-            .type = "Deque",
+            .type = "deque",
         },
     };
 
@@ -80,7 +82,11 @@ fn dequeConstructor(
 }
 
 fn dequePushHead(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("deque.push_head(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const val = try interpreter.evalExpr(args[0], env);
     const deque = try getDequeInstance(this);
     try deque.list.prepend(val);
@@ -88,7 +94,11 @@ fn dequePushHead(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, en
 }
 
 fn dequePushTail(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    if (args.len != 1) return error.ArgumentCountMismatch;
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("deque.push_tail(value) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
     const val = try interpreter.evalExpr(args[0], env);
     const deque = try getDequeInstance(this);
     try deque.list.append(val);
@@ -130,15 +140,15 @@ test "deque_builtin" {
     const source =
         \\import deque;
         \\let d = new deque();
-        \\d.pushHead(2);
-        \\d.pushTail(3);
-        \\d.pushHead(1);
-        \\d.pushTail(4);
+        \\d.push_head(2);
+        \\d.push_tail(3);
+        \\d.push_head(1);
+        \\d.push_tail(4);
         \\
-        \\let h1 = d.peekHead();
-        \\let t1 = d.peekTail();
-        \\let pop1 = d.popHead();
-        \\let pop2 = d.popTail();
+        \\let h1 = d.peek_head();
+        \\let t1 = d.peek_tail();
+        \\let pop1 = d.pop_head();
+        \\let pop2 = d.pop_tail();
     ;
 
     const block = try testing.parse(allocator, source);

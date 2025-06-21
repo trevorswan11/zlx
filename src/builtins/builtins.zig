@@ -189,7 +189,27 @@ pub const builtin_modules = [_]BuiltinModule{
         .loader = @import("types/graph.zig").load,
     },
     .{
+        .name = "map",
+        .loader = @import("types/hash_map.zig").load,
+    },
+    .{
+        .name = "set",
+        .loader = @import("types/hash_set.zig").load,
+    },
+    .{
         .name = "list",
         .loader = @import("types/list.zig").load,
+    },
+    .{
+        .name = "heap",
+        .loader = @import("types/priority_queue.zig").load,
+    },
+    .{
+        .name = "queue",
+        .loader = @import("types/queue.zig").load,
+    },
+    .{
+        .name = "stack",
+        .loader = @import("types/stack.zig").load,
     },
 };
