@@ -24,6 +24,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "split", splitHandler);
     try pack(&map, "trim", trimHandler);
     try pack(&map, "contains", containsHandler);
+    try pack(&map, "starts_with", startsWithHandler);
+    try pack(&map, "ends_with", endsWithHandler);
 
     return .{
         .object = map,
@@ -191,6 +193,54 @@ fn trimHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     };
 }
 
+fn startsWithHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("string.starts_with(str, prefix) expects 2 arguments, got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const str = try eval.evalExpr(args[0], env);
+    const prefix = try eval.evalExpr(args[1], env);
+
+    if (str != .string or prefix != .string) {
+        try writer_err.print("string.starts_with expects two string arguments\n", .{});
+        try writer_err.print("  str = {s}, prefix = {s}\n", .{
+            try str.toString(allocator),
+            try prefix.toString(allocator),
+        });
+        return error.TypeMismatch;
+    }
+
+    return .{
+        .boolean = std.mem.startsWith(u8, str.string, prefix.string),
+    };
+}
+
+fn endsWithHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("string.ends_with(str, suffix) expects 2 arguments, got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const str = try eval.evalExpr(args[0], env);
+    const suffix = try eval.evalExpr(args[1], env);
+
+    if (str != .string or suffix != .string) {
+        try writer_err.print("string.ends_with expects two string arguments\n", .{});
+        try writer_err.print("  str = {s}, suffix = {s}\n", .{
+            try str.toString(allocator),
+            try suffix.toString(allocator),
+        });
+        return error.TypeMismatch;
+    }
+
+    return .{
+        .boolean = std.mem.endsWith(u8, str.string, suffix.string),
+    };
+}
+
 // === TESTING ===
 
 const testing = @import("../../testing/testing.zig");
@@ -239,6 +289,11 @@ test "string_builtin" {
         \\// Test contains
         \\println(string.contains("hello world", "world")); // true
         \\println(string.contains("zig", "Z"));             // false
+        \\// Test starts_with and ends_with
+        \\println(string.starts_with("ZigLang", "Zig")); // true
+        \\println(string.starts_with("ZigLang", "Lang")); // false
+        \\println(string.ends_with("ZigLang", "Lang")); // true
+        \\println(string.ends_with("ZigLang", "Zig")); // false
     ;
 
     const block = try testing.parse(allocator, source);
@@ -255,6 +310,10 @@ test "string_builtin" {
         \\zig
         \\hello
         \\ZIGLANG
+        \\true
+        \\false
+        \\true
+        \\false
         \\true
         \\false
         \\

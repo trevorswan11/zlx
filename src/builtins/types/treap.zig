@@ -28,7 +28,7 @@ pub const TreapInstance = struct {
 fn getTreapInstance(this: *Value) !*TreapInstance {
     const internal = this.std_instance.fields.get("__internal") orelse
         return error.MissingInternalField;
-    return @ptrCast(internal.*.typed_val.value);
+    return @ptrCast(@alignCast(internal.*.typed_val.value));
 }
 
 var TREAP_METHODS: std.StringHashMap(StdMethod) = undefined;
@@ -50,7 +50,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
     TREAP_TYPE = Value{
         .std_struct = .{
-            .name = "Treap",
+            .name = "treap",
             .constructor = treapConstructor,
             .methods = TREAP_METHODS,
         },
@@ -71,8 +71,8 @@ fn treapConstructor(
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
-            .value = @ptrCast(wrapped),
-            .type = "Treap",
+            .value = @ptrCast(@alignCast(wrapped)),
+            .type = "treap",
         },
     };
 

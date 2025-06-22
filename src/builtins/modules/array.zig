@@ -44,6 +44,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "get", getHandler);
     try pack(&map, "set", setHandler);
     try pack(&map, "slice", sliceHandler);
+    try pack(&map, "join", joinHandler);
 
     return .{
         .object = map,
@@ -221,6 +222,51 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     };
 }
 
+fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 2) {
+        try writer_err.print("array.join(arr, delim) expects exactly two arguments, got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    var val = try eval.evalExpr(args[0], env);
+    if (val != .array and !(val == .reference and val.reference.* == .array)) {
+        try writer_err.print("array.join(arr, delim) requires the first argument to be an array or reference to an array\n", .{});
+        return error.TypeMismatch;
+    }
+
+    val = if (val == .reference) val.deref() else val;
+
+    const delim_val = try eval.evalExpr(args[1], env);
+    if (delim_val != .string) {
+        try writer_err.print("array.join(arr, delim) requires the delimiter to be a string\n", .{});
+        return error.TypeMismatch;
+    }
+
+    const delim = delim_val.string;
+
+    const items = val.array.items;
+    var output = std.ArrayList(u8).init(allocator);
+    const writer = output.writer();
+
+    for (items, 0..) |item, i| {
+        switch (item) {
+            .string => try writer.print("{s}", .{item.string}),
+            .number => try writer.print("{}", .{item.number}),
+            .boolean => try writer.print("{}", .{item.boolean}),
+            else => try writer.print("{s}", .{try item.toString(allocator)}),
+        }
+
+        if (i != items.len - 1) {
+            try writer.print("{s}", .{delim});
+        }
+    }
+
+    return .{
+        .string = try output.toOwnedSlice(),
+    };
+}
+
 // === TESTING ===
 
 const testing = @import("../../testing/testing.zig");
@@ -263,6 +309,8 @@ test "array_builtin" {
         \\let d = [1, 2, 3, 4, 5];
         \\let sub = array.slice(d, 1, 4);
         \\println(sub);  // Expect: [2, 3, 4]
+        \\let j = array.join(["a", "b", "c"], "-");
+        \\println(j);
     ;
 
     const block = try testing.parse(allocator, source);
@@ -279,6 +327,7 @@ test "array_builtin" {
         \\20
         \\References Val: ["10", "99", "30"]
         \\["2", "3", "4"]
+        \\a-b-c
         \\
     ;
 

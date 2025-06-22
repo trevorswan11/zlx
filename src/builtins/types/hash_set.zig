@@ -22,7 +22,7 @@ fn getSetInstance(this: *Value) !*HashSetInstance {
     const internal = this.std_instance.fields.get("__internal") orelse
         return error.MissingInternalField;
 
-    return @ptrCast(internal.*.typed_val.value);
+    return @ptrCast(@alignCast(internal.*.typed_val.value));
 }
 
 var SET_METHODS: std.StringHashMap(StdMethod) = undefined;
@@ -41,7 +41,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
     SET_TYPE = .{
         .std_struct = .{
-            .name = "Set",
+            .name = "set",
             .constructor = setConstructor,
             .methods = SET_METHODS,
         },
@@ -81,8 +81,8 @@ fn setConstructor(
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
-            .value = @ptrCast(wrapped),
-            .type = "Set",
+            .value = @ptrCast(@alignCast(wrapped)),
+            .type = "set",
         },
     };
 

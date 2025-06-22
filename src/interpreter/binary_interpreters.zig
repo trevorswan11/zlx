@@ -44,6 +44,25 @@ pub fn plus(op: Token, lhs: Value, rhs: Value) !Value {
                 return error.TypeMismatch;
             },
         },
+        .array => |a| switch (rhs) {
+            .array => |b| {
+                var summed = std.ArrayList(Value).init(op.allocator);
+                for (a.items) |left_item| {
+                    try summed.append(left_item);
+                }
+                for (b.items) |right_item| {
+                    try summed.append(right_item);
+                }
+
+                return .{
+                    .array = summed,
+                };
+            },
+            else => {
+                try writer_err.print("Cannot add type {s} to type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
+                return error.TypeMismatch;
+            },
+        },
         else => {
             try writer_err.print("Cannot add type {s} to type {s}\n", .{ @tagName(rhs), @tagName(lhs) });
             return error.TypeMismatch;

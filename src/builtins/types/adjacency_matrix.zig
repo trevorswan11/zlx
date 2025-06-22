@@ -27,7 +27,7 @@ fn getMatrixInstance(this: *Value) !*AdjacencyMatrixInstance {
     const internal = this.std_instance.fields.get("__internal") orelse
         return error.MissingInternalField;
 
-    return @ptrCast(internal.*.typed_val.value);
+    return @ptrCast(@alignCast(internal.*.typed_val.value));
 }
 
 var ADJ_MATRIX_METHODS: std.StringHashMap(StdMethod) = undefined;
@@ -94,7 +94,7 @@ fn adjMatrixConstructor(
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
-            .value = @ptrCast(wrapped),
+            .value = @ptrCast(@alignCast(wrapped)),
             .type = "adjacency_matrix",
         },
     };

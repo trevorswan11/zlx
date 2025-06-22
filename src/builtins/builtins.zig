@@ -101,6 +101,10 @@ pub const builtin_fns = [_]BuiltinFn{
         .name = "to_bool",
         .handler = fns.to_bool,
     },
+    .{
+        .name = "format",
+        .handler = fns.format,
+    },
 };
 
 // === Builtin Modules ===

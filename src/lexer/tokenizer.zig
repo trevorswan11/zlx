@@ -325,7 +325,7 @@ const SimpleHandlerWrapper = struct {
     }
 
     fn call(ctx: *const anyopaque, lex: *Lexer, regex: *Regex) anyerror!void {
-        const real: *const fn (*Lexer, *Regex) anyerror!void = @ptrCast(ctx);
+        const real: *const fn (*Lexer, *Regex) anyerror!void = @ptrCast(@alignCast(ctx));
         try real(lex, regex);
     }
 };

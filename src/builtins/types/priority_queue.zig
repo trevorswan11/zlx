@@ -23,7 +23,7 @@ fn getPriorityQueueInstance(this: *Value) !*PriorityQueueInstance {
     const internal = this.std_instance.fields.get("__internal") orelse
         return error.MissingInternalField;
 
-    return @ptrCast(internal.*.typed_val.value);
+    return @ptrCast(@alignCast(internal.*.typed_val.value));
 }
 
 var PRIORITY_QUEUE_METHODS: std.StringHashMap(StdMethod) = undefined;
@@ -78,7 +78,7 @@ fn pqConstructor(
     const internal_ptr = try allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
-            .value = @ptrCast(wrapped),
+            .value = @ptrCast(@alignCast(wrapped)),
             .type = "heap",
         },
     };

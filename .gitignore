@@ -9,3 +9,4 @@ update.bat
 
 **.vsix
 vsc-extension-quickstart.md
+release/targets

@@ -27,7 +27,7 @@
     "builtin_functions": {
       "patterns": [
         {
-          "match": "\\b(print|println|len|ref|range|to_string|to_number|to_bool)\\b",
+          "match": "\\b(print|println|len|ref|range|to_string|to_number|to_bool|format)\\b",
           "name": "support.function.builtin.zlx"
         }
       ]

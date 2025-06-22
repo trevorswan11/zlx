@@ -157,6 +157,7 @@
                         <li><a href="#array-get">get</a></li>
                         <li><a href="#array-set">set</a></li>
                         <li><a href="#array-slice">slice</a></li>
+                        <li><a href="#array-join">join</a></li>
                     </ul>
                 </li>
 
@@ -250,6 +251,8 @@
                         <li><a href="#string-split">split</a></li>
                         <li><a href="#string-trim">trim</a></li>
                         <li><a href="#string-contains">contains</a></li>
+                        <li><a href="#string-starts_with">starts_with</a></li>
+                        <li><a href="#string-ends_with">ends_with</a></li>
                     </ul>
                 </li>
 
@@ -261,6 +264,7 @@
                         <li><a href="#sys-setenv">setenv</a></li>
                         <li><a href="#sys-unsetenv">unsetenv</a></li>
                         <li><a href="#sys-run">run</a></li>
+                        <li><a href="#sys-input">input</a></li>
                     </ul>
                 </li>
 
@@ -308,6 +312,7 @@
                         <li><a href="#to_string">to_string</a></li>
                         <li><a href="#to_number">to_number</a></li>
                         <li><a href="#to_bool">to_bool</a></li>
+                        <li><a href="#format">format</a></li>
                     </ul>
                 </li>
 
@@ -750,6 +755,9 @@ println(y);                     // 4
             <p>Returns a subarray starting at <code>start</code> (inclusive) and ending at <code>end</code> (exclusive).
                 The resulting slice is a new array. Throws an error if the indices are invalid or out of bounds.</p>
 
+            <h3 id="array-join">join(arr|ref(arr), delim)</h3>
+            <p>Returns a string of the array's values separated by <code>delim</code>.</p>
+
             <!-- Debug Module Docs -->
             <h2 id="debug">debug</h2>
             <p>Each of these functions optionally accepts a message string as the last argument. If provided, the
@@ -981,6 +989,14 @@ println(y);                     // 4
             <p>Returns <code>true</code> if <code>substr</code> appears anywhere within <code>str</code>, otherwise
                 returns <code>false</code>.</p>
 
+            <h3 id="string-starts_with">starts_with(str, prefix)</h3>
+            <p>Returns <code>true</code> if <code>str</code> starts with <code>prefix</code>, otherwise
+                returns <code>false</code>.</p>
+
+            <h3 id="string-ends_with">ends_with(str, suffix)</h3>
+            <p>Returns <code>true</code> if <code>str</code> ends with <code>suffix</code>, otherwise
+                returns <code>false</code>.</p>
+
             <!-- Sys module Docs -->
             <h2 id="sys">sys</h2>
             <h3 id="sys-args">args()</h3>
@@ -1001,9 +1017,14 @@ println(y);                     // 4
                 calls to <code>getenv(name)</code> will return <code>null</code>.</p>
 
             <h3 id="sys-run">run(cmds)</h3>
-            <p>Executes a subprocess using the packed array of command strings <code>cmds</code>. Returns the standard
-                output of the command on success, or throws an error on failure. Equivalent to spawning a shell command.
+            <p>Executes a subprocess using a string representing <code>cmds</code>. Returns the standard
+                output of the command on success, or returns std error on failure. Equivalent to spawning a shell
+                command.
             </p>
+
+            <h3 id="sys-input">input(prompt)</h3>
+            <p>Prints the <code>prompt</code> string and waits for user input from standard input. Returns the line of
+                text entered by the user as a string. Input is read until a newline is encountered.</p>
 
             <!-- Time Module Docs -->
             <h2 id="time">time</h2>
@@ -1167,6 +1188,10 @@ println(y);                     // 4
                 The same is true for typed values. Nil values are false. As mentioned earlier, all other values are
                 true.
             </p>
+            <h3 id="format">format</h3>
+            <p>The <code>format</code> function takes in a string template followed by arguments to bake into the
+                template. The function will not crash if insufficient arguments are given. Arguments in the string are
+                indicated to be templates by using "{}". An example of this is <code>format("x = {}", 2);</code></p>
         </section>
 
         <section id="dsa">

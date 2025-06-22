@@ -546,18 +546,29 @@ pub fn compoundAssignment(a: *ast.CompoundAssignmentExpr, env: *Environment) !Va
         .end = a.operator.end,
     }, lhs_val, rhs_val);
 
-    if (result != .number) {
-        try writer_err.print("Cannot perform compound assignment on type {s}\n", .{@tagName(result)});
-        return error.TypeMismatch;
-    }
-
     const assignment_expr = try env.allocator.create(ast.AssignmentExpr);
-    assignment_expr.* = .{
-        .assignee = a.assignee,
-        .assigned_value = try env.boxExpr(.{ .number = .{
-            .value = result.number,
-        } }),
-    };
+    switch (result) {
+        .number => |num| {
+            assignment_expr.* = .{
+                .assignee = a.assignee,
+                .assigned_value = try env.boxExpr(.{ .number = .{
+                    .value = num,
+                } }),
+            };
+        },
+        .string => |str| {
+            assignment_expr.* = .{
+                .assignee = a.assignee,
+                .assigned_value = try env.boxExpr(.{ .string = .{
+                    .value = str,
+                } }),
+            };
+        },
+        else => {
+            try writer_err.print("Cannot perform compound assignment on type {s}\n", .{@tagName(result)});
+            return error.TypeMismatch;
+        },
+    }
 
     return try assignment(assignment_expr, env);
 }

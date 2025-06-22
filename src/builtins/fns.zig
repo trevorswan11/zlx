@@ -296,6 +296,52 @@ fn coerceStdInstance(val: Value, env: *Environment) bool {
     }
 }
 
+pub fn format(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len < 1) {
+        try writer_err.print("string.fmt(format, ...) expects at least 1 argument\n", .{});
+        return error.ArgumentCountMismatch;
+    }
+
+    const fmt_val = try eval.evalExpr(args[0], env);
+    if (fmt_val != .string) {
+        try writer_err.print("string.fmt expects the first argument to be a string format\n", .{});
+        return error.TypeMismatch;
+    }
+
+    const fmt = fmt_val.string;
+
+    // Collect values to format
+    var values = std.ArrayList(Value).init(allocator);
+    defer values.deinit();
+
+    for (args[1..]) |arg_expr| {
+        try values.append(try eval.evalExpr(arg_expr, env));
+    }
+
+    // Format using writer
+    var output = std.ArrayList(u8).init(allocator);
+    const writer = output.writer();
+
+    var it = std.mem.tokenizeAny(u8, fmt, "{}");
+    var i: usize = 0;
+
+    while (it.next()) |part| {
+        try writer.print("{s}", .{part});
+
+        if (i < values.items.len) {
+            const v = values.items[i];
+            try writer.print("{s}", .{try v.toString(allocator)});
+            i += 1;
+        }
+    }
+
+    return .{
+        .string = try output.toOwnedSlice(),
+    };
+}
+
 // === TESTING ===
 
 const testing = @import("../testing/testing.zig");

@@ -1,0 +1,100 @@
+import sys;
+import fs;
+import path;
+import array;
+import string;
+
+import array_list;
+
+// Fs prep
+if fs.exists("release/targets") {
+    fs.rm("release/targets");
+}
+fs.mkdir("release/targets");
+
+// Targets
+const win = [
+    "x86_64",
+    "aarch64",
+];
+
+const mac = [
+    "x86_64",
+    "aarch64",
+];
+
+const lin = [
+    "x86_64",
+    "arm",
+    "aarch64",
+    "x86",
+    "riscv64",
+    "powerpc64le",
+    "loongarch64",
+    "s390x",
+];
+
+const targets = {
+    windows: win,
+    macos: mac,
+    linux: lin,
+};
+
+const operating_sys = [
+    "linux",
+    "macos",
+    "windows",
+];
+
+const version = "0.1.0";
+const output_path = path.join("release", "targets");
+
+// Command line args
+const root = "zig build";
+const release_mode = "-Doptimize=ReleaseSafe";
+const target_format = "-Dtarget={}-{}";
+const prefix = "-p " + output_path;
+let commands = new array_list();
+let folder_names = new array_list();
+
+for os in operating_sys {
+    for target in targets[os] {
+        const opt = new array_list();
+        const target_formatted = format(target_format, target, os);
+        opt.push(root);
+        opt.push(release_mode);
+        opt.push(target_formatted);
+        opt.push(prefix);
+        commands.push(opt.items());
+
+        let release_path = path.join(output_path, format("zlx-{}_{}-{}", version, os, target));
+        fs.copy("README.md", path.join(release_path, "README.md"));
+        fs.copy("CHANGELOG.md", path.join(release_path, "CHANGELOG.md"));
+        fs.copy("LICENSE", path.join(release_path, "LICENSE"));
+        fs.mkdir(path.join(release_path, "resources"));
+        fs.copy(path.join("resources", "zlx-logo-v2.png"), path.join(release_path, "resources", "zlx-logo-v2.png"));
+        fs.copy(path.join("doc", "zlx-reference.html"), path.join(release_path, "zlx-reference.html"));
+        folder_names.push(release_path);
+    }
+}
+commands = commands.items();
+folder_names = folder_names.items();
+
+for command_num in 0..len(commands) {
+    let out = sys.run(array.join(commands[command_num], " "));
+    if out.stderr != "" {
+        println("Process errored with:");
+        print(out.stderr);
+        break;
+    }
+    const bin = path.join(output_path, "bin");
+    let exe_path = "";
+    for file in fs.list_all_files(bin) {
+        if string.ends_with(file, "zlx") || string.ends_with(file, "zlx.exe") {
+            exe_path = file;
+        }
+    }
+    let release_file = path.join(folder_names[command_num], path.basename(exe_path));
+    fs.copy(exe_path, release_file);
+    fs.rm(bin);
+}

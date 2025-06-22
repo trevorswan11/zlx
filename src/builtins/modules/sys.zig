@@ -24,6 +24,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "setenv", setenvHandler);
     try pack(&map, "unsetenv", unsetenvHandler);
     try pack(&map, "run", runHandler);
+    try pack(&map, "input", inputHandler);
 
     return .{
         .object = map,
@@ -108,54 +109,49 @@ fn runHandler(
     env: *interpreter.Environment,
 ) !Value {
     const writer_err = driver.getWriterErr();
+
     if (args.len != 1) {
-        try writer_err.print("sys.run(arr) expects 1 argument but got {d}\n", .{args.len});
+        try writer_err.print("sys.run(cmd) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
-    const list_val = try eval.evalExpr(args[0], env);
-    if (list_val != .array) {
-        try writer_err.print("sys.run(arr) expects an array argument, got {s}\n", .{@tagName(list_val)});
+    const cmd_val = try eval.evalExpr(args[0], env);
+    if (cmd_val != .string) {
+        try writer_err.print("sys.run(cmd) expects a string argument, got {s}\n", .{@tagName(cmd_val)});
         return error.TypeMismatch;
     }
 
-    const argv = list_val.array;
+    const command = cmd_val.string;
     var arg_list = std.ArrayList([]const u8).init(allocator);
 
-    // Get the users shell and prepend to args
+    // Prepend shell command
     const shell = if (builtin.os.tag == .windows)
         &[_][]const u8{ "cmd.exe", "/C" }
     else
         &[_][]const u8{ "sh", "-c" };
-    for (shell) |preprocess| {
-        try arg_list.append(preprocess);
-    }
+    try arg_list.appendSlice(shell);
 
-    // Append the rest of the args
-    for (argv.items, 0..) |item, idx| {
-        if (item != .string) {
-            try writer_err.print("sys.run(arr) expects an array with all string arguments, got {s} @ index {d}\n", .{ @tagName(list_val), idx });
-            return error.TypeMismatch;
-        }
-        try arg_list.append(item.string);
-    }
+    // Append the command string
+    try arg_list.append(command);
 
+    // Buffers for output
     var stdout_buf = std.ArrayList(u8).init(allocator);
     var stderr_buf = std.ArrayList(u8).init(allocator);
 
-    // Combine the system and local environments to run the command
-    var process_env_itr = process_env.iterator();
+    // Merge environment maps
+    var tmp_env = std.process.EnvMap.init(allocator);
     const system_env = try std.process.getEnvMap(allocator);
     var system_env_itr = system_env.iterator();
+    var process_env_itr = process_env.iterator();
 
-    var tmp_env = std.process.EnvMap.init(allocator);
-    while (process_env_itr.next()) |next| {
-        try tmp_env.put(next.key_ptr.*, next.value_ptr.*);
+    while (process_env_itr.next()) |entry| {
+        try tmp_env.put(entry.key_ptr.*, entry.value_ptr.*);
     }
-    while (system_env_itr.next()) |next| {
-        try tmp_env.put(next.key_ptr.*, next.value_ptr.*);
+    while (system_env_itr.next()) |entry| {
+        try tmp_env.put(entry.key_ptr.*, entry.value_ptr.*);
     }
 
+    // Run the command
     const result = std.process.Child.run(.{
         .allocator = allocator,
         .argv = arg_list.items,
@@ -173,8 +169,38 @@ fn runHandler(
     try map.put("stdout", .{ .string = try stdout_buf.toOwnedSlice() });
     try map.put("stderr", .{ .string = try stderr_buf.toOwnedSlice() });
 
-    return Value{
+    return .{
         .object = map,
+    };
+}
+
+fn inputHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_out = driver.getWriterOut();
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != 1) {
+        try writer_err.print("sys.input(prompt) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const prompt_val = try eval.evalExpr(args[0], env);
+    if (prompt_val != .string) {
+        try writer_err.print("sys.input(prompt) expects a string argument\n", .{});
+        try writer_err.print("  Got: {s}\n", .{try prompt_val.toString(allocator)});
+        return error.TypeMismatch;
+    }
+
+    try writer_out.print("{s}", .{prompt_val.string});
+
+    var line_buf = std.ArrayList(u8).init(allocator);
+    defer line_buf.deinit();
+
+    const stdin = std.io.getStdIn().reader();
+
+    const input_line = try stdin.readUntilDelimiterOrEofAlloc(allocator, '\n', 1024);
+    if (input_line == null) return .nil;
+    return .{
+        .string = input_line.?,
     };
 }
 

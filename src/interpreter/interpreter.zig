@@ -367,6 +367,9 @@ pub const Environment = struct {
 
     pub fn define(self: *Self, name: []const u8, value: Value) !void {
         const writer_err = driver.getWriterErr();
+        if (std.mem.eql(u8, name, "_")) {
+            return;
+        }
 
         if (self.values.contains(name)) {
             try writer_err.print("Duplicate Identifier: \"{s}\"\n", .{name});
@@ -378,6 +381,9 @@ pub const Environment = struct {
 
     pub fn declareConstant(self: *Self, name: []const u8, value: Value) !void {
         const writer_err = driver.getWriterErr();
+        if (std.mem.eql(u8, name, "_")) {
+            return;
+        }
 
         if (self.values.contains(name)) {
             try writer_err.print("Duplicate Identifier: \"{s}\"\n", .{name});
@@ -391,6 +397,9 @@ pub const Environment = struct {
 
     pub fn assign(self: *Self, name: []const u8, value: Value) !void {
         const writer_err = driver.getWriterErr();
+        if (std.mem.eql(u8, name, "_")) {
+            return;
+        }
 
         if (self.constants.contains(name)) {
             try writer_err.print("Identifier \"{s}\" is Constant\n", .{name});
@@ -409,6 +418,9 @@ pub const Environment = struct {
 
     pub fn makeConstant(self: *Self, name: []const u8) !void {
         const writer_err = driver.getWriterErr();
+        if (std.mem.eql(u8, name, "_")) {
+            return;
+        }
 
         if (!self.values.contains(name)) {
             try writer_err.print("Identifier \"{s}\" is Undefined\n", .{name});
@@ -422,6 +434,9 @@ pub const Environment = struct {
 
     pub fn stripConstant(self: *Self, name: []const u8) !void {
         const writer_err = driver.getWriterErr();
+        if (std.mem.eql(u8, name, "_")) {
+            return;
+        }
 
         if (!self.values.contains(name)) {
             try writer_err.print("Identifier \"{s}\" is Undefined\n", .{name});
