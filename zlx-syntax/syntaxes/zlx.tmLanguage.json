@@ -2,14 +2,14 @@
   "scopeName": "source.zlx",
   "name": "ZLX",
   "patterns": [
+    { "include": "#comments" },
     { "include": "#keywords" },
     { "include": "#builtin_functions" },
     { "include": "#builtin_modules" },
     { "include": "#builtin_structs" },
     { "include": "#operators" },
     { "include": "#numbers" },
-    { "include": "#strings" },
-    { "include": "#comments" }
+    { "include": "#strings" }
   ],
   "repository": {
     "keywords": {
@@ -85,8 +85,7 @@
     "comments": {
       "patterns": [
         {
-          "begin": "//",
-          "end": "\\n",
+          "match": "//.*",
           "name": "comment.line.double-slash.zlx"
         }
       ]
