@@ -55,6 +55,7 @@ fn colorForKind(kind: TokenKind) []const u8 {
         .MINUS,
         .STAR,
         .SLASH,
+        .STAR_STAR,
         .PERCENT,
         .PLUS_EQUALS,
         .MINUS_EQUALS,

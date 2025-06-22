@@ -232,13 +232,59 @@ pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
         .NOT => return .{
             .boolean = !right.boolean,
         },
-        .TYPEOF => return .{
-            .string = blk: switch (right) {
+        .TYPEOF => {
+            switch (right) {
                 .typed_val => |t| {
-                    break :blk t.type;
+                    switch (t.value.*) {
+                        .std_instance => |inst| {
+                            if (inst._type.* == .std_struct) {
+                                return .{
+                                    .pair = .{
+                                        .first = try Value.boxValueString("std_instance", env.allocator),
+                                        .second = try Value.boxValueString(inst._type.std_struct.name, env.allocator),
+                                    },
+                                };
+                            } else {
+                                return .{
+                                    .pair = .{
+                                        .first = try Value.boxValueString("ambiguous", env.allocator),
+                                        .second = try Value.boxValueString(@tagName(inst._type.*), env.allocator),
+                                    },
+                                };
+                            }
+                        },
+                        else => return .{
+                            .pair = .{
+                                .first = try Value.boxValueString("typed_val", env.allocator),
+                                .second = try Value.boxValueString(t._type, env.allocator),
+                            },
+                        },
+                    }
                 },
-                else => "any",
-            },
+                .std_instance => |inst| {
+                    if (inst._type.* == .std_struct) {
+                        return .{
+                            .pair = .{
+                                .first = try Value.boxValueString("std_instance", env.allocator),
+                                .second = try Value.boxValueString(inst._type.std_struct.name, env.allocator),
+                            },
+                        };
+                    } else {
+                        return .{
+                            .pair = .{
+                                .first = try Value.boxValueString("ambiguous", env.allocator),
+                                .second = try Value.boxValueString(@tagName(inst._type.*), env.allocator),
+                            },
+                        };
+                    }
+                },
+                else => return .{
+                    .pair = .{
+                        .first = try Value.boxValueString("any", env.allocator),
+                        .second = try Value.boxValueString(@tagName(right), env.allocator),
+                    },
+                },
+            }
         },
         .DELETE => {
             if (p.right.* == .symbol) {
@@ -522,8 +568,6 @@ pub fn match(m: *ast.Match, env: *Environment) !Value {
 
 pub fn compoundAssignment(a: *ast.CompoundAssignmentExpr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    const lhs_val = try evalExpr(a.assignee, env);
-    const rhs_val = try evalExpr(a.value, env);
 
     const binary_kind: token.TokenKind = switch (a.operator.kind) {
         .PLUS_EQUALS => .PLUS,
@@ -537,40 +581,75 @@ pub fn compoundAssignment(a: *ast.CompoundAssignmentExpr, env: *Environment) !Va
         },
     };
 
-    const result = try eval.evalBinary(.{
-        .kind = binary_kind,
+    const rhs_val = try evalExpr(a.value, env);
+    const tok: token.Token = .{
         .allocator = a.operator.allocator,
-        .line = a.operator.line,
-        .value = a.operator.value,
         .start = a.operator.start,
         .end = a.operator.end,
-    }, lhs_val, rhs_val);
+        .line = a.operator.line,
+        .value = a.operator.value,
+        .kind = binary_kind,
+    };
 
-    const assignment_expr = try env.allocator.create(ast.AssignmentExpr);
-    switch (result) {
-        .number => |num| {
-            assignment_expr.* = .{
-                .assignee = a.assignee,
-                .assigned_value = try env.boxExpr(.{ .number = .{
-                    .value = num,
-                } }),
-            };
+    switch (a.assignee.*) {
+        .symbol => |s| {
+            const lhs_val = try env.get(s.value);
+            const result = try evalBinary(tok, lhs_val, rhs_val);
+            try env.assign(s.value, result);
+            return result;
         },
-        .string => |str| {
-            assignment_expr.* = .{
-                .assignee = a.assignee,
-                .assigned_value = try env.boxExpr(.{ .string = .{
-                    .value = str,
-                } }),
+        .member => |m| {
+            var obj_val = try evalExpr(m.member, env);
+            obj_val = obj_val.deref();
+            if (obj_val != .object) {
+                try writer_err.print("Member expression can only be called on type object, got a(n) {s}\n", .{@tagName(obj_val)});
+                return error.TypeMismatch;
+            }
+
+            const lhs_val = obj_val.object.get(m.property) orelse {
+                try writer_err.print("Could not find property {s} on object\n", .{m.property});
+                return error.PropertyNotFound;
             };
+            const result = try evalBinary(tok, lhs_val, rhs_val);
+            try obj_val.object.put(m.property, result);
+            return result;
+        },
+        .computed => |c| {
+            var obj_val = try evalExpr(c.member, env);
+            obj_val = obj_val.deref();
+            const key_val = try evalExpr(c.property, env);
+
+            if (obj_val == .array and key_val == .number) {
+                const index: usize = @intFromFloat(key_val.number);
+                if (index >= obj_val.array.items.len) {
+                    try writer_err.print("Index {d} out of bounds for array of length {d}\n", .{ index, obj_val.array.items.len });
+                    return error.IndexOutOfBounds;
+                }
+                const lhs_val = obj_val.array.items[index];
+                const result = try evalBinary(tok, lhs_val, rhs_val);
+                obj_val.array.items[index] = result;
+                return result;
+            } else if (obj_val == .object and key_val == .string) {
+                const lhs_val = obj_val.object.get(key_val.string) orelse {
+                    try writer_err.print("Could not find property {s} on object\n", .{key_val.string});
+                    return error.PropertyNotFound;
+                };
+                const result = try evalBinary(tok, lhs_val, rhs_val);
+                try obj_val.object.put(key_val.string, result);
+                return result;
+            } else {
+                try writer_err.print("Compound assignment unsupported for ({s}, {s})\n", .{
+                    @tagName(obj_val),
+                    @tagName(key_val),
+                });
+                return error.TypeMismatch;
+            }
         },
         else => {
-            try writer_err.print("Cannot perform compound assignment on type {s}\n", .{@tagName(result)});
-            return error.TypeMismatch;
+            try writer_err.print("Unsupported compound assignment target: {s}\n", .{@tagName(a.assignee.*)});
+            return error.InvalidAssignmentTarget;
         },
     }
-
-    return try assignment(assignment_expr, env);
 }
 
 pub fn nil(_: void, _: *Environment) !Value {

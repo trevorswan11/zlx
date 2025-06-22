@@ -20,6 +20,7 @@ pub fn evalBinary(op: Token, lhs: Value, rhs: Value) !Value {
         .MINUS => return try binary_interpreters.minus(op, lhs, rhs),
         .STAR => return try binary_interpreters.star(op, lhs, rhs),
         .SLASH => return try binary_interpreters.slash(op, lhs, rhs),
+        .STAR_STAR => return try binary_interpreters.exp(op, lhs, rhs),
         .EQUALS => return try binary_interpreters.equal(op, lhs, rhs),
         .NOT_EQUALS => return try binary_interpreters.notEqual(op, lhs, rhs),
         .GREATER => return try binary_interpreters.greater(op, lhs, rhs),

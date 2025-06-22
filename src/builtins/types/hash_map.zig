@@ -64,7 +64,7 @@ fn mapConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "map",
+            ._type = "map",
         },
     };
 

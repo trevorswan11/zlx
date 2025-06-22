@@ -218,6 +218,10 @@ pub const Lexer = struct {
             .handler = try defaultHandler(allocator, .SLASH, "/"),
         });
         try patterns.append(.{
+            .regex = try Regex.compile(allocator, "\\*\\*"),
+            .handler = try defaultHandler(allocator, .STAR_STAR, "**"),
+        });
+        try patterns.append(.{
             .regex = try Regex.compile(allocator, "\\*"),
             .handler = try defaultHandler(allocator, .STAR, "*"),
         });

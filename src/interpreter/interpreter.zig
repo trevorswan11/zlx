@@ -40,7 +40,7 @@ pub const Value = union(enum) {
     return_value: *Value,
     typed_val: struct {
         value: *Value,
-        type: []const u8,
+        _type: []const u8,
     },
     std_struct: struct {
         name: []const u8,
@@ -202,7 +202,7 @@ pub const Value = union(enum) {
             .break_signal => |_| try std.fmt.allocPrint(allocator, "break", .{}),
             .continue_signal => |_| try std.fmt.allocPrint(allocator, "continue", .{}),
             .return_value => |r| try stringReturn(r, allocator),
-            .typed_val => |t| try stringTyped(t.value, t.type, allocator),
+            .typed_val => |t| try stringTyped(t.value, t._type, allocator),
             .std_struct => try std.fmt.allocPrint(allocator, "<Standard Library Struct>", .{}),
             .std_instance => try std.fmt.allocPrint(allocator, "<Standard Library Instance>", .{}),
             .bound_std_method => |bm| try stringBoundMethod(bm.instance, allocator),
@@ -298,6 +298,14 @@ pub const Value = union(enum) {
                 else => return current,
             };
         }
+    }
+
+    pub fn boxValueString(str: []const u8, allocator: std.mem.Allocator) !*Value {
+        const box = try allocator.create(Value);
+        box.* = .{
+            .string = str,
+        };
+        return box;
     }
 };
 
@@ -462,11 +470,9 @@ pub const Environment = struct {
     }
 
     pub fn remove(self: *Self, name: []const u8) Value {
-        const flag = self.values.remove(name);
+        _ = self.values.remove(name);
         _ = self.constants.remove(name);
-        return .{
-            .boolean = flag,
-        };
+        return .nil;
     }
 
     pub fn clear(self: *Self) void {

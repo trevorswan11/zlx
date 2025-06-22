@@ -399,7 +399,9 @@ y = 2;                  // Error, cannot reassign to constant
             <p>ZLX supports most common operators found in many languages, including common prefix, postfix, and
                 reassignment operators like <code>+=</code> Most of these operators are heavily dependent on the
                 underlying type of the operand, but this should not be an issue in most scenarios. To learn more about
-                the typing system, read the next section.</p>
+                the typing system, read the next section. ZLX also supports discarding values using the "_" symbol. It
+                cannot be used after the 'let' or 'const' keywords, and variables assigned to it are not tracked in any
+                scope.</p>
         </section>
 
         <section id="keywords">
@@ -485,11 +487,14 @@ y = 2;                  // Error, cannot reassign to constant
 let x: int = 42;
 print(x);
             </code></pre>
-            <p>By default, all declarations get the "any" type, and can be reassigned within reason (without the const
-                keyword). To get the type of any value, use <code>typeof</code> as:</p>
+            <p>By default, all declarations get the "any (current_type)" type, and can be reassigned within reason
+                (without the const
+                keyword). The current type corresponds to the interpreters current understanding of the value. The type
+                of a value is represented by a pair of values with the second entry being a narrower context of the
+                first entry.To get the type of any value, use <code>typeof</code> as:</p>
             <pre><code>
 let x: int = 42;
-print(typeof x); >> int
+print(typeof x); >> Pair{"typed_val", "int"}
             </code></pre>
             <p>Typed values are not recommended as they require you to call the builtin <code>detype</code> function
                 which returns the underlying value in the type. This builtin does not alter the data in the typed value,
@@ -498,6 +503,8 @@ print(typeof x); >> int
 let x: int = 42;
 print(detype(x)); >> 42
             </code></pre>
+            <p>Instances of structs in the standard library are inherently typed and can be used with the typeof
+                operator. You cannot detype these data structures.</p>
             <h2>Strings</h2>
             <p>Strings in ZLX are somewhat unique. They can be declared only with double quotes, and multiline strings
                 can
@@ -1194,7 +1201,8 @@ println(y);                     // 4
             <h3 id="to_ascii">to_ascii</h3>
             <p>The <code>to_ascii</code> function takes a single-character string and returns its ASCII code as a
                 number. The input must be exactly one character long and within the ASCII range (0-127). For example,
-                <code>to_ascii("A")</code> returns <code>65</code>.</p>
+                <code>to_ascii("A")</code> returns <code>65</code>.
+            </p>
 
             <h3 id="from_ascii">from_ascii</h3>
             <p>The <code>from_ascii</code> function takes a number representing an ASCII code (0-127) and returns the

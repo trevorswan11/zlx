@@ -95,7 +95,7 @@ fn adjMatrixConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "adjacency_matrix",
+            ._type = "adjacency_matrix",
         },
     };
 

@@ -70,7 +70,7 @@ fn listConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "linked_list",
+            ._type = "linked_list",
         },
     };
 

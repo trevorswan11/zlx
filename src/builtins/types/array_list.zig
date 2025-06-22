@@ -78,7 +78,7 @@ fn arrayListConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "array_list",
+            ._type = "array_list",
         },
     };
 

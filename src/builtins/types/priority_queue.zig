@@ -79,7 +79,7 @@ fn pqConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "heap",
+            ._type = "heap",
         },
     };
 

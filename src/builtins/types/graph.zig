@@ -65,7 +65,7 @@ fn graphConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "graph",
+            ._type = "graph",
         },
     };
 

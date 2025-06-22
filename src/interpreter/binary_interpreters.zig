@@ -89,12 +89,45 @@ pub fn minus(_: Token, lhs: Value, rhs: Value) !Value {
     }
 }
 
-pub fn star(_: Token, lhs: Value, rhs: Value) !Value {
+pub fn star(op: Token, lhs: Value, rhs: Value) !Value {
     const writer_err = driver.getWriterErr();
     switch (lhs) {
         .number => |l| switch (rhs) {
             .number => return .{
                 .number = l * rhs.number,
+            },
+            else => {
+                try writer_err.print("Cannot multiply type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                return error.TypeMismatch;
+            },
+        },
+        .string => |s| switch (rhs) {
+            .number => |n| {
+                var buffer = std.ArrayList(u8).init(op.allocator);
+                defer buffer.deinit();
+                for (0..@intFromFloat(n)) |_| {
+                    try buffer.appendSlice(s);
+                }
+                return .{
+                    .string = try buffer.toOwnedSlice(),
+                };
+            },
+            else => {
+                try writer_err.print("Cannot multiply type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                return error.TypeMismatch;
+            },
+        },
+        .array => |a| switch (rhs) {
+            .number => |n| {
+                var buffer = std.ArrayList(Value).init(op.allocator);
+                for (0..@intFromFloat(n)) |_| {
+                    for (a.items) |val| {
+                        try buffer.append(val);
+                    }
+                }
+                return .{
+                    .array = buffer,
+                };
             },
             else => {
                 try writer_err.print("Cannot multiply type {s} with type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
@@ -122,6 +155,26 @@ pub fn slash(_: Token, lhs: Value, rhs: Value) !Value {
         },
         else => {
             try writer_err.print("Cannot divide type {s} by type {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+            return error.TypeMismatch;
+        },
+    }
+}
+
+pub fn exp(op: Token, lhs: Value, rhs: Value) !Value {
+    const writer_err = driver.getWriterErr();
+    switch (lhs) {
+        .number => |l| switch (rhs) {
+            .number => return .{
+                .number = std.math.pow(f64, l, rhs.number),
+            },
+            else => {
+                try writer_err.print("Cannot perform exponentiation on types {s} and {s}\n", .{ @tagName(lhs), @tagName(rhs) });
+                return error.TypeMismatch;
+            },
+        },
+        .string, .array => return try star(op, lhs, rhs),
+        else => {
+            try writer_err.print("Cannot perform exponentiation on types {s} and {s}\n", .{ @tagName(lhs), @tagName(rhs) });
             return error.TypeMismatch;
         },
     }

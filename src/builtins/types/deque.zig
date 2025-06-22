@@ -68,7 +68,7 @@ fn dequeConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "deque",
+            ._type = "deque",
         },
     };
 

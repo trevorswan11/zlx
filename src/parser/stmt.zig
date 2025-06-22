@@ -55,9 +55,32 @@ pub fn parseBlockStmt(p: *parser.Parser) !ast.Stmt {
 pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
     const writer_err = driver.getWriterErr();
     var explicit_type: ?ast.Type = null;
-    const start_token = p.advance().kind;
-    const is_constant = start_token == .CONST;
+    const start_token = p.currentToken().kind;
+    var is_constant = false;
+    var discard_flag = true;
+
+    if (start_token == .LET or start_token == .CONST) {
+        _ = p.advance();
+        is_constant = start_token == .CONST;
+        discard_flag = false;
+    }
     const symbol_name = try p.expectError(.IDENTIFIER, error.VarDeclStmt);
+
+    // You can either discard the value by using _ or use an actual variable name. 'let' and 'const' do not work with _
+    if (discard_flag != std.mem.eql(u8, symbol_name.value, "_")) {
+        if (std.mem.eql(u8, symbol_name.value, "_")) {
+            try writer_err.print("Identifier \"{s}\" cannot be declared with with 'let' or 'const' @ Line {d}\n", .{
+                symbol_name.value,
+                p.tokens.items[p.pos].line,
+            });
+        } else {
+            try writer_err.print("Identifier \"{s}\" requires declaration with 'let' or 'const' @ Line {d}\n", .{
+                symbol_name.value,
+                p.tokens.items[p.pos].line,
+            });
+        }
+        return error.InvalidDiscardIdentifier;
+    }
 
     var reserved_map = try token.Token.getReservedMap(p.allocator);
     defer reserved_map.deinit();

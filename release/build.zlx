@@ -100,5 +100,5 @@ for command_num in 0..len(commands) {
 
 for compiled in fs.list(target_path) {
     let compiled_name = path.basename(compiled);
-    let _ = sys.run(format("tar -cvf {}.tar -C {} .", path.join(compressed_path, compiled_name), path.join(target_path, compiled_name)));
+    _ = sys.run(format("tar -cvf {}.tar -C {} .", path.join(compressed_path, compiled_name), path.join(target_path, compiled_name)));
 }

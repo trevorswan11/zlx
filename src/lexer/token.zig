@@ -50,6 +50,7 @@ pub const TokenKind = enum(u32) {
     // Shorthand
     PLUS_PLUS,
     MINUS_MINUS,
+    STAR_STAR,
     PLUS_EQUALS,
     MINUS_EQUALS,
     SLASH_EQUALS,

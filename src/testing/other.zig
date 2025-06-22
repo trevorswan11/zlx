@@ -28,8 +28,8 @@ test "types" {
     _ = try testing.eval.evalStmt(block, &env);
 
     const expected =
-        \\any
-        \\number
+        \\Pair: First = any; Second = number
+        \\Pair: First = typed_val; Second = number
         \\
     ;
 

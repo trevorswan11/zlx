@@ -24,7 +24,7 @@ pub fn variable(v: *ast.VarDeclarationStmt, env: *Environment) !Value {
                 const to_put: Value = .{
                     .typed_val = .{
                         .value = value_ptr,
-                        .type = s.value_type,
+                        ._type = s.value_type,
                     },
                 };
                 if (v.constant) {
@@ -39,7 +39,7 @@ pub fn variable(v: *ast.VarDeclarationStmt, env: *Environment) !Value {
                 const to_put: Value = .{
                     .typed_val = .{
                         .value = value_ptr,
-                        .type = type_str,
+                        ._type = type_str,
                     },
                 };
                 if (v.constant) {

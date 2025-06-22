@@ -65,7 +65,7 @@ fn queueConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "queue",
+            ._type = "queue",
         },
     };
 

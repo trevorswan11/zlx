@@ -82,7 +82,7 @@ fn setConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "set",
+            ._type = "set",
         },
     };
 

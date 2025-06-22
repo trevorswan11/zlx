@@ -68,7 +68,7 @@ fn adjListConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "adjacency_list",
+            ._type = "adjacency_list",
         },
     };
 

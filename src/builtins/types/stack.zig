@@ -65,7 +65,7 @@ fn stackConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "stack",
+            ._type = "stack",
         },
     };
 

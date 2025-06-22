@@ -72,7 +72,7 @@ fn treapConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "treap",
+            ._type = "treap",
         },
     };
 
