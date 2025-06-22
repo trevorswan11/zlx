@@ -329,7 +329,7 @@
                         <li><a href="#std_treap">Treap</a></li>
                         <li><a href="#std_stack">Stack</a></li>
                         <li><a href="#std_queue">Queue</a></li>
-                        <li><a href="#std_list">List</a></li>
+                        <li><a href="#std_list">LinkedList</a></li>
                         <li><a href="#std_deque">Deque</a></li>
                     </ul>
                 </li>
@@ -1439,9 +1439,9 @@ q.enqueue(5);
 let x = q.dequeue();
             </code></pre>
 
-            <h3 id="std_list">List</h3>
+            <h3 id="std_list">LinkedList</h3>
             <p><strong>Summary:</strong> A doubly linked list for bi-directional traversal.</p>
-            <p><strong>Constructor:</strong><br><code>let l = new list();</code></p>
+            <p><strong>Constructor:</strong><br><code>let l = new linked_list();</code></p>
             <p><strong>Methods:</strong></p>
             <ul>
                 <li><code>l.append(value)</code>: Adds to tail.</li>
@@ -1461,7 +1461,7 @@ let x = q.dequeue();
             </ul>
             <p><strong>Example:</strong></p>
             <pre><code>
-let l = new list();
+let l = new linked_list();
 l.append(10);
 let x = l.pop_head();
             </code></pre>

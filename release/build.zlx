@@ -6,11 +6,20 @@ import string;
 
 import array_list;
 
+const version = "0.1.0";
+const target_path = path.join("release", "targets");
+const compressed_path = path.join("release", "compressed");
+
 // Fs prep
-if fs.exists("release/targets") {
-    fs.rm("release/targets");
+if fs.exists(target_path) {
+    fs.rm(target_path);
 }
-fs.mkdir("release/targets");
+fs.mkdir(target_path);
+
+if fs.exists(compressed_path) {
+    fs.rm(compressed_path);
+}
+fs.mkdir(compressed_path);
 
 // Targets
 const win = [
@@ -46,14 +55,11 @@ const operating_sys = [
     "windows",
 ];
 
-const version = "0.1.0";
-const output_path = path.join("release", "targets");
-
 // Command line args
 const root = "zig build";
 const release_mode = "-Doptimize=ReleaseSafe";
 const target_format = "-Dtarget={}-{}";
-const prefix = "-p " + output_path;
+const prefix = "-p " + target_path;
 let commands = new array_list();
 let folder_names = new array_list();
 
@@ -67,7 +73,7 @@ for os in operating_sys {
         opt.push(prefix);
         commands.push(opt.items());
 
-        let release_path = path.join(output_path, format("zlx-{}_{}-{}", version, os, target));
+        let release_path = path.join(target_path, format("zlx-{}_{}-{}", version, os, target));
         fs.copy("README.md", path.join(release_path, "README.md"));
         fs.copy("CHANGELOG.md", path.join(release_path, "CHANGELOG.md"));
         fs.copy("LICENSE", path.join(release_path, "LICENSE"));
@@ -81,20 +87,27 @@ commands = commands.items();
 folder_names = folder_names.items();
 
 for command_num in 0..len(commands) {
+    // Compile the program and move into the correct output file
     let out = sys.run(array.join(commands[command_num], " "));
     if out.stderr != "" {
         println("Process errored with:");
         print(out.stderr);
         break;
     }
-    const bin = path.join(output_path, "bin");
+    const bin = path.join(target_path, "bin");
     let exe_path = "";
     for file in fs.list_all_files(bin) {
         if string.ends_with(file, "zlx") || string.ends_with(file, "zlx.exe") {
             exe_path = file;
         }
     }
-    let release_file = path.join(folder_names[command_num], path.basename(exe_path));
+    let release_path = folder_names[command_num];
+    let release_file = path.join(release_path, path.basename(exe_path));
     fs.copy(exe_path, release_file);
     fs.rm(bin);
+}
+
+for compiled in fs.list(target_path) {
+    let compiled_name = path.basename(compiled);
+    let _ = sys.run(format("tar -cvf {}.tar -C {} .", path.join(compressed_path, compiled_name), path.join(target_path, compiled_name)));
 }

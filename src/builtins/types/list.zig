@@ -47,7 +47,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
     LIST_TYPE = .{
         .std_struct = .{
-            .name = "list",
+            .name = "linked_list",
             .constructor = listConstructor,
             .methods = LIST_METHODS,
         },
@@ -70,7 +70,7 @@ fn listConstructor(
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
-            .type = "list",
+            .type = "linked_list",
         },
     };
 
@@ -251,8 +251,8 @@ test "list_builtin" {
     defer env.deinit();
 
     const source =
-        \\import list;
-        \\let l = new list();
+        \\import linked_list;
+        \\let l = new linked_list();
         \\l.append("a");
         \\l.append("b");
         \\l.append("c");

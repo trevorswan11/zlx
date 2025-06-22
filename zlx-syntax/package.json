@@ -2,7 +2,7 @@
   "name": "zlx-syntax",
   "displayName": "zlx-syntax",
   "description": "Syntax highlighting for the ZLX language",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.101.0"
   },

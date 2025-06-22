@@ -211,7 +211,7 @@ pub const Token = struct {
         try reserved.put("graph", .IDENTIFIER);
         try reserved.put("map", .IDENTIFIER);
         try reserved.put("set", .IDENTIFIER);
-        try reserved.put("list", .IDENTIFIER);
+        try reserved.put("linked_list", .IDENTIFIER);
         try reserved.put("heap", .IDENTIFIER);
         try reserved.put("queue", .IDENTIFIER);
         try reserved.put("stack", .IDENTIFIER);

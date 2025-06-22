@@ -201,7 +201,7 @@ pub const builtin_modules = [_]BuiltinModule{
         .loader = @import("types/hash_set.zig").load,
     },
     .{
-        .name = "list",
+        .name = "linked_list",
         .loader = @import("types/list.zig").load,
     },
     .{

@@ -1,6 +1,6 @@
-import list;
+import linked_list;
         
-let l = new list();
+let l = new linked_list();
 l.append("a");
 l.append("b");
 l.append("c");
