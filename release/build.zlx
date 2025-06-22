@@ -6,7 +6,7 @@ import string;
 
 import array_list;
 
-const version = "0.1.0";
+const version = "0.1.1";
 const target_path = path.join("release", "targets");
 const compressed_path = path.join("release", "compressed");
 
@@ -22,15 +22,9 @@ if fs.exists(compressed_path) {
 fs.mkdir(compressed_path);
 
 // Targets
-const win = [
-    "x86_64",
-    "aarch64",
-];
+const win = ["x86_64", "aarch64"];
 
-const mac = [
-    "x86_64",
-    "aarch64",
-];
+const mac = ["x86_64", "aarch64"];
 
 const lin = [
     "x86_64",
@@ -49,11 +43,7 @@ const targets = {
     linux: lin,
 };
 
-const operating_sys = [
-    "linux",
-    "macos",
-    "windows",
-];
+const operating_sys = ["linux", "macos", "windows"];
 
 // Command line args
 const root = "zig build";
@@ -78,8 +68,9 @@ for os in operating_sys {
         fs.copy("CHANGELOG.md", path.join(release_path, "CHANGELOG.md"));
         fs.copy("LICENSE", path.join(release_path, "LICENSE"));
         fs.mkdir(path.join(release_path, "resources"));
+        fs.mkdir(path.join(release_path, "doc"));
         fs.copy(path.join("resources", "zlx-logo-v2.png"), path.join(release_path, "resources", "zlx-logo-v2.png"));
-        fs.copy(path.join("doc", "zlx-reference.html"), path.join(release_path, "zlx-reference.html"));
+        fs.copy(path.join("doc", "zlx-reference.html"), path.join(release_path, "doc", "zlx-reference.html"));
         folder_names.push(release_path);
     }
 }
