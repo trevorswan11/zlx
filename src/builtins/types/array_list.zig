@@ -189,14 +189,14 @@ fn arrayListClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *
 
 fn arrayListEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getArrayListInstance(this);
-    return Value{
+    return .{
         .boolean = inst.array.empty(),
     };
 }
 
 fn arrayListSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getArrayListInstance(this);
-    return Value{
+    return .{
         .number = @floatFromInt(inst.array.len),
     };
 }

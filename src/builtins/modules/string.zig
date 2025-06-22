@@ -121,7 +121,7 @@ fn containsHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *
         return error.TypeMismatch;
     }
 
-    return Value{
+    return .{
         .boolean = std.mem.indexOf(u8, haystack.string, needle.string) != null,
     };
 }
@@ -180,7 +180,7 @@ fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
         );
     }
 
-    return Value{
+    return .{
         .array = list,
     };
 }

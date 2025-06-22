@@ -48,7 +48,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try TREAP_METHODS.put("items", treapItems);
     try TREAP_METHODS.put("str", treapStr);
 
-    TREAP_TYPE = Value{
+    TREAP_TYPE = .{
         .std_struct = .{
             .name = "treap",
             .constructor = treapConstructor,

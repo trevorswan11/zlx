@@ -52,10 +52,10 @@ fn expectTwoNumbers(args: []const *ast.Expr, env: *Environment) !struct { f64, f
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
-    try map.put("PI", Value{
+    try map.put("PI", .{
         .number = std.math.pi,
     });
-    try map.put("E", Value{
+    try map.put("E", .{
         .number = std.math.e,
     });
 

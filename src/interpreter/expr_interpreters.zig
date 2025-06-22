@@ -446,7 +446,7 @@ pub fn new(n: *ast.NewExpr, env: *Environment) !Value {
     return switch (struct_val) {
         .structure => |cls| blk: {
             const instance_ptr = try env.allocator.create(Value);
-            instance_ptr.* = Value{
+            instance_ptr.* = .{
                 .object = std.StringHashMap(Value).init(env.allocator),
             };
             try instance_ptr.*.object.put("__struct_name", .{
