@@ -36,7 +36,10 @@ While I originally intended to just build the parser, I ended up going much deep
 - You can run the projects tests, which mimic the code found in the `examples` folder, with `zig build test`
 
 ## External Libraries
-This project uses a two external librarys, the main one being [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. The second dependency is my [zig-containers](https://github.com/trevorswan11/zig-containers) library that drives the standard libraries builtin data structures.
+This project uses a two external libraries, the main one being [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. The second dependency is my [zig-containers](https://github.com/trevorswan11/zig-containers) library that drives the standard libraries builtin data structures.
+
+## Syntax Highlighting
+While you can edit the source code for any zlx file in any editor, you can download the [zlx-syntax](https://marketplace.visualstudio.com/items?itemName=kyoshi11.zlx-syntax) extension through vscode to get syntax highlighting! This is a large WIP, but will hopefully grow to show doc strings and support intellisense eventually!
 
 ## Language Documentation
 Documentation for the language, officially called `zlx`, will be written and polished over time. You can find the language reference in the `doc` folder. The "standard library" has a few built-in functions that work out of the box, and also has built-in modules that must be imported to use their defined functions and constants. While documentation is a WIP, you can view their source code in the `builtins` folder in the `src` directory.
