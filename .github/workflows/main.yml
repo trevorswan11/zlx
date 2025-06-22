@@ -19,14 +19,20 @@ permissions:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - uses: goto-bus-stop/setup-zig@v2
+      - name: Set up Zig
+        uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.14.0
 
