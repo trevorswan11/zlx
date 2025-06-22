@@ -188,8 +188,8 @@ test "csv_builtin" {
     const source =
         \\import csv;
         \\
-        \\let text = """a,b,c
-        \\1,2,3""";
+        \\let text = ```a,b,c
+        \\1,2,3```;
         \\let data = csv.parse(text);
         \\println(data);
         \\println(len(data));

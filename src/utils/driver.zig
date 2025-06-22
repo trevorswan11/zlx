@@ -320,6 +320,33 @@ pub fn repl(allocator: std.mem.Allocator) !void {
     }
 }
 
+pub fn unescapeString(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
+    var result = std.ArrayList(u8).init(allocator);
+    var i: usize = 0;
+
+    while (i < input.len) {
+        if (input[i] == '\\') {
+            i += 1;
+            if (i >= input.len) break;
+
+            switch (input[i]) {
+                'n' => try result.append('\n'),
+                'r' => try result.append('\r'),
+                't' => try result.append('\t'),
+                '\\' => try result.append('\\'),
+                '"' => try result.append('"'),
+                '0' => try result.append(0),
+                else => try result.append(input[i]),
+            }
+        } else {
+            try result.append(input[i]);
+        }
+        i += 1;
+    }
+
+    return result.toOwnedSlice();
+}
+
 // === GLOBAL WRITER PIPING ===
 
 pub var global_writer_out: ?std.io.AnyWriter = null;

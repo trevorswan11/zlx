@@ -157,7 +157,7 @@ test "json_builtin" {
     const source =
         \\import json;
         \\
-        \\let obj = json.parse("""{"x": 1, "y": [true, null]}""");
+        \\let obj = json.parse(```{"x": 1, "y": [true, null]}```);
         \\println(obj);
         \\println(obj["x"]);
         \\println(obj["y"][0]);

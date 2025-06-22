@@ -1,4 +1,4 @@
-let s = """This is
+let s = ```This is
 a multiline
-string""";
+string```;
 println(s);

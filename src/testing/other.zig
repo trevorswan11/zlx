@@ -107,9 +107,9 @@ test "multiline_string" {
     testing.driver.setWriters(writer);
 
     const source =
-        \\let s = """This is
+        \\let s = ```This is
         \\a multiline
-        \\string""";
+        \\string```;
         \\println(s);
     ;
 

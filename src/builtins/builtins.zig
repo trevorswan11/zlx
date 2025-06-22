@@ -102,6 +102,14 @@ pub const builtin_fns = [_]BuiltinFn{
         .handler = fns.to_bool,
     },
     .{
+        .name = "to_ascii",
+        .handler = fns.to_ascii,
+    },
+    .{
+        .name = "from_ascii",
+        .handler = fns.from_ascii,
+    },
+    .{
         .name = "format",
         .handler = fns.format,
     },

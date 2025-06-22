@@ -1,9 +1,9 @@
 import csv;
 
-let text = """
+let text = ```
 a,b,c
 1,2,3
-""";
+```;
 let data = csv.parse(text);
 println(data);
 println(len(data));

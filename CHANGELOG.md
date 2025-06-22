@@ -7,3 +7,9 @@ All notably significant or outstanding changes to the zlx language will be docum
     - Fully functional scripting language fit for basic tasks
     - Binaries built for most major platforms... with a zlx script!
 - 16-star milestone on project after initial reddit post, thank you all for the support!
+
+## [0.1.1]
+- Added ascii code support
+- Added support for escape characters in strings
+    - Multiline strings have been changed from triple quotes (""") to triple backticks (```)
+- Updated syntax extension and docs to reflect these changes

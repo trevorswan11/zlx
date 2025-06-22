@@ -312,6 +312,8 @@
                         <li><a href="#to_string">to_string</a></li>
                         <li><a href="#to_number">to_number</a></li>
                         <li><a href="#to_bool">to_bool</a></li>
+                        <li><a href="#to_ascii">to_ascii</a></li>
+                        <li><a href="#from_ascii">from_ascii</a></li>
                         <li><a href="#format">format</a></li>
                     </ul>
                 </li>
@@ -499,13 +501,13 @@ print(detype(x)); >> 42
             <h2>Strings</h2>
             <p>Strings in ZLX are somewhat unique. They can be declared only with double quotes, and multiline strings
                 can
-                be declared using 3 triple quotes. Multiline strings will capture all newline tokens starting from the
+                be declared using 3 backticks. Multiline strings will capture all newline tokens starting from the
                 end
-                of the first triplet of quotes and ending with the start of the ending triplet.</p>
+                of the first triplet of backticks and ending with the start of the ending triplet.</p>
             <pre><code>
-let s = """This is
+let s = ```This is
 a multiline
-string""";
+string```;
 println(s);
             </code></pre>
         </section>
@@ -1188,6 +1190,17 @@ println(y);                     // 4
                 The same is true for typed values. Nil values are false. As mentioned earlier, all other values are
                 true.
             </p>
+
+            <h3 id="to_ascii">to_ascii</h3>
+            <p>The <code>to_ascii</code> function takes a single-character string and returns its ASCII code as a
+                number. The input must be exactly one character long and within the ASCII range (0-127). For example,
+                <code>to_ascii("A")</code> returns <code>65</code>.</p>
+
+            <h3 id="from_ascii">from_ascii</h3>
+            <p>The <code>from_ascii</code> function takes a number representing an ASCII code (0-127) and returns the
+                corresponding character as a string. For example, <code>from_ascii(65)</code> returns <code>"A"</code>.
+            </p>
+
             <h3 id="format">format</h3>
             <p>The <code>format</code> function takes in a string template followed by arguments to bake into the
                 template. The function will not crash if insufficient arguments are given. Arguments in the string are

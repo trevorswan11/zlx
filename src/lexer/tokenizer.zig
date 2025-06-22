@@ -57,11 +57,11 @@ pub const Lexer = struct {
             .handler = SimpleHandlerWrapper.wrap(commentHandler),
         });
         try patterns.append(.{
-            .regex = try Regex.compile(allocator, "\"\"\"[\\s\\S]*?\"\"\""),
+            .regex = try Regex.compile(allocator, "```[\\s\\S]*?```"),
             .handler = SimpleHandlerWrapper.wrap(multilineStringHandler),
         });
         try patterns.append(.{
-            .regex = try Regex.compile(allocator, "\"[^\"]*\""),
+            .regex = try Regex.compile(allocator, "\"(\\\\.|[^\"])*\""),
             .handler = SimpleHandlerWrapper.wrap(stringHandler),
         });
         try patterns.append(.{
@@ -337,14 +337,15 @@ fn stringHandler(lex: *Lexer, regex: *Regex) anyerror!void {
         defer caps.deinit();
 
         const span = caps.boundsAt(0).?;
-        const matched = text[(span.lower + 1)..(span.upper - 1)];
+        const raw = text[(span.lower + 1)..(span.upper - 1)];
+        const unescaped = try driver.unescapeString(lex.allocator, raw);
 
         const start = lex.pos + span.lower;
         const end = lex.pos + span.upper;
 
-        const tok = Token.init(lex.allocator, .STRING, matched, lex.line, start, end);
+        const tok = Token.init(lex.allocator, .STRING, unescaped, lex.line, start, end);
         try lex.push(tok);
-        lex.advanceN(matched.len + 2);
+        lex.advanceN(raw.len + 2);
     }
 }
 
@@ -355,12 +356,13 @@ fn multilineStringHandler(lex: *Lexer, regex: *Regex) anyerror!void {
         defer caps.deinit();
 
         const span = caps.boundsAt(0).?;
-        const matched = text[(span.lower + 3)..(span.upper - 3)];
+        const raw = text[(span.lower + 3)..(span.upper - 3)];
+        const unescaped = try driver.unescapeString(lex.allocator, raw);
 
         const start = lex.pos + span.lower;
         const end = lex.pos + span.upper;
 
-        const tok = Token.init(lex.allocator, .STRING, matched, lex.line, start, end);
+        const tok = Token.init(lex.allocator, .STRING, unescaped, lex.line, start, end);
         try lex.push(tok);
         lex.advanceN(span.upper);
         lex.line += countNewlines(text[span.lower..span.upper]);

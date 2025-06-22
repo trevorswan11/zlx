@@ -262,6 +262,54 @@ pub fn to_bool(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     };
 }
 
+pub fn to_ascii(
+    _: std.mem.Allocator,
+    args: []const *ast.Expr,
+    env: *interpreter.Environment,
+) !Value {
+    const writer_err = driver.getWriterErr();
+    const val = try eval.evalExpr(args[0], env);
+    if (val != .string or val.string.len != 1) {
+        try writer_err.print("to_ascii can only operate on strings of length one, got a(n) {s}\n", .{@tagName(val)});
+        return error.TypeMismatch;
+    }
+
+    const code = val.string[0];
+    if (!std.ascii.isAscii(code)) {
+        try writer_err.print("Character {c} is not a valid ascii character\n", .{code});
+        return error.OutOfRange;
+    }
+
+    return .{
+        .number = @floatFromInt(code),
+    };
+}
+
+pub fn from_ascii(
+    allocator: std.mem.Allocator,
+    args: []const *ast.Expr,
+    env: *interpreter.Environment,
+) !Value {
+    const writer_err = driver.getWriterErr();
+    const val = try eval.evalExpr(args[0], env);
+    if (val != .number) {
+        try writer_err.print("from_ascii can only operate on numbers, got a(n) {s}\n", .{@tagName(val)});
+        return error.TypeMismatch;
+    }
+
+    const code: u8 = @intFromFloat(val.number);
+    if (!std.ascii.isAscii(code)) {
+        try writer_err.print("Value {d} is not a valid ascii code\n", .{code});
+        return error.OutOfRange;
+    }
+
+    const str = try allocator.alloc(u8, 1);
+    str[0] = code;
+    return .{
+        .string = str,
+    };
+}
+
 pub fn coerceBool(val: Value, env: ?*Environment) bool {
     return switch (val) {
         .boolean => val.boolean,
