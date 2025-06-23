@@ -23,3 +23,5 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Added star star (**) operator that behaves like the same operator in python. It can be used for exponentiation
     - This is a binary operator
 - Compound assignment now works on more types with more consistent behavior
+- Modularized reused helpers for builtin modules
+- Fixed inconsistent casing in some builtin functions

@@ -8,8 +8,6 @@ const Token = token.Token;
 const TokenKind = token.TokenKind;
 const Regex = regxp.Regex;
 
-pub var reserved_map: std.StringHashMap(TokenKind) = undefined;
-
 pub const RegexHandler = struct {
     ctx: *const anyopaque,
     func: *const fn (*const anyopaque, *Lexer, *Regex) anyerror!void,
@@ -31,7 +29,7 @@ pub const Lexer = struct {
     allocator: std.mem.Allocator,
 
     pub fn init(allocator: std.mem.Allocator, source: []const u8) !Self {
-        reserved_map = try Token.getReservedMap(allocator);
+        _ = try Token.getReservedMap(allocator);
         return Self{
             .pos = 0,
             .line = 1,
@@ -403,6 +401,8 @@ fn symbolHandler(lex: *Lexer, regex: *Regex) anyerror!void {
         const start = lex.pos + span.lower;
         const end = lex.pos + span.upper;
 
+        const reserved_map = try Token.getReservedMap(lex.allocator);
+        std.debug.assert(@intFromPtr(reserved_map) % @alignOf(std.StringHashMap(TokenKind)) == 0);
         const kind: TokenKind = reserved_map.get(word) orelse .IDENTIFIER;
         const tok = Token.init(lex.allocator, kind, word, lex.line, start, end);
         try lex.push(tok);

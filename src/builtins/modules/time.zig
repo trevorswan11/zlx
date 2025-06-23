@@ -12,23 +12,8 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
+const expectNumberArgs = builtins.expectNumberArgs;
 const loadConstants = time_constants.loadConstants;
-
-fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("time module: expected 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .number) {
-        try writer_err.print("time module: expected a number but got: {s}\n", .{try val.toString(env.allocator)});
-        return error.TypeMismatch;
-    }
-
-    return val.number;
-}
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -36,7 +21,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "now", nowHandler);
     try pack(&map, "millis", millisHandler);
     try pack(&map, "sleep", sleepHandler);
-    try pack(&map, "sleepMs", sleepMsHandler);
+    try pack(&map, "sleep_ms", sleepMsHandler);
     try pack(&map, "timestamp", timestampHandler);
 
     // Time constants!
@@ -75,7 +60,7 @@ fn millisHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment)
 }
 
 fn sleepHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const seconds = try expectNumberArg(args, env);
+    const seconds = (try expectNumberArgs(args, env, 1, "time", "sleep"))[0];
     const nanos: u64 = @intFromFloat(seconds * 1_000_000_000.0);
 
     std.time.sleep(nanos);
@@ -83,7 +68,7 @@ fn sleepHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
 }
 
 fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const ms = try expectNumberArg(args, env);
+    const ms = (try expectNumberArgs(args, env, 1, "time", "sleep_ms"))[0];
     const nanos: u64 = @intFromFloat(ms * 1_000_000.0);
 
     std.time.sleep(nanos);

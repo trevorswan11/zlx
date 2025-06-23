@@ -38,10 +38,68 @@ pub fn expectStringArgs(
     for (args, 0..) |arg, idx| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
-            try writer_err.print("{s} module: {s} expected a string, got a {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
+            try writer_err.print("{s} module: {s} expected a string, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
             return error.TypeMismatch;
         }
         try result.append(val.string);
+    }
+
+    return try result.toOwnedSlice();
+}
+
+pub fn expectArrayArgs(
+    args: []const *ast.Expr,
+    env: *Environment,
+    count: usize,
+    module_name: []const u8,
+    func_name: []const u8,
+) ![]const std.ArrayList(Value) {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != count) {
+        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
+        return error.ArgumentCountMismatch;
+    }
+
+    var result = std.ArrayList(std.ArrayList(Value)).init(env.allocator);
+    defer result.deinit();
+
+    for (args, 0..) |arg, idx| {
+        const val = try eval.evalExpr(arg, env);
+        if (val != .array) {
+            try writer_err.print("{s} module: {s} expected an array, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
+            return error.TypeMismatch;
+        }
+        try result.append(val.array);
+    }
+
+    return try result.toOwnedSlice();
+}
+
+pub fn expectNumberArgs(
+    args: []const *ast.Expr,
+    env: *Environment,
+    count: usize,
+    module_name: []const u8,
+    func_name: []const u8,
+) ![]const f64 {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != count) {
+        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
+        return error.ArgumentCountMismatch;
+    }
+
+    var result = std.ArrayList(f64).init(env.allocator);
+    defer result.deinit();
+
+    for (args, 0..) |arg, idx| {
+        const val = try eval.evalExpr(arg, env);
+        if (val != .number) {
+            try writer_err.print("{s} module: {s} expected an array, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
+            return error.TypeMismatch;
+        }
+        try result.append(val.number);
     }
 
     return try result.toOwnedSlice();

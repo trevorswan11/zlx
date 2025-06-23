@@ -127,6 +127,9 @@ pub fn main() !void {
 }
 
 test {
+    // Initialization for reserved identifiers 
+    _ = try @import("lexer/token.zig").Token.getReservedMap(std.heap.page_allocator);
+
     // Builtin Modules - Tests located with source code
     _ = @import("builtins/fns.zig");
     _ = @import("builtins/modules/array.zig");

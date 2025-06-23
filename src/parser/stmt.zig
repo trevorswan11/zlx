@@ -83,7 +83,6 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
     }
 
     var reserved_map = try token.Token.getReservedMap(p.allocator);
-    defer reserved_map.deinit();
     if (reserved_map.get(symbol_name.value) != null) {
         try writer_err.print("Reserved Identifier \"{s}\" used for variable declaration @ Line {d}\n", .{
             symbol_name.value,
@@ -162,7 +161,6 @@ pub fn parseFnParamsAndBody(p: *parser.Parser) !FunctionInfo {
         const param_name = expected.value;
 
         var reserved_map = try token.Token.getReservedMap(p.allocator);
-        defer reserved_map.deinit();
         if (reserved_map.get(param_name) != null) {
             try writer_err.print("Reserved Identifier \"{s}\" used for function parameter @ Line {d}\n", .{
                 param_name,
@@ -273,8 +271,6 @@ pub fn parseImportStmt(p: *parser.Parser) !ast.Stmt {
     const import_name = import_type.value;
 
     var reserved_map = try token.Token.getReservedMap(p.allocator);
-    defer reserved_map.deinit();
-
     const builtin_mods = @import("../builtins/builtins.zig").builtin_modules;
     var is_builtin = false;
     for (builtin_mods) |mod| {
@@ -362,7 +358,6 @@ pub fn parseStructDeclStmt(p: *parser.Parser) !ast.Stmt {
     const writer_err = driver.getWriterErr();
     const struct_name = (try p.expect(.IDENTIFIER)).value;
     var reserved_map = try token.Token.getReservedMap(p.allocator);
-    defer reserved_map.deinit();
     if (reserved_map.get(struct_name) != null) {
         try writer_err.print("Reserved Identifier \"{s}\" used for struct name @ Line {d}\n", .{
             struct_name,

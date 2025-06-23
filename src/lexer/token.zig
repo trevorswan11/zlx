@@ -87,6 +87,8 @@ pub const TokenKind = enum(u32) {
     ARROW,
 };
 
+var reserved_identifiers: ?*std.StringHashMap(TokenKind) = null;
+
 // Token
 pub const Token = struct {
     const Self = @This();
@@ -154,8 +156,13 @@ pub const Token = struct {
         return false;
     }
 
-    pub fn getReservedMap(allocator: std.mem.Allocator) !std.StringHashMap(TokenKind) {
-        var reserved = std.StringHashMap(TokenKind).init(allocator);
+    pub fn getReservedMap(allocator: std.mem.Allocator) !*std.StringHashMap(TokenKind) {
+        if (reserved_identifiers) |reserved| {
+            return reserved;
+        }
+
+        const reserved = try allocator.create(std.StringHashMap(TokenKind));
+        reserved.* = std.StringHashMap(TokenKind).init(allocator);
 
         // Keywords
         try reserved.put("let", .LET);
@@ -218,6 +225,7 @@ pub const Token = struct {
         try reserved.put("stack", .IDENTIFIER);
         try reserved.put("treap", .IDENTIFIER);
 
+        reserved_identifiers = reserved;
         return reserved;
     }
 

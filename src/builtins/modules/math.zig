@@ -11,44 +11,7 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
-
-fn expectNumberArg(args: []const *ast.Expr, env: *Environment) !f64 {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("math module: expected 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .number) {
-        try writer_err.print("math module: expected a number, got a(n) {s}\n", .{@tagName(val)});
-        return error.TypeMismatch;
-    }
-
-    return val.number;
-}
-
-fn expectTwoNumbers(args: []const *ast.Expr, env: *Environment) !struct { f64, f64 } {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("math module: expected 2 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const lhs = try eval.evalExpr(args[0], env);
-    const rhs = try eval.evalExpr(args[1], env);
-    if (lhs != .number or rhs != .number) {
-        try writer_err.print("math module: expected both arguments to be numbers\n", .{});
-        try writer_err.print("  Left: {s}\n", .{try lhs.toString(env.allocator)});
-        try writer_err.print("  Right: {s}\n", .{try rhs.toString(env.allocator)});
-        return error.TypeMismatch;
-    }
-
-    return .{
-        lhs.number,
-        rhs.number,
-    };
-}
+const expectNumberArgs = builtins.expectNumberArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -87,7 +50,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn sqrtHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const arg = try expectNumberArg(args, env);
+    const arg = (try expectNumberArgs(args, env, 1, "math", "sqrt"))[0];
     if (arg < 0) {
         return .{
             .string = "NaN",
@@ -100,42 +63,42 @@ fn sqrtHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
 
 fn absHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = @abs(try expectNumberArg(args, env)),
+        .number = @abs((try expectNumberArgs(args, env, 1, "math", "abs"))[0]),
     };
 }
 
 fn sinHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.sin(try expectNumberArg(args, env)),
+        .number = std.math.sin((try expectNumberArgs(args, env, 1, "math", "sin"))[0]),
     };
 }
 
 fn cosHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.cos(try expectNumberArg(args, env)),
+        .number = std.math.cos((try expectNumberArgs(args, env, 1, "math", "cos"))[0]),
     };
 }
 
 fn tanHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.tan(try expectNumberArg(args, env)),
+        .number = std.math.tan((try expectNumberArgs(args, env, 1, "math", "tan"))[0]),
     };
 }
 
 fn logHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.log(f64, std.math.e, try expectNumberArg(args, env)),
+        .number = std.math.log(f64, std.math.e, (try expectNumberArgs(args, env, 1, "math", "log"))[0]),
     };
 }
 
 fn expHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.exp(try expectNumberArg(args, env)),
+        .number = std.math.exp((try expectNumberArgs(args, env, 1, "math", "exp"))[0]),
     };
 }
 
 fn powHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const vals = try expectTwoNumbers(args, env);
+    const vals = try expectNumberArgs(args, env, 2, "math", "pow");
     return .{
         .number = std.math.pow(f64, vals[0], vals[1]),
     };
@@ -143,24 +106,24 @@ fn powHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
 
 fn asinHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.asin(try expectNumberArg(args, env)),
+        .number = std.math.asin((try expectNumberArgs(args, env, 1, "math", "asin"))[0]),
     };
 }
 
 fn acosHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.acos(try expectNumberArg(args, env)),
+        .number = std.math.acos((try expectNumberArgs(args, env, 1, "math", "acos"))[0]),
     };
 }
 
 fn atanHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.atan(try expectNumberArg(args, env)),
+        .number = std.math.atan((try expectNumberArgs(args, env, 1, "math", "atan"))[0]),
     };
 }
 
 fn atan2Handler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const vals = try expectTwoNumbers(args, env);
+    const vals = try expectNumberArgs(args, env, 2, "math", "atan2");
     return .{
         .number = std.math.atan2(vals[0], vals[1]),
     };
@@ -168,37 +131,37 @@ fn atan2Handler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
 
 fn log10Handler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.log10(try expectNumberArg(args, env)),
+        .number = std.math.log10((try expectNumberArgs(args, env, 1, "math", "log10"))[0]),
     };
 }
 
 fn floorHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.floor(try expectNumberArg(args, env)),
+        .number = std.math.floor((try expectNumberArgs(args, env, 1, "math", "floor"))[0]),
     };
 }
 
 fn ceilHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.ceil(try expectNumberArg(args, env)),
+        .number = std.math.ceil((try expectNumberArgs(args, env, 1, "math", "ceil"))[0]),
     };
 }
 
 fn roundHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.round(try expectNumberArg(args, env)),
+        .number = std.math.round((try expectNumberArgs(args, env, 1, "math", "round"))[0]),
     };
 }
 
 fn minHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const vals = try expectTwoNumbers(args, env);
+    const vals = try expectNumberArgs(args, env, 2, "math", "min");
     return .{
         .number = @min(vals[0], vals[1]),
     };
 }
 
 fn maxHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const vals = try expectTwoNumbers(args, env);
+    const vals = try expectNumberArgs(args, env, 2, "math", "max");
     return .{
         .number = @max(vals[0], vals[1]),
     };

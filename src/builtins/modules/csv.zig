@@ -12,22 +12,7 @@ const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
 const expectStringArgs = builtins.expectStringArgs;
-
-fn expectArrayArg(args: []const *ast.Expr, env: *Environment) !std.ArrayList(Value) {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("csv module: expected 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .array) {
-        try writer_err.print("csv module: expected an array, got a(n) {s}\n", .{@tagName(val)});
-        return error.TypeMismatch;
-    }
-
-    return val.array;
-}
+const expectArrayArgs = builtins.expectArrayArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -90,7 +75,7 @@ fn parseHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
 }
 
 fn stringifyHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const input = try expectArrayArg(args, env);
+    const input = (try expectArrayArgs(args, env, 1, "csv", "stringify"))[0];
     return .{
         .string = try stringifyCSV(allocator, .{ .array = input }),
     };
