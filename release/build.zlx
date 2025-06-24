@@ -88,7 +88,7 @@ for command_num in 0..len(commands) {
         break;
     }
     let end_compile = time.millis();
-    println(format("Command {} took {} ms", command_num, end_compile - start_compile));
+    println(format("Compilation {} took {} ms", command_num + 1, end_compile - start_compile));
 
     const bin = path.join(target_path, "bin");
     let exe_path = "";
@@ -102,11 +102,12 @@ for command_num in 0..len(commands) {
     fs.copy(exe_path, release_file);
     fs.rm(bin);
 }
+println();
 
 for compiled, idx in fs.list(target_path) {
     let compiled_name = path.basename(compiled);
     let start_compression = time.millis();
     _ = sys.run(format("tar -cvf {}.tar -C {} .", path.join(compressed_path, compiled_name), path.join(target_path, compiled_name)));
     let end_compression = time.millis();
-    println(format("Compression {} took {} ms", idx, end_compression - start_compression));
+    println(format("Compression {} took {} ms", idx + 1, end_compression - start_compression));
 }
