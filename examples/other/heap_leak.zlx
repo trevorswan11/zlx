@@ -1,9 +1,0 @@
-import time;
-import csv;
-
-for i in 0..10 {
-    let start = time.millis();
-    let contents = csv.read("example.csv");
-    let end = time.millis();
-    println(format("Zig: csv reading took {} ms", end - start));
-}
