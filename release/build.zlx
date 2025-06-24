@@ -3,10 +3,11 @@ import fs;
 import path;
 import array;
 import string;
+import time;
 
 import array_list;
 
-const version = "0.1.1";
+const version = "0.2.0";
 const target_path = path.join("release", "targets");
 const compressed_path = path.join("release", "compressed");
 
@@ -79,12 +80,16 @@ folder_names = folder_names.items();
 
 for command_num in 0..len(commands) {
     // Compile the program and move into the correct output file
+    let start_compile = time.millis();
     let out = sys.run(array.join(commands[command_num], " "));
     if out.stderr != "" {
         println("Process errored with:");
         print(out.stderr);
         break;
     }
+    let end_compile = time.millis();
+    println(format("Command {} took {} ms", command_num, end_compile - start_compile));
+
     const bin = path.join(target_path, "bin");
     let exe_path = "";
     for file in fs.list_all_files(bin) {
@@ -98,7 +103,10 @@ for command_num in 0..len(commands) {
     fs.rm(bin);
 }
 
-for compiled in fs.list(target_path) {
+for compiled, idx in fs.list(target_path) {
     let compiled_name = path.basename(compiled);
+    let start_compression = time.millis();
     _ = sys.run(format("tar -cvf {}.tar -C {} .", path.join(compressed_path, compiled_name), path.join(target_path, compiled_name)));
+    let end_compression = time.millis();
+    println(format("Compression {} took {} ms", idx, end_compression - start_compression));
 }
