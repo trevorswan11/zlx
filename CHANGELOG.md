@@ -33,3 +33,6 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Added stat module!
     - Full suite of statistical functions with some working on numbers and others on arrays
     - Linear regression analysis works, but more complex analysis functions may be implemented in the future 
+
+## [0.2.1]
+- Fixed corrupt memory bug in the graph module preventing edge checking

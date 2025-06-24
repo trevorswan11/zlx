@@ -122,7 +122,7 @@ fn graphHasEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env
     const inst = try getGraphInstance(this);
 
     if (inst.graph.getNeighbors(from)) |list| {
-        for (list.arr) |v| {
+        for (list.arr[0..list.len]) |v| {
             if (v.eql(to)) return .{
                 .boolean = true,
             };

@@ -143,10 +143,8 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try nud(.OPEN_BRACKET, binding.PRIMARY, exprs.parseArrayLiteralExpr);
     try nud_lu.put(.MATCH, exprs.parseMatchExpr);
 
-    // Object Literal
+    // Object Literal, Member / Call
     _ = try nud_lu.put(.OPEN_CURLY, exprs.parseObjectLiteral);
-
-    // Member / Call
     try led(.DOT, binding.MEMBER, exprs.parseMemberExpr);
     try led(.OPEN_BRACKET, binding.MEMBER, exprs.parseMemberExpr);
     try led(.OPEN_PAREN, binding.CALL, exprs.parseCallExpr);
@@ -154,28 +152,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     // Grouping / Functions
     try nud(.OPEN_PAREN, binding.DEFAULT_BP, exprs.parseGroupingExpr);
     try nud(.FN, binding.DEFAULT_BP, exprs.parseFnExpr);
-    try nud(.NEW, binding.DEFAULT_BP, struct {
-        pub fn afn(p: *Parser) anyerror!ast.Expr {
-            _ = p.advance();
-            const inst = try exprs.parseExpr(p, binding.DEFAULT_BP);
-            const call_expr_ptr = try p.allocator.create(ast.CallExpr);
-            switch (inst) {
-                .call => |call_expr| {
-                    call_expr_ptr.* = call_expr;
-                    return ast.Expr{
-                        .new_expr = .{
-                            .instantiation = call_expr_ptr,
-                        },
-                    };
-                },
-                else => {
-                    const writer_err = driver.getWriterErr();
-                    try writer_err.print("Expected call expression with new keyword but found expression: {s}\n", .{@tagName(inst)});
-                    return error.ExpectedCallExpr;
-                },
-            }
-        }
-    }.afn);
+    try nud(.NEW, binding.DEFAULT_BP, exprs.parseNewExpr);
 
     // Booleans
     try nud(.TRUE, binding.PRIMARY, exprs.parseBooleanLiteral);

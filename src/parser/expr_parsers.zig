@@ -250,6 +250,27 @@ pub fn parseFnExpr(p: *parser.Parser) !ast.Expr {
     };
 }
 
+pub fn parseNewExpr(p: *parser.Parser) !ast.Expr {
+    _ = p.advance();
+    const inst = try parseExpr(p, binding.DEFAULT_BP);
+    const call_expr_ptr = try p.allocator.create(ast.CallExpr);
+    const writer_err = driver.getWriterErr();
+    switch (inst) {
+        .call => |call_expr| {
+            call_expr_ptr.* = call_expr;
+            return .{
+                .new_expr = .{
+                    .instantiation = call_expr_ptr,
+                },
+            };
+        },
+        else => {
+            try writer_err.print("Expected call expression with new keyword but found expression: {s}\n", .{@tagName(inst)});
+            return error.ExpectedCallExpr;
+        },
+    }
+}
+
 pub fn parseObjectLiteral(p: *parser.Parser) !ast.Expr {
     _ = p.advance();
     var entries = std.ArrayList(*ast.ObjectEntry).init(p.allocator);
