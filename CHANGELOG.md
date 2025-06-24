@@ -36,3 +36,7 @@ All notably significant or outstanding changes to the zlx language will be docum
 
 ## [0.2.1]
 - Fixed corrupt memory bug in the graph module preventing edge checking
+
+## [0.2.2]
+- Removed byte limit on file reading, now adapts to the size of the file
+- Created deinit methods for values that are called on delete, but environment memory leaks during function calls

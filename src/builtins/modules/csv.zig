@@ -31,8 +31,15 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 1, "csv", "read");
     const filepath = parts[0];
-    const contents = try std.fs.cwd().readFileAlloc(allocator, filepath, 1 << 20);
-    defer allocator.free(contents);
+    
+    const file = try std.fs.cwd().openFile(filepath, .{});
+    defer file.close();
+
+    const stat = try file.stat();
+    const contents = try allocator.alloc(u8, @intCast(stat.size));
+    errdefer allocator.free(contents);
+
+    _ = try file.readAll(contents);
 
     return try parseCSV(allocator, contents);
 }

@@ -117,6 +117,7 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
 
     for (iterable.array.items, 0..) |item, i| {
         var child_env = Environment.init(env.allocator, env);
+        defer child_env.deinit();
         try child_env.define(f.value, item);
         if (f.index) {
             try child_env.define(f.index_name.?, .{
@@ -151,6 +152,7 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
         }
 
         var child_env = Environment.init(env.allocator, env);
+        defer child_env.deinit();
         for (w.body.items) |stmt| {
             const val = try evalStmt(stmt, &child_env);
             switch (val) {

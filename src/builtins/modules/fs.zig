@@ -42,7 +42,11 @@ fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
-    const contents = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+    const stat = try file.stat();
+    const contents = try allocator.alloc(u8, @intCast(stat.size));
+    errdefer allocator.free(contents);
+
+    _ = try file.readAll(contents);
     return .{
         .string = contents,
     };
@@ -205,7 +209,8 @@ fn readLinesHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: 
     var buf = reader.reader();
     var lines = std.ArrayList(Value).init(allocator);
 
-    while (try buf.readUntilDelimiterOrEofAlloc(allocator, '\n', 4096)) |line| {
+    const stat = try file.stat();
+    while (try buf.readUntilDelimiterOrEofAlloc(allocator, '\n', @intCast(stat.size))) |line| {
         try lines.append(
             .{
                 .string = line,
