@@ -32,7 +32,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn nowHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
+fn nowHandler(args: []const *ast.Expr, _: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 0) {
         try writer_err.print("time.now() expects 0 arguments but got {d}\n", .{args.len});
@@ -45,7 +45,7 @@ fn nowHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) an
     };
 }
 
-fn millisHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
+fn millisHandler(args: []const *ast.Expr, _: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 0) {
         try writer_err.print("time.millis() expects 0 arguments but got {d}\n", .{args.len});
@@ -59,7 +59,7 @@ fn millisHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment)
     };
 }
 
-fn sleepHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn sleepHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const seconds = (try expectNumberArgs(args, env, 1, "time", "sleep"))[0];
     const nanos: u64 = @intFromFloat(seconds * 1_000_000_000.0);
 
@@ -67,7 +67,7 @@ fn sleepHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
     return .nil;
 }
 
-fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn sleepMsHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const ms = (try expectNumberArgs(args, env, 1, "time", "sleep_ms"))[0];
     const nanos: u64 = @intFromFloat(ms * 1_000_000.0);
 
@@ -75,7 +75,7 @@ fn sleepMsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environme
     return .nil;
 }
 
-fn timestampHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) anyerror!Value {
+fn timestampHandler(args: []const *ast.Expr, _: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 0) {
         try writer_err.print("time.timestamp() expects 0 arguments but got {d}\n", .{args.len});

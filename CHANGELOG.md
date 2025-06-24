@@ -37,6 +37,9 @@ All notably significant or outstanding changes to the zlx language will be docum
 ## [0.2.1]
 - Fixed corrupt memory bug in the graph module preventing edge checking
 
-## [0.2.2]
+## [0.3.0]
 - Removed byte limit on file reading, now adapts to the size of the file
-- Created deinit methods for values that are called on delete, but environment memory leaks during function calls
+- Restructured function pointers for builtin modules to remove redundancy in function params
+- Added linear algebra module!
+    - Matrix multiplication, normalization, determination, and more
+    - Vector operations and 2D/3D space behavior

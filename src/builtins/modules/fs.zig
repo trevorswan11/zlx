@@ -37,14 +37,14 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn readHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "read"))[0];
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
     const stat = try file.stat();
-    const contents = try allocator.alloc(u8, @intCast(stat.size));
-    errdefer allocator.free(contents);
+    const contents = try env.allocator.alloc(u8, @intCast(stat.size));
+    errdefer env.allocator.free(contents);
 
     _ = try file.readAll(contents);
     return .{
@@ -52,7 +52,7 @@ fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     };
 }
 
-pub fn writeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+pub fn writeHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 2, "fs", "write");
     const full_path = parts[0];
 
@@ -66,7 +66,7 @@ pub fn writeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environ
     return .nil;
 }
 
-pub fn existsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+pub fn existsHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "exists"))[0];
     std.fs.cwd().access(path, .{}) catch {
         return .{
@@ -79,14 +79,14 @@ pub fn existsHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     };
 }
 
-fn removeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn removeHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "remove"))[0];
     try std.fs.cwd().deleteFile(path);
 
     return .nil;
 }
 
-fn listHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn listHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "list"))[0];
     var dir = try std.fs.cwd().openDir(
         path,
@@ -97,7 +97,7 @@ fn listHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     defer dir.close();
 
     var it = dir.iterate();
-    var array = std.ArrayList(Value).init(allocator);
+    var array = std.ArrayList(Value).init(env.allocator);
 
     while (try it.next()) |entry| {
         var name = entry.name;
@@ -110,9 +110,9 @@ fn listHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
         };
 
         if (is_dir) {
-            name = try std.fmt.allocPrint(allocator, "{s}/", .{name});
+            name = try std.fs.path.join(env.allocator, &[_][]const u8{name});
         } else {
-            name = try allocator.dupe(u8, name);
+            name = try env.allocator.dupe(u8, name);
         }
 
         try array.append(
@@ -127,25 +127,25 @@ fn listHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     };
 }
 
-fn mkdirHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn mkdirHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "mkdir"))[0];
     try std.fs.cwd().makeDir(path);
     return .nil;
 }
 
-fn rmdirHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn rmdirHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "rmdir"))[0];
     try std.fs.cwd().deleteDir(path);
     return .nil;
 }
 
-fn rmHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn rmHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "rm"))[0];
     try std.fs.cwd().deleteTree(path);
     return .nil;
 }
 
-fn copyHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn copyHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
     const parts = try expectStringArgs(args, env, 2, "fs", "copy");
     const src_path = parts[0];
@@ -181,13 +181,13 @@ fn copyHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     return .nil;
 }
 
-fn renameHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn renameHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 2, "fs", "rename");
     try std.fs.cwd().rename(parts[0], parts[1]);
     return .nil;
 }
 
-fn isDirHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn isDirHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "is_dir"))[0];
     var dir = std.fs.cwd().openDir(path, .{}) catch {
         return .{
@@ -200,17 +200,17 @@ fn isDirHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
     };
 }
 
-fn readLinesHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn readLinesHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "read_lines"))[0];
     const file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
 
     var reader = std.io.bufferedReader(file.reader());
     var buf = reader.reader();
-    var lines = std.ArrayList(Value).init(allocator);
+    var lines = std.ArrayList(Value).init(env.allocator);
 
     const stat = try file.stat();
-    while (try buf.readUntilDelimiterOrEofAlloc(allocator, '\n', @intCast(stat.size))) |line| {
+    while (try buf.readUntilDelimiterOrEofAlloc(env.allocator, '\n', @intCast(stat.size))) |line| {
         try lines.append(
             .{
                 .string = line,
@@ -223,7 +223,7 @@ fn readLinesHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: 
     };
 }
 
-fn touchHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn touchHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "touch"))[0];
     const file = try std.fs.cwd().createFile(
         path,
@@ -235,7 +235,7 @@ fn touchHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment
     return .nil;
 }
 
-fn appendHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn appendHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 2, "fs", "append");
     const file = try std.fs.cwd().openFile(
         parts[0],
@@ -248,12 +248,12 @@ fn appendHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     return .nil;
 }
 
-fn listAllFilesHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn listAllFilesHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const start_path = (try expectStringArgs(args, env, 1, "fs", "list_all_files"))[0];
-    var result = std.ArrayList(Value).init(allocator);
+    var result = std.ArrayList(Value).init(env.allocator);
 
     const cwd = std.fs.cwd();
-    try recurseDir(cwd, start_path, allocator, &result);
+    try recurseDir(cwd, start_path, env.allocator, &result);
 
     return .{
         .array = result,

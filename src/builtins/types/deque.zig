@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const List = @import("dsa").List(Value);
 
@@ -53,18 +53,14 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return DEQUE_TYPE;
 }
 
-fn dequeConstructor(
-    allocator: std.mem.Allocator,
-    _: []const *ast.Expr,
-    _: *Environment,
-) !Value {
-    const list = try List.init(allocator);
-    const wrapped = try allocator.create(DequeInstance);
+fn dequeConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+    const list = try List.init(env.allocator);
+    const wrapped = try env.allocator.create(DequeInstance);
     wrapped.* = .{
         .list = list,
     };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -72,10 +68,10 @@ fn dequeConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = DEQUE_TYPE;
 
     return .{
@@ -86,7 +82,7 @@ fn dequeConstructor(
     };
 }
 
-fn dequePushHead(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn dequePushHead(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("deque.push_head(value) expects 1 argument but got {d}\n", .{args.len});
@@ -98,7 +94,7 @@ fn dequePushHead(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, en
     return .nil;
 }
 
-fn dequePushTail(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn dequePushTail(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("deque.push_tail(value) expects 1 argument but got {d}\n", .{args.len});
@@ -110,49 +106,49 @@ fn dequePushTail(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, en
     return .nil;
 }
 
-fn dequePopHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn dequePopHead(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const deque = try getDequeInstance(this);
     return deque.list.popHead() orelse .nil;
 }
 
-fn dequePopTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn dequePopTail(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getDequeInstance(this);
     return inst.list.popTail() orelse .nil;
 }
 
-fn dequePeekHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn dequePeekHead(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getDequeInstance(this);
     return inst.list.peekHead() orelse .nil;
 }
 
-fn dequePeekTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn dequePeekTail(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getDequeInstance(this);
     return inst.list.peekTail() orelse .nil;
 }
 
-fn dequeClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn dequeClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getDequeInstance(this);
     inst.list.clear();
     return .nil;
 }
 
-fn dequeEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn dequeEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getDequeInstance(this);
     return .{
         .boolean = inst.list.empty(),
     };
 }
 
-fn dequeSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn dequeSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getDequeInstance(this);
     return .{
         .number = @floatFromInt(inst.list.len),
     };
 }
 
-pub fn dequeItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn dequeItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getDequeInstance(this);
-    var vals = std.ArrayList(Value).init(allocator);
+    var vals = std.ArrayList(Value).init(env.allocator);
 
     var itr = inst.list.begin();
     while (itr.next()) |val| {
@@ -164,7 +160,7 @@ pub fn dequeItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Ex
     };
 }
 
-fn dequeStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn dequeStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getDequeInstance(this);
     const strFn = @import("list.zig").toString;
     return .{

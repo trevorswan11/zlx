@@ -16,7 +16,7 @@ pub fn readFile(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
     const stat = try file.stat();
     const buffer = try allocator.alloc(u8, @intCast(stat.size));
     errdefer allocator.free(buffer);
-    
+
     _ = try file.readAll(buffer);
     return buffer;
 }

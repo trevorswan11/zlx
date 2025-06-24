@@ -129,7 +129,6 @@ pub fn expectNumberArrays(allocator: std.mem.Allocator, arrays: []const std.Arra
 // === Builtin Functions ===
 
 const BuiltinFnHandler = *const fn (
-    allocator: std.mem.Allocator,
     args: []const *ast.Expr,
     env: *Environment,
 ) anyerror!Value;
@@ -194,14 +193,13 @@ pub const builtin_fns = [_]BuiltinFn{
     },
 };
 
-// === Builtin Modules ===
+// === Builtin Modules and Structs ===
 
 const BuiltinModuleLoader = *const fn (
     allocator: std.mem.Allocator,
 ) anyerror!Value;
 
 pub const BuiltinModuleHandler = *const fn (
-    allocator: std.mem.Allocator,
     args: []const *ast.Expr,
     env: *Environment,
 ) anyerror!Value;
@@ -210,6 +208,17 @@ const BuiltinModule = struct {
     name: []const u8,
     loader: BuiltinModuleLoader,
 };
+
+pub const StdMethod = *const fn (
+    this: *Value,
+    args: []const *ast.Expr,
+    env: *Environment,
+) anyerror!Value;
+
+pub const StdCtor = *const fn (
+    args: []const *ast.Expr,
+    env: *Environment,
+) anyerror!Value;
 
 pub const builtin_modules = [_]BuiltinModule{
     // Modules

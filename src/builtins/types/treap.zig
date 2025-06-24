@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const Treap = @import("dsa").Treap(Value, lessThan, eql);
 fn lessThan(a: Value, b: Value) bool {
@@ -59,16 +59,12 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return TREAP_TYPE;
 }
 
-fn treapConstructor(
-    allocator: std.mem.Allocator,
-    _: []const *ast.Expr,
-    _: *Environment,
-) !Value {
-    const treap = Treap.init(allocator);
-    const wrapped = try allocator.create(TreapInstance);
+fn treapConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+    const treap = Treap.init(env.allocator);
+    const wrapped = try env.allocator.create(TreapInstance);
     wrapped.* = .{ .treap = treap };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -76,10 +72,10 @@ fn treapConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = TREAP_TYPE;
 
     return .{
@@ -90,7 +86,7 @@ fn treapConstructor(
     };
 }
 
-fn treapInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn treapInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("treap.insert(value) expects 1 argument but got {d}\n", .{args.len});
@@ -102,7 +98,7 @@ fn treapInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env:
     return .nil;
 }
 
-fn treapContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn treapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("treap.contains(value) expects 1 argument but got {d}\n", .{args.len});
@@ -115,7 +111,7 @@ fn treapContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, en
     };
 }
 
-fn treapRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn treapRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("treap.remove(value) expects 1 argument but got {d}\n", .{args.len});
@@ -127,38 +123,38 @@ fn treapRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env:
     return .nil;
 }
 
-fn treapSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn treapSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getTreapInstance(this);
     return .{
         .number = @floatFromInt(inst.treap.size()),
     };
 }
 
-fn treapEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn treapEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getTreapInstance(this);
     return .{
         .boolean = inst.treap.size() == 0,
     };
 }
 
-fn treapHeight(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn treapHeight(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getTreapInstance(this);
     return .{
         .number = @floatFromInt(inst.treap.height()),
     };
 }
 
-fn treapMin(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn treapMin(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getTreapInstance(this);
     return inst.treap.findMin() orelse .nil;
 }
 
-fn treapMax(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn treapMax(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getTreapInstance(this);
     return inst.treap.findMax() orelse .nil;
 }
 
-fn treapClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn treapClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getTreapInstance(this);
     inst.treap.clear();
     return .nil;
@@ -178,14 +174,14 @@ fn preorderListImpl(t: Treap, node: ?*Treap.Node, list: *std.ArrayList(Value)) !
     }
 }
 
-pub fn treapItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn treapItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getTreapInstance(this);
     return .{
-        .array = try preorderList(allocator, inst.treap),
+        .array = try preorderList(env.allocator, inst.treap),
     };
 }
 
-fn treapStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn treapStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getTreapInstance(this);
     return .{
         .string = try toString(inst.treap),

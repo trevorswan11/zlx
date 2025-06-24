@@ -11,18 +11,18 @@ const Value = interpreter.Value;
 
 const getStdStructName = builtins.getStdStructName;
 
-pub fn print(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn print(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_out = driver.getWriterOut();
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
-        const str = try toPrintableString(allocator, val, env);
-        defer allocator.free(str);
+        const str = try toPrintableString(val, env);
+        defer env.allocator.free(str);
         try writer_out.print("{s}", .{str});
     }
     return .nil;
 }
 
-pub fn println(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn println(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_out = driver.getWriterOut();
     if (args.len == 0) {
         try writer_out.print("\n", .{});
@@ -30,41 +30,41 @@ pub fn println(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
 
     for (args) |arg_expr| {
         const val = try eval.evalExpr(arg_expr, env);
-        const str = try toPrintableString(allocator, val, env);
-        defer allocator.free(str);
+        const str = try toPrintableString(val, env);
+        defer env.allocator.free(str);
         try writer_out.print("{s}\n", .{str});
     }
     return .nil;
 }
 
-fn toPrintableString(allocator: std.mem.Allocator, val: Value, env: *Environment) ![]u8 {
+fn toPrintableString(val: Value, env: *Environment) ![]u8 {
     switch (val) {
         .std_instance => |instance| {
             if (instance._type.std_struct.methods.get("str")) |str_fn| {
                 var mut_val = val;
-                const result = try str_fn(allocator, &mut_val, &[_]*ast.Expr{}, env);
-                return try result.toString(allocator);
+                const result = try str_fn(&mut_val, &[_]*ast.Expr{}, env);
+                return try result.toString(env.allocator);
             } else {
-                return try allocator.dupe(u8, "<std_instance: no .str()>");
+                return try env.allocator.dupe(u8, "<std_instance: no .str()>");
             }
         },
         .std_struct => |_| {
-            return try allocator.dupe(u8, "<std_struct>");
+            return try env.allocator.dupe(u8, "<std_struct>");
         },
         else => {
-            return try val.toString(allocator);
+            return try val.toString(env.allocator);
         },
     }
 }
 
-pub fn len(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn len(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     var val = try eval.evalExpr(args[0], env);
     switch (val) {
         .std_instance => |instance| {
             if (instance._type.std_struct.methods.get("size")) |size_fn| {
                 var mut_val = val;
-                const result = try size_fn(allocator, &mut_val, &[_]*ast.Expr{}, env);
+                const result = try size_fn(&mut_val, &[_]*ast.Expr{}, env);
                 if (result != .number) {
                     try writer_err.print("len(arr|str|std_instance) cannot return a {s}\n", .{@tagName(result)});
                     return error.MalformedStdInstance;
@@ -98,7 +98,7 @@ pub fn len(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
     }
 }
 
-pub fn ref(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn ref(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
@@ -112,7 +112,7 @@ pub fn ref(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
         return val;
     }
 
-    const heap_val = try allocator.create(Value);
+    const heap_val = try env.allocator.create(Value);
     heap_val.* = val;
 
     return .{
@@ -120,7 +120,7 @@ pub fn ref(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
     };
 }
 
-pub fn deref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn deref(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
@@ -138,7 +138,7 @@ pub fn deref(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !
     return val.reference.*;
 }
 
-pub fn detype(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn detype(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
@@ -156,7 +156,7 @@ pub fn detype(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
     return val.typed_val.value.*;
 }
 
-pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn range(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len == 2) {
@@ -193,7 +193,7 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     const steps = @floor(diff / step);
     const count: usize = if ((step > 0 and start >= end) or (step < 0 and start <= end)) 0 else @as(usize, @intFromFloat(steps)) + 1;
 
-    var result = std.ArrayList(Value).init(allocator);
+    var result = std.ArrayList(Value).init(env.allocator);
     for (0..count) |i| {
         const value = start + step * @as(f64, @floatFromInt(i));
         const rounded = @round(value * 1e10) / 1e10;
@@ -209,7 +209,7 @@ pub fn range(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Enviro
     };
 }
 
-pub fn to_string(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn to_string(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
@@ -218,13 +218,13 @@ pub fn to_string(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *En
     }
 
     const val = try eval.evalExpr(args[0], env);
-    const str = try val.toString(allocator);
+    const str = try val.toString(env.allocator);
     return .{
         .string = str,
     };
 }
 
-pub fn to_number(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn to_number(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
@@ -248,7 +248,7 @@ pub fn to_number(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     };
 }
 
-pub fn to_bool(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn to_bool(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
@@ -262,11 +262,7 @@ pub fn to_bool(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     };
 }
 
-pub fn to_ascii(
-    _: std.mem.Allocator,
-    args: []const *ast.Expr,
-    env: *interpreter.Environment,
-) !Value {
+pub fn to_ascii(args: []const *ast.Expr, env: *interpreter.Environment) !Value {
     const writer_err = driver.getWriterErr();
     const val = try eval.evalExpr(args[0], env);
     if (val != .string or val.string.len != 1) {
@@ -285,11 +281,7 @@ pub fn to_ascii(
     };
 }
 
-pub fn from_ascii(
-    allocator: std.mem.Allocator,
-    args: []const *ast.Expr,
-    env: *interpreter.Environment,
-) !Value {
+pub fn from_ascii(args: []const *ast.Expr, env: *interpreter.Environment) !Value {
     const writer_err = driver.getWriterErr();
     const val = try eval.evalExpr(args[0], env);
     if (val != .number) {
@@ -303,7 +295,7 @@ pub fn from_ascii(
         return error.OutOfRange;
     }
 
-    const str = try allocator.alloc(u8, 1);
+    const str = try env.allocator.alloc(u8, 1);
     str[0] = code;
     return .{
         .string = str,
@@ -330,7 +322,7 @@ fn coerceStdInstance(val: Value, env: *Environment) bool {
     var instance = val.std_instance;
     if (instance._type.std_struct.methods.get("size")) |size_fn| {
         var mut_val = val;
-        const result = size_fn(env.allocator, &mut_val, &[_]*ast.Expr{}, env) catch {
+        const result = size_fn(&mut_val, &[_]*ast.Expr{}, env) catch {
             return false;
         };
 
@@ -344,7 +336,7 @@ fn coerceStdInstance(val: Value, env: *Environment) bool {
     }
 }
 
-pub fn format(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+pub fn format(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len < 1) {
@@ -361,7 +353,7 @@ pub fn format(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
     const fmt = fmt_val.string;
 
     // Collect values to format
-    var values = std.ArrayList(Value).init(allocator);
+    var values = std.ArrayList(Value).init(env.allocator);
     defer values.deinit();
 
     for (args[1..]) |arg_expr| {
@@ -369,7 +361,7 @@ pub fn format(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
     }
 
     // Format using writer
-    var output = std.ArrayList(u8).init(allocator);
+    var output = std.ArrayList(u8).init(env.allocator);
     const writer = output.writer();
 
     var it = std.mem.tokenizeAny(u8, fmt, "{}");
@@ -380,7 +372,7 @@ pub fn format(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envir
 
         if (i < values.items.len) {
             const v = values.items[i];
-            try writer.print("{s}", .{try v.toString(allocator)});
+            try writer.print("{s}", .{try v.toString(env.allocator)});
             i += 1;
         }
     }

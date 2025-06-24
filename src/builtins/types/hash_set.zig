@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const HashSet = @import("dsa").HashSet(Value, interpreter.ValueContext);
 
@@ -50,14 +50,10 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return SET_TYPE;
 }
 
-fn setConstructor(
-    allocator: std.mem.Allocator,
-    args: []const *ast.Expr,
-    env: *Environment,
-) !Value {
+fn setConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    const set = try HashSet.init(allocator);
-    const wrapped = try allocator.create(HashSetInstance);
+    const set = try HashSet.init(env.allocator);
+    const wrapped = try env.allocator.create(HashSetInstance);
     wrapped.* = .{ .set = set };
 
     if (args.len > 1) {
@@ -78,7 +74,7 @@ fn setConstructor(
         }
     }
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -86,10 +82,10 @@ fn setConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = SET_TYPE;
 
     return .{
@@ -100,7 +96,7 @@ fn setConstructor(
     };
 }
 
-fn setInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn setInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("set.insert(value) expects 1 argument but got {d}\n", .{args.len});
@@ -112,7 +108,7 @@ fn setInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *
     return .nil;
 }
 
-fn setRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn setRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("set.remove(value) expects 1 argument but got {d}\n", .{args.len});
@@ -125,7 +121,7 @@ fn setRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *
     };
 }
 
-fn setContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn setContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("set.contains(value) expects 1 argument but got {d}\n", .{args.len});
@@ -138,29 +134,29 @@ fn setContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env:
     };
 }
 
-fn setClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn setClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getSetInstance(this);
     inst.set.clear();
     return .nil;
 }
 
-fn setSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn setSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getSetInstance(this);
     return .{
         .number = @floatFromInt(inst.set.size()),
     };
 }
 
-fn setEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn setEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getSetInstance(this);
     return .{
         .boolean = inst.set.empty(),
     };
 }
 
-pub fn setItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn setItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getSetInstance(this);
-    var vals = std.ArrayList(Value).init(allocator);
+    var vals = std.ArrayList(Value).init(env.allocator);
 
     var itr = inst.set.map.iterator();
     while (itr.next()) |entry| {
@@ -172,7 +168,7 @@ pub fn setItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr
     };
 }
 
-fn setStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn setStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getSetInstance(this);
     return .{
         .string = try toString(inst.set),

@@ -51,7 +51,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn pushHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn pushHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     var array = try expectArrayRef(args, env);
     if (args.len != 2) {
@@ -64,7 +64,7 @@ fn pushHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment)
     return .nil;
 }
 
-fn popHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn popHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     var array = try expectArrayRef(args, env);
     if (array.items.len == 0) {
@@ -75,7 +75,7 @@ fn popHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
     return array.pop() orelse .nil;
 }
 
-fn insertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn insertHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     var array = try expectArrayRef(args, env);
     if (args.len != 3) {
@@ -100,7 +100,7 @@ fn insertHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     return .nil;
 }
 
-fn removeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn removeHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     var array = try expectArrayRef(args, env);
     if (args.len != 2) {
@@ -123,13 +123,13 @@ fn removeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     return array.orderedRemove(index);
 }
 
-fn clearHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn clearHandler(args: []const *ast.Expr, env: *Environment) !Value {
     var array = try expectArrayRef(args, env);
     array.clearRetainingCapacity();
     return .nil;
 }
 
-fn getHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn getHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("array.get(...) expects exactly two arguments, got {d}\n", .{args.len});
@@ -158,7 +158,7 @@ fn getHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
     return val.array.items[index];
 }
 
-fn setHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn setHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 3) {
         try writer_err.print("array.set(...) expects exactly two arguments, got {d}\n", .{args.len});
@@ -190,7 +190,7 @@ fn setHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) 
     return .nil;
 }
 
-fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn sliceHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len < 2 or args.len > 3) {
         try writer_err.print("array.slice(...) expects between two and three arguments, got {d}\n", .{args.len});
@@ -212,7 +212,7 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
         return error.OutOfBounds;
     }
 
-    var new_array = std.ArrayList(Value).init(allocator);
+    var new_array = std.ArrayList(Value).init(env.allocator);
     for (start..end) |i| {
         try new_array.append(val.array.items[i]);
     }
@@ -222,7 +222,7 @@ fn sliceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     };
 }
 
-fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn joinHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("array.join(arr, delim) expects exactly two arguments, got {d}\n", .{args.len});
@@ -246,7 +246,7 @@ fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     const delim = delim_val.string;
 
     const items = val.array.items;
-    var output = std.ArrayList(u8).init(allocator);
+    var output = std.ArrayList(u8).init(env.allocator);
     const writer = output.writer();
 
     for (items, 0..) |item, i| {
@@ -254,7 +254,7 @@ fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
             .string => try writer.print("{s}", .{item.string}),
             .number => try writer.print("{}", .{item.number}),
             .boolean => try writer.print("{}", .{item.boolean}),
-            else => try writer.print("{s}", .{try item.toString(allocator)}),
+            else => try writer.print("{s}", .{try item.toString(env.allocator)}),
         }
 
         if (i != items.len - 1) {

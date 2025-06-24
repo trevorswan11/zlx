@@ -24,7 +24,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn randHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) !Value {
+fn randHandler(args: []const *ast.Expr, _: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 0) {
         try writer_err.print("random.rand() expects 0 arguments, got {d}\n", .{args.len});
@@ -38,7 +38,7 @@ fn randHandler(_: std.mem.Allocator, args: []const *ast.Expr, _: *Environment) !
     };
 }
 
-fn randintHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn randintHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("random.randint(start_inclusive, end_inclusive) expects 2 arguments, got {d}\n", .{args.len});
@@ -50,8 +50,8 @@ fn randintHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
 
     if (a != .number or b != .number) {
         try writer_err.print("random.randint(start_inclusive, end_inclusive) expects number arguments\n", .{});
-        try writer_err.print("  Left: {s}\n", .{try a.toString(allocator)});
-        try writer_err.print("  Right: {s}\n", .{try b.toString(allocator)});
+        try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
+        try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -70,7 +70,7 @@ fn randintHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *E
     };
 }
 
-fn choiceHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn choiceHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("random.choice(arr) expects 1 argument, got {d}\n", .{args.len});

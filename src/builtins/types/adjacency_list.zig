@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const Array = @import("dsa").Array(Value);
 const HashMap = @import("dsa").HashMap(Value, Array, interpreter.ValueContext);
@@ -53,18 +53,14 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return ADJ_LIST_TYPE;
 }
 
-fn adjListConstructor(
-    allocator: std.mem.Allocator,
-    _: []const *ast.Expr,
-    _: *Environment,
-) !Value {
-    const graph = GraphType.init(allocator);
-    const wrapped = try allocator.create(AdjacencyListInstance);
+fn adjListConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+    const graph = GraphType.init(env.allocator);
+    const wrapped = try env.allocator.create(AdjacencyListInstance);
     wrapped.* = .{
         .graph = graph,
     };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -72,10 +68,10 @@ fn adjListConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = ADJ_LIST_TYPE;
 
     return .{
@@ -86,7 +82,7 @@ fn adjListConstructor(
     };
 }
 
-fn adjListAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjListAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("adj_list.add_edge(val_from, val_to) expects 2 arguments but got {d}\n", .{args.len});
@@ -99,7 +95,7 @@ fn adjListAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, e
     return .nil;
 }
 
-fn adjListGetNeighbors(allocator: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjListGetNeighbors(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("adj_list.get_neighbors(value) expects 1 argument but got {d}\n", .{args.len});
@@ -111,7 +107,7 @@ fn adjListGetNeighbors(allocator: std.mem.Allocator, this: *Value, args: []const
     if (neighbors) |list| {
         var mut_list = list;
         const list_slice = try mut_list.toSlice();
-        var array_list = std.ArrayList(Value).init(allocator);
+        var array_list = std.ArrayList(Value).init(env.allocator);
         try array_list.appendSlice(list_slice);
         return .{
             .array = array_list,
@@ -121,7 +117,7 @@ fn adjListGetNeighbors(allocator: std.mem.Allocator, this: *Value, args: []const
     }
 }
 
-fn adjListContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjListContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("adj_list.contains(value) expects 1 argument but got {d}\n", .{args.len});
@@ -134,27 +130,27 @@ fn adjListContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, 
     };
 }
 
-fn adjListClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjListClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getGraphInstance(this);
     inst.graph.clear();
     return .nil;
 }
 
-fn adjListSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjListSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getGraphInstance(this);
     return .{
         .number = @floatFromInt(inst.graph.size()),
     };
 }
 
-fn adjListEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjListEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getGraphInstance(this);
     return .{
         .boolean = inst.graph.size() == 0,
     };
 }
 
-fn adjListStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjListStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getGraphInstance(this);
     return .{
         .string = try toString(inst.graph),

@@ -31,9 +31,9 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn argsHandler(allocator: std.mem.Allocator, _: []const *ast.Expr, _: *Environment) !Value {
-    const args = try std.process.argsAlloc(allocator);
-    var array = std.ArrayList(Value).init(allocator);
+fn argsHandler(_: []const *ast.Expr, env: *Environment) !Value {
+    const args = try std.process.argsAlloc(env.allocator);
+    var array = std.ArrayList(Value).init(env.allocator);
     for (args) |arg| {
         try array.append(
             .{
@@ -46,7 +46,7 @@ fn argsHandler(allocator: std.mem.Allocator, _: []const *ast.Expr, _: *Environme
     };
 }
 
-fn getenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn getenvHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("sys.getenv(key) expects 1 argument, got {d}\n", .{args.len});
@@ -65,7 +65,7 @@ fn getenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environmen
     };
 }
 
-fn setenvHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn setenvHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("sys.setenv(key, value) expects 2 arguments but got {d}\n", .{args.len});
@@ -77,8 +77,8 @@ fn setenvHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *En
 
     if (key != .string or val != .string) {
         try writer_err.print("sys.setenv(key, value) expects two string arguments\n", .{});
-        try writer_err.print("  Key: {s}\n", .{try key.toString(allocator)});
-        try writer_err.print("  Value: {s}\n", .{try val.toString(allocator)});
+        try writer_err.print("  Key: {s}\n", .{try key.toString(env.allocator)});
+        try writer_err.print("  Value: {s}\n", .{try val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
@@ -86,7 +86,7 @@ fn setenvHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *En
     return .nil;
 }
 
-fn unsetenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn unsetenvHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("sys.unsetenv(key) expects 1 argument but got {d}\n", .{args.len});
@@ -104,7 +104,6 @@ fn unsetenvHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environm
 }
 
 fn runHandler(
-    allocator: std.mem.Allocator,
     args: []const *ast.Expr,
     env: *interpreter.Environment,
 ) !Value {
@@ -122,7 +121,7 @@ fn runHandler(
     }
 
     const command = cmd_val.string;
-    var arg_list = std.ArrayList([]const u8).init(allocator);
+    var arg_list = std.ArrayList([]const u8).init(env.allocator);
 
     // Prepend shell command
     const shell = if (builtin.os.tag == .windows)
@@ -135,12 +134,12 @@ fn runHandler(
     try arg_list.append(command);
 
     // Buffers for output
-    var stdout_buf = std.ArrayList(u8).init(allocator);
-    var stderr_buf = std.ArrayList(u8).init(allocator);
+    var stdout_buf = std.ArrayList(u8).init(env.allocator);
+    var stderr_buf = std.ArrayList(u8).init(env.allocator);
 
     // Merge environment maps
-    var tmp_env = std.process.EnvMap.init(allocator);
-    const system_env = try std.process.getEnvMap(allocator);
+    var tmp_env = std.process.EnvMap.init(env.allocator);
+    const system_env = try std.process.getEnvMap(env.allocator);
     var system_env_itr = system_env.iterator();
     var process_env_itr = process_env.iterator();
 
@@ -153,7 +152,7 @@ fn runHandler(
 
     // Run the command
     const result = std.process.Child.run(.{
-        .allocator = allocator,
+        .allocator = env.allocator,
         .argv = arg_list.items,
         .env_map = &tmp_env,
     }) catch |err| {
@@ -164,7 +163,7 @@ fn runHandler(
     try stdout_buf.appendSlice(result.stdout);
     try stderr_buf.appendSlice(result.stderr);
 
-    var map = std.StringHashMap(Value).init(allocator);
+    var map = std.StringHashMap(Value).init(env.allocator);
     try map.put("exit_code", .{ .number = @floatFromInt(result.term.Exited) });
     try map.put("stdout", .{ .string = try stdout_buf.toOwnedSlice() });
     try map.put("stderr", .{ .string = try stderr_buf.toOwnedSlice() });
@@ -174,7 +173,7 @@ fn runHandler(
     };
 }
 
-fn inputHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn inputHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_out = driver.getWriterOut();
     const writer_err = driver.getWriterErr();
 
@@ -186,18 +185,18 @@ fn inputHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     const prompt_val = try eval.evalExpr(args[0], env);
     if (prompt_val != .string) {
         try writer_err.print("sys.input(prompt) expects a string argument\n", .{});
-        try writer_err.print("  Got: {s}\n", .{try prompt_val.toString(allocator)});
+        try writer_err.print("  Got: {s}\n", .{try prompt_val.toString(env.allocator)});
         return error.TypeMismatch;
     }
 
     try writer_out.print("{s}", .{prompt_val.string});
 
-    var line_buf = std.ArrayList(u8).init(allocator);
+    var line_buf = std.ArrayList(u8).init(env.allocator);
     defer line_buf.deinit();
 
     const stdin = std.io.getStdIn().reader();
 
-    const input_line = try stdin.readUntilDelimiterOrEofAlloc(allocator, '\n', 1024);
+    const input_line = try stdin.readUntilDelimiterOrEofAlloc(env.allocator, '\n', 1024);
     if (input_line == null) return .nil;
     return .{
         .string = input_line.?,

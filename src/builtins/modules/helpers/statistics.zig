@@ -268,7 +268,7 @@ pub fn standardNormalCdf(x: f64) f64 {
 
 // === TESTING ===
 
-const testing = @import("../../testing/testing.zig");
+const testing = @import("../../../testing/testing.zig");
 
 test "mean" {
     const data = [_]f64{ 2.0, 4.0, 6.0, 8.0 };

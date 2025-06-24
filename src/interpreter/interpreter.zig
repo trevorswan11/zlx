@@ -4,6 +4,7 @@ const ast = @import("../parser/ast.zig");
 pub const eval = @import("eval.zig");
 const token = @import("../lexer/token.zig");
 const driver = @import("../utils/driver.zig");
+const builtins = @import("../builtins/builtins.zig");
 
 pub const evalExpr = eval.evalExpr;
 pub const evalStmt = eval.evalStmt;
@@ -30,11 +31,7 @@ pub const Value = union(enum) {
         instance: *Value,
         method: *ast.Stmt,
     },
-    builtin: *const fn (
-        allocator: std.mem.Allocator,
-        args: []const *ast.Expr,
-        env: *Environment,
-    ) anyerror!Value,
+    builtin: builtins.BuiltinModuleHandler,
     break_signal,
     continue_signal,
     return_value: *Value,
@@ -44,8 +41,8 @@ pub const Value = union(enum) {
     },
     std_struct: struct {
         name: []const u8,
-        constructor: StdCtor,
-        methods: std.StringHashMap(StdMethod),
+        constructor: builtins.StdCtor,
+        methods: std.StringHashMap(builtins.StdMethod),
     },
     std_instance: struct {
         _type: *Value,
@@ -53,92 +50,13 @@ pub const Value = union(enum) {
     },
     bound_std_method: struct {
         instance: *Value,
-        method: Value.StdMethod,
+        method: builtins.StdMethod,
     },
     pair: struct {
         first: *Value,
         second: *Value,
     },
     nil,
-
-    pub fn deinit(self: *Value, allocator: std.mem.Allocator) void {
-        switch (self.*) {
-            .string => |s| allocator.free(s),
-
-            .array => |*arr| {
-                for (arr.items) |*item| {
-                    item.deinit(allocator);
-                }
-                arr.deinit();
-            },
-
-            .function => |*f| {
-                f.body.deinit();
-            },
-
-            .object => |*map| {
-                var it = map.iterator();
-                while (it.next()) |entry| {
-                    entry.value_ptr.deinit(allocator);
-                }
-                map.deinit();
-            },
-
-            .structure => |*s| {
-                s.body.deinit();
-                s.methods.deinit();
-                allocator.free(s.name);
-            },
-
-            .reference => |ref| {
-                ref.deinit(allocator);
-                allocator.destroy(ref);
-            },
-
-            .bound_method => |bm| {
-                bm.instance.deinit(allocator);
-                allocator.destroy(bm.instance);
-            },
-
-            .return_value => |ret| {
-                ret.deinit(allocator);
-                allocator.destroy(ret);
-            },
-
-            .typed_val => |tv| {
-                tv.value.deinit(allocator);
-                allocator.destroy(tv.value);
-                allocator.free(tv._type);
-            },
-
-            .std_instance => |*inst| {
-                var it = inst.fields.iterator();
-                while (it.next()) |entry| {
-                    entry.value_ptr.*.deinit(allocator);
-                    allocator.destroy(entry.value_ptr);
-                }
-                inst.fields.deinit();
-            },
-
-            .bound_std_method => |bm| {
-                bm.instance.deinit(allocator);
-                allocator.destroy(bm.instance);
-            },
-
-            .pair => |p| {
-                p.first.deinit(allocator);
-                allocator.destroy(p.first);
-                p.second.deinit(allocator);
-                allocator.destroy(p.second);
-            },
-
-            // No-op cases
-            .number, .boolean, .builtin, .break_signal, .continue_signal, .nil, .std_struct => {},
-        }
-    }
-
-    pub const StdMethod = *const fn (allocator: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) anyerror!Value;
-    pub const StdCtor = *const fn (allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value;
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
         var str_builder = std.ArrayList(u8).init(allocator);
@@ -546,10 +464,6 @@ pub const Environment = struct {
     }
 
     pub fn remove(self: *Self, name: []const u8) Value {
-        if (self.values.get(name)) |to_remove| {
-            var val = to_remove;
-            val.deinit(self.allocator);
-        }
         _ = self.values.remove(name);
         _ = self.constants.remove(name);
         return .nil;

@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const Array = @import("dsa").Array(Value);
 
@@ -51,11 +51,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return PRIORITY_QUEUE_TYPE;
 }
 
-fn pqConstructor(
-    allocator: std.mem.Allocator,
-    args: []const *ast.Expr,
-    env: *Environment,
-) !Value {
+fn pqConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("heap(max_at_top) expects 1 argument but got {d}\n", .{args.len});
@@ -68,14 +64,14 @@ fn pqConstructor(
         return error.TypeMismatch;
     }
 
-    const arr = try Array.init(allocator, 8);
-    const wrapped = try allocator.create(PriorityQueueInstance);
+    const arr = try Array.init(env.allocator, 8);
+    const wrapped = try env.allocator.create(PriorityQueueInstance);
     wrapped.* = .{
         .array = arr,
         .max_at_top = max.boolean,
     };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -83,10 +79,10 @@ fn pqConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = PRIORITY_QUEUE_TYPE;
 
     return .{
@@ -147,7 +143,7 @@ fn siftDown(inst: *PriorityQueueInstance) !void {
     }
 }
 
-fn pqInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn pqInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("heap.insert(value) expects 1 argument but got {d}\n", .{args.len});
@@ -160,7 +156,7 @@ fn pqInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *E
     return .nil;
 }
 
-fn pqPoll(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqPoll(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getPriorityQueueInstance(this);
     if (inst.array.len == 0) {
         return .nil;
@@ -174,34 +170,34 @@ fn pqPoll(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environm
     return top;
 }
 
-fn pqPeek(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqPeek(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getPriorityQueueInstance(this);
     return if (inst.array.len == 0) .nil else try inst.array.get(0);
 }
 
-fn pqSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getPriorityQueueInstance(this);
     return .{
         .number = @floatFromInt(inst.array.len),
     };
 }
 
-fn pqEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getPriorityQueueInstance(this);
     return .{
         .boolean = inst.array.len == 0,
     };
 }
 
-fn pqClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getPriorityQueueInstance(this);
     inst.array.clear();
     return .nil;
 }
 
-pub fn pqItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn pqItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getPriorityQueueInstance(this);
-    var vals = std.ArrayList(Value).init(allocator);
+    var vals = std.ArrayList(Value).init(env.allocator);
 
     for (inst.array.arr[0..inst.array.len]) |val| {
         try vals.append(val);
@@ -212,7 +208,7 @@ pub fn pqItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr,
     };
 }
 
-fn pqStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getPriorityQueueInstance(this);
     const strFn = @import("array_list.zig").toString;
     return .{

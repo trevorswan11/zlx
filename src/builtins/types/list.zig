@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const List = @import("dsa").List(Value);
 
@@ -56,17 +56,13 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return LIST_TYPE;
 }
 
-fn listConstructor(
-    allocator: std.mem.Allocator,
-    _: []const *ast.Expr,
-    _: *Environment,
-) anyerror!Value {
-    const list = try List.init(allocator);
+fn listConstructor(_: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const list = try List.init(env.allocator);
 
-    const wrapped = try allocator.create(ListInstance);
+    const wrapped = try env.allocator.create(ListInstance);
     wrapped.* = .{ .list = list };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -74,10 +70,10 @@ fn listConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = LIST_TYPE;
 
     return .{
@@ -88,7 +84,7 @@ fn listConstructor(
     };
 }
 
-fn listAppend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn listAppend(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("list.append(value) expects 1 argument but got {d}\n", .{args.len});
@@ -100,7 +96,7 @@ fn listAppend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: 
     return .nil;
 }
 
-fn listPrepend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn listPrepend(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("list.prepend(value) expects 1 argument but got {d}\n", .{args.len});
@@ -112,17 +108,17 @@ fn listPrepend(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env:
     return .nil;
 }
 
-fn listPopHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listPopHead(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getListInstance(this);
     return inst.list.popHead() orelse .nil;
 }
 
-fn listPopTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listPopTail(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getListInstance(this);
     return inst.list.popTail() orelse .nil;
 }
 
-fn listGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn listGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("list.get(value) expects 1 argument but got {d}\n", .{args.len});
@@ -138,7 +134,7 @@ fn listGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *En
     return try inst.list.get(@intFromFloat(index_val.number));
 }
 
-fn listRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn listRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("list.remove(value) expects 1 argument but got {d}\n", .{args.len});
@@ -154,7 +150,7 @@ fn listRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: 
     return try inst.list.remove(@intFromFloat(index_val.number));
 }
 
-fn listDiscard(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn listDiscard(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("list.discard(value) expects 1 argument but got {d}\n", .{args.len});
@@ -171,39 +167,39 @@ fn listDiscard(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env:
     return .nil;
 }
 
-fn listPeekHead(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listPeekHead(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getListInstance(this);
     return inst.list.peekHead() orelse .nil;
 }
 
-fn listPeekTail(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listPeekTail(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getListInstance(this);
     return inst.list.peekTail() orelse .nil;
 }
 
-fn listClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getListInstance(this);
     inst.list.clear();
     return .nil;
 }
 
-fn listEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getListInstance(this);
     return .{
         .boolean = inst.list.empty(),
     };
 }
 
-fn listSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getListInstance(this);
     return .{
         .number = @floatFromInt(inst.list.len),
     };
 }
 
-pub fn listItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn listItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getListInstance(this);
-    var vals = std.ArrayList(Value).init(allocator);
+    var vals = std.ArrayList(Value).init(env.allocator);
 
     var itr = inst.list.begin();
     while (itr.next()) |val| {
@@ -215,7 +211,7 @@ pub fn listItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Exp
     };
 }
 
-fn listStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getListInstance(this);
     return .{
         .string = try toString(inst.list),

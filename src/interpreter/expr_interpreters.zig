@@ -128,7 +128,7 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
 
         inline for (builtins.builtin_fns) |builtin| {
             if (std.mem.eql(u8, fn_name, builtin.name)) {
-                return try builtin.handler(env.allocator, c.arguments.items, env);
+                return try builtin.handler(c.arguments.items, env);
             }
         }
     }
@@ -137,7 +137,7 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     switch (callee_val) {
         .builtin => |handler| {
-            return try handler(env.allocator, c.arguments.items, env);
+            return try handler(c.arguments.items, env);
         },
         .function => |func| {
             if (func.parameters.len != c.arguments.items.len) {
@@ -189,7 +189,7 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
         },
         .bound_std_method => {
             const bound = callee_val.bound_std_method;
-            return try bound.method(env.allocator, bound.instance, c.arguments.items, env);
+            return try bound.method(bound.instance, c.arguments.items, env);
         },
         else => {
             try writer_err.print("Cannot invoke call on type {s}\n", .{@tagName(callee_val)});
@@ -527,7 +527,7 @@ pub fn new(n: *ast.NewExpr, env: *Environment) !Value {
         },
         .std_struct => |std_struct| blk: {
             const ctor = std_struct.constructor;
-            break :blk try ctor(env.allocator, args, env);
+            break :blk try ctor(args, env);
         },
         else => blk: {
             try writer_err.print("The 'new' keyword can only be used when creating a struct, got {s}\n", .{@tagName(struct_val)});

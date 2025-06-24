@@ -31,9 +31,9 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn joinHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    var parts = std.ArrayList([]const u8).init(allocator);
+    var parts = std.ArrayList([]const u8).init(env.allocator);
     defer parts.deinit();
     for (args) |arg| {
         const val = try eval.evalExpr(arg, env);
@@ -43,75 +43,75 @@ fn joinHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
         }
         try parts.append(val.string);
     }
-    const joined = try std.fs.path.join(allocator, parts.items);
+    const joined = try std.fs.path.join(env.allocator, parts.items);
     return .{
         .string = joined,
     };
 }
 
-fn basenameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn basenameHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(args, env, 1, "path", "basename"))[0];
     return .{
-        .string = try allocator.dupe(u8, std.fs.path.basename(path)),
+        .string = try env.allocator.dupe(u8, std.fs.path.basename(path)),
     };
 }
 
-fn dirnameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn dirnameHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(args, env, 1, "path", "dirname"))[0];
     return .{
-        .string = try allocator.dupe(u8, std.fs.path.dirname(path) orelse "."),
+        .string = try env.allocator.dupe(u8, std.fs.path.dirname(path) orelse "."),
     };
 }
 
-fn extnameHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn extnameHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(args, env, 1, "path", "extname"))[0];
     return .{
-        .string = try allocator.dupe(u8, std.fs.path.extension(path)),
+        .string = try env.allocator.dupe(u8, std.fs.path.extension(path)),
     };
 }
 
-fn stemHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn stemHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(args, env, 1, "path", "stem"))[0];
     return .{
-        .string = try allocator.dupe(u8, std.fs.path.stem(path)),
+        .string = try env.allocator.dupe(u8, std.fs.path.stem(path)),
     };
 }
 
-fn isAbsoluteHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn isAbsoluteHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(args, env, 1, "path", "is_absolute"))[0];
     return .{
         .boolean = std.fs.path.isAbsolute(path),
     };
 }
 
-fn isRelativeHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn isRelativeHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(args, env, 1, "path", "is_relative"))[0];
     return .{
         .boolean = !std.fs.path.isAbsolute(path),
     };
 }
 
-fn normalizeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn normalizeHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(args, env, 1, "path", "split"))[0];
-    const norm = try std.fs.path.resolve(allocator, &[_][]const u8{path});
+    const norm = try std.fs.path.resolve(env.allocator, &[_][]const u8{path});
     return .{
         .string = norm,
     };
 }
 
-fn splitHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn splitHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const path = (try expectStringArgs(args, env, 1, "path", "split"))[0];
     const dir = std.fs.path.dirname(path) orelse "";
     const base = std.fs.path.basename(path);
-    var list = std.ArrayList(Value).init(allocator);
+    var list = std.ArrayList(Value).init(env.allocator);
     try list.append(
         .{
-            .string = try allocator.dupe(u8, dir),
+            .string = try env.allocator.dupe(u8, dir),
         },
     );
     try list.append(
         .{
-            .string = try allocator.dupe(u8, base),
+            .string = try env.allocator.dupe(u8, base),
         },
     );
     return .{

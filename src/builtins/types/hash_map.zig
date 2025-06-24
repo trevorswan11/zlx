@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const HashMap = @import("dsa").HashMap(Value, Value, interpreter.ValueContext);
 
@@ -51,16 +51,12 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return MAP_TYPE;
 }
 
-fn mapConstructor(
-    allocator: std.mem.Allocator,
-    _: []const *ast.Expr,
-    _: *Environment,
-) !Value {
-    const map = try HashMap.init(allocator);
-    const wrapped = try allocator.create(HashMapInstance);
+fn mapConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+    const map = try HashMap.init(env.allocator);
+    const wrapped = try env.allocator.create(HashMapInstance);
     wrapped.* = .{ .map = map };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -68,10 +64,10 @@ fn mapConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = MAP_TYPE;
 
     return .{
@@ -82,7 +78,7 @@ fn mapConstructor(
     };
 }
 
-fn mapPut(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn mapPut(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("map.put(value) expects 1 argument but got {d}\n", .{args.len});
@@ -95,7 +91,7 @@ fn mapPut(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Env
     return .nil;
 }
 
-fn mapGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn mapGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("map.get(value) expects 1 argument but got {d}\n", .{args.len});
@@ -106,7 +102,7 @@ fn mapGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Env
     return inst.map.find(key) orelse .nil;
 }
 
-fn mapRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn mapRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("map.remove(value) expects 1 argument but got {d}\n", .{args.len});
@@ -117,7 +113,7 @@ fn mapRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *
     return inst.map.remove(key) orelse .nil;
 }
 
-fn mapContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn mapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("map.contains(value) expects 1 argument but got {d}\n", .{args.len});
@@ -130,29 +126,29 @@ fn mapContains(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env:
     };
 }
 
-fn mapClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn mapClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMapInstance(this);
     inst.map.clear();
     return .nil;
 }
 
-fn mapSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn mapSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMapInstance(this);
     return .{
         .number = @floatFromInt(inst.map.size()),
     };
 }
 
-fn mapEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn mapEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMapInstance(this);
     return .{
         .boolean = inst.map.size() == 0,
     };
 }
 
-pub fn mapItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn mapItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getMapInstance(this);
-    var vals = std.ArrayList(Value).init(allocator);
+    var vals = std.ArrayList(Value).init(env.allocator);
 
     var itr = inst.map.map.iterator();
     while (itr.next()) |entry| {
@@ -169,7 +165,7 @@ pub fn mapItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr
     };
 }
 
-fn mapStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn mapStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMapInstance(this);
     return .{
         .string = try toString(inst.map),

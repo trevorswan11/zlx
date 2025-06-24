@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const Stack = @import("dsa").Stack(Value);
 
@@ -50,18 +50,14 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return STACK_TYPE;
 }
 
-fn stackConstructor(
-    allocator: std.mem.Allocator,
-    _: []const *ast.Expr,
-    _: *Environment,
-) !Value {
-    const stack = try Stack.init(allocator);
-    const wrapped = try allocator.create(StackInstance);
+fn stackConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+    const stack = try Stack.init(env.allocator);
+    const wrapped = try env.allocator.create(StackInstance);
     wrapped.* = .{
         .stack = stack,
     };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -69,10 +65,10 @@ fn stackConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = STACK_TYPE;
 
     return .{
@@ -83,7 +79,7 @@ fn stackConstructor(
     };
 }
 
-fn stackPush(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn stackPush(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("stack.push(value) expects 1 argument but got {d}\n", .{args.len});
@@ -95,41 +91,41 @@ fn stackPush(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *
     return .nil;
 }
 
-fn stackPop(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn stackPop(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getStackInstance(this);
     const result = inst.stack.pop();
     return result orelse .nil;
 }
 
-fn stackPeek(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn stackPeek(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getStackInstance(this);
     const result = inst.stack.peek();
     return result orelse .nil;
 }
 
-fn stackSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn stackSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getStackInstance(this);
     return .{
         .number = @floatFromInt(inst.stack.list.len),
     };
 }
 
-fn stackEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn stackEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getStackInstance(this);
     return .{
         .boolean = inst.stack.list.empty(),
     };
 }
 
-fn stackClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn stackClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getStackInstance(this);
     inst.stack.list.clear();
     return .nil;
 }
 
-pub fn stackItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn stackItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getStackInstance(this);
-    var vals = std.ArrayList(Value).init(allocator);
+    var vals = std.ArrayList(Value).init(env.allocator);
 
     var itr = inst.stack.list.begin();
     while (itr.next()) |val| {
@@ -141,7 +137,7 @@ pub fn stackItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Ex
     };
 }
 
-fn stackStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn stackStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getStackInstance(this);
     const strFn = @import("list.zig").toString;
     return .{

@@ -28,26 +28,26 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn readHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn readHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 1, "csv", "read");
     const filepath = parts[0];
-    
+
     const file = try std.fs.cwd().openFile(filepath, .{});
     defer file.close();
 
     const stat = try file.stat();
-    const contents = try allocator.alloc(u8, @intCast(stat.size));
-    errdefer allocator.free(contents);
+    const contents = try env.allocator.alloc(u8, @intCast(stat.size));
+    errdefer env.allocator.free(contents);
 
     _ = try file.readAll(contents);
 
-    return try parseCSV(allocator, contents);
+    return try parseCSV(env.allocator, contents);
 }
 
-fn writeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn writeHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 2, "csv", "write");
     const filepath = parts[0];
-    const contents = try stringifyCSV(allocator, .{ .string = parts[1] });
+    const contents = try stringifyCSV(env.allocator, .{ .string = parts[1] });
 
     const dir_path = std.fs.path.dirname(filepath) orelse ".";
     try std.fs.cwd().makePath(dir_path);
@@ -59,10 +59,10 @@ fn writeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Env
     return .nil;
 }
 
-fn appendHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn appendHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 2, "csv", "append");
     const filepath = parts[0];
-    const contents = try stringifyCSV(allocator, .{ .string = parts[1] });
+    const contents = try stringifyCSV(env.allocator, .{ .string = parts[1] });
 
     const file = try std.fs.cwd().openFile(
         filepath,
@@ -76,15 +76,15 @@ fn appendHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *En
     return .nil;
 }
 
-fn parseHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn parseHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const input = try expectStringArgs(args, env, 1, "csv", "parse");
-    return try parseCSV(allocator, input[0]);
+    return try parseCSV(env.allocator, input[0]);
 }
 
-fn stringifyHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn stringifyHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const input = (try expectArrayArgs(args, env, 1, "csv", "stringify"))[0];
     return .{
-        .string = try stringifyCSV(allocator, .{ .array = input }),
+        .string = try stringifyCSV(env.allocator, .{ .array = input }),
     };
 }
 

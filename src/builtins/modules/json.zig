@@ -24,17 +24,17 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn parseHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn parseHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 1, "json", "parse");
-    return try parseJson(allocator, parts[0]);
+    return try parseJson(env.allocator, parts[0]);
 }
 
-fn stringifyHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) anyerror!Value {
+fn stringifyHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     if (args.len != 1) {
         return error.ArgumentCountMismatch;
     }
     const val = try eval.evalExpr(args[0], env);
-    const str = try stringifyJson(allocator, val);
+    const str = try stringifyJson(env.allocator, val);
     return .{
         .string = str,
     };

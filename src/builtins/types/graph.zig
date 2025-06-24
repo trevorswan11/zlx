@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const Array = @import("dsa").Array(Value);
 const Queue = @import("dsa").Queue(Value);
@@ -50,18 +50,14 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return GRAPH_TYPE;
 }
 
-fn graphConstructor(
-    allocator: std.mem.Allocator,
-    _: []const *ast.Expr,
-    _: *Environment,
-) !Value {
-    const graph = AdjacencyList.init(allocator);
-    const wrapped = try allocator.create(GraphInstance);
+fn graphConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+    const graph = AdjacencyList.init(env.allocator);
+    const wrapped = try env.allocator.create(GraphInstance);
     wrapped.* = .{
         .graph = graph,
     };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -69,10 +65,10 @@ fn graphConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = GRAPH_TYPE;
 
     return .{
@@ -83,7 +79,7 @@ fn graphConstructor(
     };
 }
 
-fn graphAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn graphAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("graph.add_edge(val_from, val_to) expects 2 argument but got {d}\n", .{args.len});
@@ -98,7 +94,7 @@ fn graphAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env
     return .nil;
 }
 
-fn graphHasNode(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn graphHasNode(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("graph.has_node(value) expects 1 argument but got {d}\n", .{args.len});
@@ -111,7 +107,7 @@ fn graphHasNode(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env
     };
 }
 
-fn graphHasEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn graphHasEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("graph.has_edge(val_from, val_to) expects 2 argument but got {d}\n", .{args.len});
@@ -133,13 +129,13 @@ fn graphHasEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env
     };
 }
 
-fn graphClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn graphClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getGraphInstance(this);
     inst.graph.clear();
     return .nil;
 }
 
-fn graphStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn graphStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getGraphInstance(this);
     const strFn = @import("adjacency_list.zig").toString;
     return .{

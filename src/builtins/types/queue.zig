@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 const Queue = @import("dsa").Queue(Value);
 
@@ -52,16 +52,12 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return QUEUE_TYPE;
 }
 
-fn queueConstructor(
-    allocator: std.mem.Allocator,
-    _: []const *ast.Expr,
-    _: *Environment,
-) !Value {
-    const queue = try Queue.init(allocator);
-    const wrapped = try allocator.create(QueueInstance);
+fn queueConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+    const queue = try Queue.init(env.allocator);
+    const wrapped = try env.allocator.create(QueueInstance);
     wrapped.* = .{ .queue = queue };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -69,10 +65,10 @@ fn queueConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = QUEUE_TYPE;
 
     return .{
@@ -83,7 +79,7 @@ fn queueConstructor(
     };
 }
 
-fn queuePush(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn queuePush(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("queue.push(value) expects 1 argument but got {d}\n", .{args.len});
@@ -95,41 +91,41 @@ fn queuePush(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *
     return .nil;
 }
 
-fn queuePoll(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queuePoll(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getQueueInstance(this);
     const result = inst.queue.poll();
     return result orelse .nil;
 }
 
-fn queuePeek(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queuePeek(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getQueueInstance(this);
     const result = inst.queue.peek();
     return result orelse .nil;
 }
 
-fn queueSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queueSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getQueueInstance(this);
     return .{
         .number = @floatFromInt(inst.queue.list.len),
     };
 }
 
-fn queueEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queueEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getQueueInstance(this);
     return .{
         .boolean = inst.queue.list.empty(),
     };
 }
 
-fn queueClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queueClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getQueueInstance(this);
     inst.queue.list.clear();
     return .nil;
 }
 
-pub fn queueItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn queueItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getQueueInstance(this);
-    var vals = std.ArrayList(Value).init(allocator);
+    var vals = std.ArrayList(Value).init(env.allocator);
 
     var itr = inst.queue.list.begin();
     while (itr.next()) |val| {
@@ -141,7 +137,7 @@ pub fn queueItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Ex
     };
 }
 
-fn queueStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queueStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getQueueInstance(this);
     const strFn = @import("list.zig").toString;
     return .{

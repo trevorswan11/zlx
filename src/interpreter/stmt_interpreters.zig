@@ -99,7 +99,7 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
         const instance = iterable.std_instance;
         if (instance._type.std_struct.methods.get("items")) |items_fn| {
             var mut_instance = iterable;
-            const result = try items_fn(env.allocator, &mut_instance, &[_]*ast.Expr{}, env);
+            const result = try items_fn(&mut_instance, &[_]*ast.Expr{}, env);
             if (result != .array) {
                 try writer_err.print("std_instance.items() must return an array, got a(n) {s}\n", .{@tagName(result)});
                 return error.TypeMismatch;

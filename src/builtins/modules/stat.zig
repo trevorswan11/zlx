@@ -4,7 +4,7 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-const stat_helpers = @import("stat_helpers.zig");
+const statistics = @import("helpers/statistics.zig");
 
 const eval = interpreter.eval;
 const Environment = interpreter.Environment;
@@ -53,28 +53,28 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn meanHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn meanHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "mean");
-    const float_array = (try expectNumberArrays(allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
 
     return .{
-        .number = stat_helpers.mean(float_array),
+        .number = statistics.mean(float_array),
     };
 }
 
-fn medianHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn medianHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "median");
-    const float_array = (try expectNumberArrays(allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
 
     return .{
-        .number = try stat_helpers.median(allocator, float_array),
+        .number = try statistics.median(env.allocator, float_array),
     };
 }
 
-fn modeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn modeHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "mode");
-    const float_array = (try expectNumberArrays(allocator, parts))[0];
-    const result = stat_helpers.mode(allocator, float_array) catch |err| switch (err) {
+    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const result = statistics.mode(env.allocator, float_array) catch |err| switch (err) {
         error.NoMode => return .nil,
         else => return err,
     };
@@ -84,34 +84,34 @@ fn modeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Envi
     };
 }
 
-fn minHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn minHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "min");
-    const float_array = (try expectNumberArrays(allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
 
     return .{
-        .number = stat_helpers.min(float_array),
+        .number = statistics.min(float_array),
     };
 }
 
-fn maxHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn maxHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "max");
-    const float_array = (try expectNumberArrays(allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
 
     return .{
-        .number = stat_helpers.max(float_array),
+        .number = statistics.max(float_array),
     };
 }
 
-fn rangeHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn rangeHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "range");
-    const float_array = (try expectNumberArrays(allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
 
     return .{
-        .number = stat_helpers.range(float_array),
+        .number = statistics.range(float_array),
     };
 }
 
-fn varianceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn varianceHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("stat module: variance expects 2 arguments, got {d}\n", .{args.len});
@@ -119,19 +119,19 @@ fn varianceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *
     }
 
     const parts = try expectArrayArgs(args[0..1], env, 1, "stat", "variance");
-    const float_array = (try expectNumberArrays(allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
     const population = (try expectNumberArgs(args[1..], env, 1, "stat", "variance"))[0] == flags.population;
 
     return .{
         .number = if (population) blk: {
-            break :blk stat_helpers.variancePopulation(float_array);
+            break :blk statistics.variancePopulation(float_array);
         } else blk: {
-            break :blk stat_helpers.varianceSample(float_array);
+            break :blk statistics.varianceSample(float_array);
         },
     };
 }
 
-fn stddevHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn stddevHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("stat module: stddev expects 2 arguments, got {d}\n", .{args.len});
@@ -139,19 +139,19 @@ fn stddevHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *En
     }
 
     const parts = try expectArrayArgs(args[0..1], env, 1, "stat", "stddev");
-    const float_array = (try expectNumberArrays(allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
     const population = (try expectNumberArgs(args[1..], env, 1, "stat", "stddev"))[0] == flags.population;
 
     return .{
         .number = if (population) blk: {
-            break :blk stat_helpers.stddevPopulation(float_array);
+            break :blk statistics.stddevPopulation(float_array);
         } else blk: {
-            break :blk stat_helpers.stddevSample(float_array);
+            break :blk statistics.stddevSample(float_array);
         },
     };
 }
 
-fn covarianceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn covarianceHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 3) {
         try writer_err.print("stat module: covariance expects 3 arguments, got {d}\n", .{args.len});
@@ -159,19 +159,19 @@ fn covarianceHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env:
     }
 
     const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "covariance");
-    const float_arrays = try expectNumberArrays(allocator, arr_parts);
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts);
     const population = (try expectNumberArgs(args[2..], env, 1, "stat", "covariance"))[0] == flags.population;
 
     return .{
         .number = if (population) blk: {
-            break :blk stat_helpers.covariancePopulation(float_arrays[0], float_arrays[1]);
+            break :blk statistics.covariancePopulation(float_arrays[0], float_arrays[1]);
         } else blk: {
-            break :blk stat_helpers.covarianceSample(float_arrays[0], float_arrays[1]);
+            break :blk statistics.covarianceSample(float_arrays[0], float_arrays[1]);
         },
     };
 }
 
-fn correlationHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn correlationHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 3) {
         try writer_err.print("stat module: correlation expects 3 arguments, got {d}\n", .{args.len});
@@ -179,19 +179,19 @@ fn correlationHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env
     }
 
     const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "correlation");
-    const float_arrays = try expectNumberArrays(allocator, arr_parts);
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts);
     const population = (try expectNumberArgs(args[2..], env, 1, "stat", "correlation"))[0] == flags.population;
 
     return .{
         .number = if (population) blk: {
-            break :blk stat_helpers.correlationPopulation(float_arrays[0], float_arrays[1]);
+            break :blk statistics.correlationPopulation(float_arrays[0], float_arrays[1]);
         } else blk: {
-            break :blk stat_helpers.correlationSample(float_arrays[0], float_arrays[1]);
+            break :blk statistics.correlationSample(float_arrays[0], float_arrays[1]);
         },
     };
 }
 
-fn linearRegressionHandler(allocator: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn linearRegressionHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 3) {
         try writer_err.print("stat module: linear_regression expects 3 arguments, got {d}\n", .{args.len});
@@ -199,15 +199,15 @@ fn linearRegressionHandler(allocator: std.mem.Allocator, args: []const *ast.Expr
     }
 
     const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "linear_regression");
-    const float_arrays = try expectNumberArrays(allocator, arr_parts);
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts);
     const population = (try expectNumberArgs(args[2..], env, 1, "stat", "linear_regression"))[0] == flags.population;
     const result = if (population) blk: {
-        break :blk stat_helpers.linearRegressionPopulation(float_arrays[0], float_arrays[1]);
+        break :blk statistics.linearRegressionPopulation(float_arrays[0], float_arrays[1]);
     } else blk: {
-        break :blk stat_helpers.linearRegressionSample(float_arrays[0], float_arrays[1]);
+        break :blk statistics.linearRegressionSample(float_arrays[0], float_arrays[1]);
     };
 
-    var obj = std.StringHashMap(Value).init(allocator);
+    var obj = std.StringHashMap(Value).init(env.allocator);
     try obj.put("slope", .{
         .number = result.slope,
     });
@@ -223,25 +223,25 @@ fn linearRegressionHandler(allocator: std.mem.Allocator, args: []const *ast.Expr
     };
 }
 
-fn zScoreHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn zScoreHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectNumberArgs(args, env, 3, "stat", "z_score");
 
     return .{
-        .number = stat_helpers.zScore(parts[0], parts[1], parts[2]),
+        .number = statistics.zScore(parts[0], parts[1], parts[2]),
     };
 }
 
-fn normalPdfHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn normalPdfHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len == 1) {
         const num = (try expectNumberArgs(args, env, 1, "stat", "normal_pdf"))[0];
         return .{
-            .number = stat_helpers.standardNormalPdf(num),
+            .number = statistics.standardNormalPdf(num),
         };
     } else if (args.len == 3) {
         const parts = try expectNumberArgs(args, env, 3, "stat", "normal_pdf");
         return .{
-            .number = stat_helpers.normalPdf(parts[0], parts[1], parts[2]),
+            .number = statistics.normalPdf(parts[0], parts[1], parts[2]),
         };
     } else {
         try writer_err.print("stat module: normal_pdf expects 1 or 3 arguments, got {d}", .{args.len});
@@ -249,17 +249,17 @@ fn normalPdfHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environ
     }
 }
 
-fn normalCdfHandler(_: std.mem.Allocator, args: []const *ast.Expr, env: *Environment) !Value {
+fn normalCdfHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len == 1) {
         const num = (try expectNumberArgs(args, env, 1, "stat", "normal_cdf"))[0];
         return .{
-            .number = stat_helpers.standardNormalCdf(num),
+            .number = statistics.standardNormalCdf(num),
         };
     } else if (args.len == 3) {
         const parts = try expectNumberArgs(args, env, 3, "stat", "normal_pdf");
         return .{
-            .number = stat_helpers.normalCdf(parts[0], parts[1], parts[2]),
+            .number = statistics.normalCdf(parts[0], parts[1], parts[2]),
         };
     } else {
         try writer_err.print("stat module: normal_cdf expects 1 or 3 arguments, got {d}", .{args.len});

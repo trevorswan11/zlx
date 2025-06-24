@@ -11,8 +11,8 @@ const Value = interpreter.Value;
 
 const ArrayList = @import("dsa").Array(Value);
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 pub const ArrayListInstance = struct {
     array: ArrayList,
@@ -53,11 +53,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return ARRAY_LIST_TYPE;
 }
 
-fn arrayListConstructor(
-    allocator: std.mem.Allocator,
-    args: []const *ast.Expr,
-    env: *Environment,
-) !Value {
+fn arrayListConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     const capacity: usize = if (args.len == 1) blk: {
         const val = try interpreter.evalExpr(args[0], env);
@@ -68,13 +64,13 @@ fn arrayListConstructor(
         break :blk @intFromFloat(val.number);
     } else 8;
 
-    const array = try ArrayList.init(allocator, capacity);
-    const wrapped = try allocator.create(ArrayListInstance);
+    const array = try ArrayList.init(env.allocator, capacity);
+    const wrapped = try env.allocator.create(ArrayListInstance);
     wrapped.* = .{
         .array = array,
     };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -82,10 +78,10 @@ fn arrayListConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = ARRAY_LIST_TYPE;
 
     return .{
@@ -96,7 +92,7 @@ fn arrayListConstructor(
     };
 }
 
-fn arrayListPush(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn arrayListPush(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("array_list.push(value) expects 1 argument but got {d}\n", .{args.len});
@@ -108,7 +104,7 @@ fn arrayListPush(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, en
     return .nil;
 }
 
-fn arrayListInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn arrayListInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("array_list.insert(index, value) expects 2 arguments but got {d}\n", .{args.len});
@@ -126,7 +122,7 @@ fn arrayListInsert(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, 
     return .nil;
 }
 
-fn arrayListRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn arrayListRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("array_list.remove(index) expects 1 argument but got {d}\n", .{args.len});
@@ -142,12 +138,12 @@ fn arrayListRemove(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, 
     return try inst.array.remove(@intFromFloat(index_val.number));
 }
 
-fn arrayListPop(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListPop(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getArrayListInstance(this);
     return try inst.array.pop();
 }
 
-fn arrayListGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn arrayListGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("array_list.get(index) expects 1 argument but got {d}\n", .{args.len});
@@ -163,7 +159,7 @@ fn arrayListGet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env
     return try inst.array.get(@intFromFloat(index_val.number));
 }
 
-fn arrayListSet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn arrayListSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("array_list.set(index, value) expects 2 arguments but got {d}\n", .{args.len});
@@ -181,29 +177,29 @@ fn arrayListSet(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env
     return .nil;
 }
 
-fn arrayListClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getArrayListInstance(this);
     inst.array.clear();
     return .nil;
 }
 
-fn arrayListEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getArrayListInstance(this);
     return .{
         .boolean = inst.array.empty(),
     };
 }
 
-fn arrayListSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getArrayListInstance(this);
     return .{
         .number = @floatFromInt(inst.array.len),
     };
 }
 
-pub fn arrayListItems(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+pub fn arrayListItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getArrayListInstance(this);
-    var vals = std.ArrayList(Value).init(allocator);
+    var vals = std.ArrayList(Value).init(env.allocator);
 
     for (inst.array.arr[0..inst.array.len]) |val| {
         try vals.append(val);
@@ -214,7 +210,7 @@ pub fn arrayListItems(allocator: std.mem.Allocator, this: *Value, _: []const *as
     };
 }
 
-fn arrayListStr(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getArrayListInstance(this);
     return .{
         .string = try toString(inst.array),

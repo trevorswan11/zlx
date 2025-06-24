@@ -9,8 +9,8 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const StdMethod = Value.StdMethod;
-const StdCtor = Value.StdCtor;
+const StdMethod = builtins.StdMethod;
+const StdCtor = builtins.StdCtor;
 
 pub const AdjacencyMatrixInstance = struct {
     matrix: [][]Node,
@@ -57,11 +57,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return ADJ_MATRIX_TYPE;
 }
 
-fn adjMatrixConstructor(
-    allocator: std.mem.Allocator,
-    args: []const *ast.Expr,
-    env: *Environment,
-) !Value {
+fn adjMatrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
         try writer_err.print("adj_matrix(size) expects 1 argument but got {d}\n", .{args.len});
@@ -74,9 +70,9 @@ fn adjMatrixConstructor(
     }
 
     const size: usize = @intFromFloat(size_val.number);
-    const outer = try allocator.alloc([]Node, size);
+    const outer = try env.allocator.alloc([]Node, size);
     for (outer) |*row| {
-        row.* = try allocator.alloc(Node, size);
+        row.* = try env.allocator.alloc(Node, size);
         for (0..size) |i| {
             row.*[i] = Node{
                 .flag = false,
@@ -84,14 +80,14 @@ fn adjMatrixConstructor(
         }
     }
 
-    const wrapped = try allocator.create(AdjacencyMatrixInstance);
+    const wrapped = try env.allocator.create(AdjacencyMatrixInstance);
     wrapped.* = .{
         .matrix = outer,
         .size = size,
         .edge_count = 0,
     };
 
-    const internal_ptr = try allocator.create(Value);
+    const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
         .typed_val = .{
             .value = @ptrCast(@alignCast(wrapped)),
@@ -99,10 +95,10 @@ fn adjMatrixConstructor(
         },
     };
 
-    var fields = std.StringHashMap(*Value).init(allocator);
+    var fields = std.StringHashMap(*Value).init(env.allocator);
     try fields.put("__internal", internal_ptr);
 
-    const type_ptr = try allocator.create(Value);
+    const type_ptr = try env.allocator.create(Value);
     type_ptr.* = ADJ_MATRIX_TYPE;
 
     return .{
@@ -113,7 +109,7 @@ fn adjMatrixConstructor(
     };
 }
 
-fn adjMatrixAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjMatrixAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("adj_matrix.add_edge(val_from, val_to) expects 2 arguments but got {d}\n", .{args.len});
@@ -144,7 +140,7 @@ fn adjMatrixAddEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr,
     return .nil;
 }
 
-fn adjMatrixAddWeightEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjMatrixAddWeightEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 3) {
         try writer_err.print("adj_matrix.add_weight_edge(from, to, weight) expects 3 arguments but got {d}\n", .{args.len});
@@ -178,7 +174,7 @@ fn adjMatrixAddWeightEdge(_: std.mem.Allocator, this: *Value, args: []const *ast
     return .nil;
 }
 
-fn adjMatrixGetWeight(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjMatrixGetWeight(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("adj_matrix.get_weight(from, to) expects 2 arguments but got {d}\n", .{args.len});
@@ -214,7 +210,7 @@ fn adjMatrixGetWeight(_: std.mem.Allocator, this: *Value, args: []const *ast.Exp
     };
 }
 
-fn adjMatrixRemoveEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjMatrixRemoveEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("adj_matrix.remove_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
@@ -245,7 +241,7 @@ fn adjMatrixRemoveEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Ex
     return .nil;
 }
 
-fn adjMatrixContainsEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjMatrixContainsEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 2) {
         try writer_err.print("adj_matrix.contains_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
@@ -273,14 +269,14 @@ fn adjMatrixContainsEdge(_: std.mem.Allocator, this: *Value, args: []const *ast.
     };
 }
 
-fn adjMatrixSize(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMatrixInstance(this);
     return .{
         .number = @floatFromInt(inst.size),
     };
 }
 
-fn adjMatrixEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMatrixInstance(this);
     for (inst.matrix) |row| {
         for (row) |entry| {
@@ -296,7 +292,7 @@ fn adjMatrixEmpty(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *
     };
 }
 
-fn adjMatrixClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMatrixInstance(this);
     for (inst.matrix) |row| {
         for (row) |*entry| {
@@ -306,17 +302,17 @@ fn adjMatrixClear(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *
     return .nil;
 }
 
-fn adjMatrixEdges(_: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixEdges(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     const inst = try getMatrixInstance(this);
     return .{
         .number = @floatFromInt(inst.edge_count),
     };
 }
 
-fn adjMatrixStr(allocator: std.mem.Allocator, this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixStr(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getMatrixInstance(this);
     return .{
-        .string = try toString(allocator, inst),
+        .string = try toString(env.allocator, inst),
     };
 }
 

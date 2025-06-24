@@ -143,7 +143,11 @@ test {
     _ = @import("builtins/modules/csv.zig");
     _ = @import("builtins/modules/json.zig");
     _ = @import("builtins/modules/stat.zig");
-    _ = @import("builtins/modules/stat_helpers.zig");
+
+    // Module Helper Functions
+    _ = @import("builtins/modules/helpers/statistics.zig");
+    _ = @import("builtins/modules/helpers/matrix.zig");
+    _ = @import("builtins/modules/helpers/vector.zig");
 
     // Builtin Standard Library Structs
     _ = @import("builtins/types/adjacency_list.zig");
