@@ -105,6 +105,27 @@ pub fn expectNumberArgs(
     return try result.toOwnedSlice();
 }
 
+pub fn expectNumberArrays(allocator: std.mem.Allocator, arrays: []const std.ArrayList(Value)) ![]const []const f64 {
+    const writer_err = driver.getWriterErr();
+    var result = std.ArrayList([]const f64).init(allocator);
+    defer result.deinit();
+
+    for (arrays) |arr| {
+        var nums = try std.ArrayList(f64).initCapacity(allocator, arr.items.len);
+        defer nums.deinit();
+        for (arr.items, 0..) |val, idx| {
+            if (val != .number) {
+                try writer_err.print("Expected array packed with numbers but found type {s} @ index {d}\n", .{ @tagName(val), idx });
+                return error.TypeMismatch;
+            }
+            try nums.append(val.number);
+        }
+        try result.append(try nums.toOwnedSlice());
+    }
+
+    return try result.toOwnedSlice();
+}
+
 // === Builtin Functions ===
 
 const BuiltinFnHandler = *const fn (
@@ -235,6 +256,10 @@ pub const builtin_modules = [_]BuiltinModule{
     .{
         .name = "json",
         .loader = @import("modules/json.zig").load,
+    },
+    .{
+        .name = "stat",
+        .loader = @import("modules/stat.zig").load,
     },
 
     // Types

@@ -128,7 +128,7 @@ pub const Parser = struct {
 };
 
 pub fn parse(allocator: std.mem.Allocator, source: []const u8) !*ast.Stmt {
-    const parseStmt = @import("stmt.zig").parseStmt;
+    const parseStmt = @import("stmt_parsers.zig").parseStmt;
     var body = std.ArrayList(*ast.Stmt).init(allocator);
     const tokens = try tokenizer.tokenize(allocator, source);
     var parser = try Parser.init(allocator, tokens, false);
@@ -152,7 +152,7 @@ pub fn parse(allocator: std.mem.Allocator, source: []const u8) !*ast.Stmt {
 }
 
 pub fn parseREPL(allocator: std.mem.Allocator, source: []const u8) !*ast.Stmt {
-    const parseStmt = @import("stmt.zig").parseStmt;
+    const parseStmt = @import("stmt_parsers.zig").parseStmt;
     var body = std.ArrayList(*ast.Stmt).init(allocator);
     const tokens = try tokenizer.tokenize(allocator, source);
     var parser = try Parser.init(allocator, tokens, true);

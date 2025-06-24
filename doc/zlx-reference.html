@@ -126,6 +126,28 @@
             padding-left: 1.5em;
             margin-top: 0.2em;
         }
+
+        details summary {
+            cursor: pointer;
+            list-style: none;
+            margin: 0.5rem 0;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details summary::before {
+            content: "▸";
+            display: inline-block;
+            margin-right: 0.5em;
+            transform: rotate(0deg);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        details[open] summary::before {
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 
@@ -296,6 +318,27 @@
                     <ul>
                         <li><a href="#json-parse">parse(text)</a></li>
                         <li><a href="#json-stringify">stringify(value)</a></li>
+                    </ul>
+                </li>
+
+                <li>
+                    <a href="#stat">stat</a>
+                    <ul>
+                        <li><a href="#stat-mean">mean</a></li>
+                        <li><a href="#stat-median">median</a></li>
+                        <li><a href="#stat-mode">mode</a></li>
+                        <li><a href="#stat-min">min</a></li>
+                        <li><a href="#stat-max">max</a></li>
+                        <li><a href="#stat-range">range</a></li>
+                        <li><a href="#stat-variance">variance</a></li>
+                        <li><a href="#stat-stddev">stddev</a></li>
+                        <li><a href="#stat-covariance">covariance</a></li>
+                        <li><a href="#stat-correlation">correlation</a></li>
+                        <li><a href="#stat-linear_regression">linear_regression</a></li>
+                        <li><a href="#stat-z_score">z_score</a></li>
+                        <li><a href="#stat-normal_pdf">normal_pdf</a></li>
+                        <li><a href="#stat-normal_cdf">normal_cdf</a></li>
+                        <li><a href="#stat-constants">Stat Constants</a></li>
                     </ul>
                 </li>
 
@@ -1132,6 +1175,86 @@ println(y);                     // 4
                 types. Throws an error if the input contains unsupported types such as functions or class instances.
             </p>
 
+            <!-- Stat Module Docs -->
+            <h2 id="stat">stat</h2>
+            <p>The <code>stat</code> module provides functions for basic and advanced statistical computations. It
+                supports population and sample variants where relevant. Use <code>stat.population</code> or
+                <code>stat.sample</code> as a flag argument where applicable.
+            </p>
+
+            <h3 id="stat-mean">mean(array)</h3>
+            <p>Returns the arithmetic mean of the numeric array.</p>
+
+            <h3 id="stat-median">median(array)</h3>
+            <p>Returns the median value of the numeric array. If the array has even length, the average of the middle
+                two values is returned.</p>
+
+            <h3 id="stat-mode">mode(array)</h3>
+            <p>Returns the most frequent value in the numeric array. Returns <code>nil</code> if there is no mode (e.g.,
+                uniform data).</p>
+
+            <h3 id="stat-min">min(array)</h3>
+            <p>Returns the minimum value in the numeric array.</p>
+
+            <h3 id="stat-max">max(array)</h3>
+            <p>Returns the maximum value in the numeric array.</p>
+
+            <h3 id="stat-range">range(array)</h3>
+            <p>Returns the difference between the maximum and minimum values in the numeric array.</p>
+
+            <h3 id="stat-variance">variance(array, flag)</h3>
+            <p>Returns the variance of the array. The second argument must be <code>stat.population</code> or
+                <code>stat.sample</code>.
+            </p>
+
+            <h3 id="stat-stddev">stddev(array, flag)</h3>
+            <p>Returns the standard deviation of the array. The second argument must be <code>stat.population</code> or
+                <code>stat.sample</code>.
+            </p>
+
+            <h3 id="stat-covariance">covariance(arrayX, arrayY, flag)</h3>
+            <p>Returns the covariance of the two numeric arrays. The third argument specifies
+                <code>stat.population</code> or <code>stat.sample</code>. Both arrays must have the same length.
+            </p>
+
+            <h3 id="stat-correlation">correlation(arrayX, arrayY, flag)</h3>
+            <p>Returns the Pearson correlation coefficient between the two numeric arrays. The third argument specifies
+                <code>stat.population</code> or <code>stat.sample</code>.
+            </p>
+
+            <h3 id="stat-linear_regression">linear_regression(arrayX, arrayY, flag)</h3>
+            <p>Performs linear regression on the data and returns an object with keys <code>slope</code>,
+                <code>intercept</code>, and <code>r_squared</code>. The third argument specifies
+                <code>stat.population</code> or <code>stat.sample</code>.
+            </p>
+
+            <h3 id="stat-z_score">z_score(x, mean, stddev)</h3>
+            <p>Returns the z-score of a value <code>x</code> given its mean and standard deviation.</p>
+
+            <h3 id="stat-normal_pdf">normal_pdf(x)</h3>
+            <p>Returns the probability density of <code>x</code> in the standard normal distribution.</p>
+
+            <h3 id="stat-normal_pdf-3">normal_pdf(x, mean, stddev)</h3>
+            <p>Returns the probability density of <code>x</code> under a normal distribution with the given
+                <code>mean</code> and <code>stddev</code>.
+            </p>
+
+            <h3 id="stat-normal_cdf">normal_cdf(x)</h3>
+            <p>Returns the cumulative distribution value of <code>x</code> in the standard normal distribution.</p>
+
+            <h3 id="stat-normal_cdf-3">normal_cdf(x, mean, stddev)</h3>
+            <p>Returns the cumulative distribution value of <code>x</code> under a normal distribution with the given
+                <code>mean</code> and <code>stddev</code>.
+            </p>
+
+            <h3 id="stat-constants">Stat Constants</h3>
+            <p>
+                <code>stat.population = 0.0</code><br>
+                <code>stat.sample = 1.0</code><br>
+                Used to distinguish between population and sample variants in applicable functions.
+            </p>
+
+            <!-- Builtin Function Docs -->
             <h2 id="builtin-functions">Functions</h2>
             <p>The builtin functions found in ZLX implement reasonably verbose error messages that can be used to guide
                 their usage, but this section can be used for clarity.</p>

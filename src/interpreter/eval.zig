@@ -79,5 +79,6 @@ pub fn evalStmt(stmt: *ast.Stmt, env: *Environment) anyerror!Value {
         .continue_stmt => |_| return .continue_signal,
         .return_stmt => |*s| return try stmt_interpreters.returns(s, env),
         .match_stmt => |*m| return try stmt_interpreters.match(m, env),
+        .enum_decl => |*e| return try stmt_interpreters.enumerate(e, env),
     }
 }

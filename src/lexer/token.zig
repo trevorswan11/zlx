@@ -68,6 +68,7 @@ pub const TokenKind = enum(u32) {
     LET,
     CONST,
     STRUCT,
+    ENUM,
     NEW,
     IMPORT,
     FROM,
@@ -168,6 +169,7 @@ pub const Token = struct {
         try reserved.put("let", .LET);
         try reserved.put("const", .CONST);
         try reserved.put("struct", .STRUCT);
+        try reserved.put("enum", .ENUM);
         try reserved.put("new", .NEW);
         try reserved.put("import", .IMPORT);
         try reserved.put("from", .FROM);
@@ -210,6 +212,7 @@ pub const Token = struct {
         try reserved.put("time", .IDENTIFIER);
         try reserved.put("csv", .IDENTIFIER);
         try reserved.put("json", .IDENTIFIER);
+        try reserved.put("stat", .IDENTIFIER);
 
         // Built-in Structs
         try reserved.put("adjacency_list", .IDENTIFIER);

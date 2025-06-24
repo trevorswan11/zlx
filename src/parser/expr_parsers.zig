@@ -4,7 +4,7 @@ const parser = @import("parser.zig");
 const token = @import("../lexer/token.zig");
 const ast = @import("ast.zig");
 const lus = @import("lookups.zig");
-const stmts = @import("stmt.zig");
+const stmts = @import("stmt_parsers.zig");
 const driver = @import("../utils/driver.zig");
 
 const BindingPower = lus.BindingPower;

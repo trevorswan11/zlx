@@ -3,8 +3,8 @@ const std = @import("std");
 const Parser = @import("parser.zig").Parser;
 const ast = @import("ast.zig");
 const token = @import("../lexer/token.zig");
-const stmts = @import("stmt.zig");
-const exprs = @import("expr.zig");
+const stmts = @import("stmt_parsers.zig");
+const exprs = @import("expr_parsers.zig");
 const driver = @import("../utils/driver.zig");
 
 pub const BindingPower = struct {
@@ -192,6 +192,7 @@ pub fn createTokenLookups(allocator: std.mem.Allocator) !void {
     try stmt(.FOREACH, stmts.parseForEachStmt);
     try stmt(.WHILE, stmts.parseWhileStmt);
     try stmt(.STRUCT, stmts.parseStructDeclStmt);
+    try stmt(.ENUM, stmts.parseEnumDeclStmt);
     try stmt(.BREAK, stmts.parseBreakStmt);
     try stmt(.CONTINUE, stmts.parseContinueStmt);
     try stmt(.RETURN, stmts.parseReturnStmt);

@@ -24,7 +24,7 @@
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(let|const|struct|new|import|from|fn|if|else|for|foreach|while|typeof|delete|in|break|continue|return|match)\\b",
+          "match": "\\b(let|const|struct|enum|new|import|from|fn|if|else|for|foreach|while|typeof|delete|in|break|continue|return|match)\\b",
           "name": "keyword.control.zlx"
         },
         {
@@ -44,7 +44,7 @@
     "builtin_modules": {
       "patterns": [
         {
-          "match": "\\b(array|debug|fs|math|path|random|string|sys|time|csv|json)\\b",
+          "match": "\\b(array|debug|fs|math|path|random|string|sys|time|csv|json|stat)\\b",
           "name": "support.type.builtin.zlx"
         }
       ]

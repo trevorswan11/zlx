@@ -204,3 +204,36 @@ test "match_expr" {
     const actual = output_buffer.items;
     try testing.expectEqualStrings(expected, actual);
 }
+
+// Tests basic enum functionality
+test "enum" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = testing.Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    testing.driver.setWriters(writer);
+
+    const source =
+        \\enum Status { OK, ERROR, TIMEOUT }
+        \\println(Status.OK);
+        \\println(Status.ERROR == 1);
+    ;
+
+    const block = try testing.parse(allocator, source);
+    _ = try testing.eval.evalStmt(block, &env);
+
+    const expected =
+        \\0
+        \\true
+        \\
+    ;
+
+    const actual = output_buffer.items;
+    try testing.expectEqualStrings(expected, actual);
+}

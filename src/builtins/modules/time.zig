@@ -5,8 +5,8 @@ const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
 const time_constants = @import("time_constants.zig");
-const eval = interpreter.eval;
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;

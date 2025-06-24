@@ -19,6 +19,50 @@ pub fn mean(values: []const f64) f64 {
     return if (values.len > 0) sum / @as(f64, @floatFromInt(values.len)) else 0;
 }
 
+/// The median value of an array of floats
+pub fn median(allocator: std.mem.Allocator, values: []const f64) !f64 {
+    if (values.len == 0) return 0;
+    const sorted = try allocator.alloc(f64, values.len);
+    defer allocator.free(sorted);
+    std.mem.copyForwards(f64, sorted, values);
+    std.sort.insertion(f64, sorted, {}, std.sort.asc(f64));
+
+    const mid = values.len / 2;
+    if (values.len % 2 == 0) {
+        return (sorted[mid - 1] + sorted[mid]) / 2.0;
+    } else {
+        return sorted[mid];
+    }
+}
+
+/// The most common value of an array of floats
+pub fn mode(allocator: std.mem.Allocator, values: []const f64) !f64 {
+    var freq = std.HashMap(f64, usize, FloatContext, 80).init(allocator);
+    defer freq.deinit();
+
+    for (values) |v| {
+        const count = freq.get(v) orelse 0;
+        try freq.put(v, count + 1);
+    }
+
+    var max_val: f64 = 0;
+    var max_count: usize = 0;
+
+    var iter = freq.iterator();
+    while (iter.next()) |entry| {
+        if (entry.value_ptr.* > max_count) {
+            max_val = entry.key_ptr.*;
+            max_count = entry.value_ptr.*;
+        }
+    }
+
+    if (max_count <= 1) {
+        return error.NoMode;
+    }
+
+    return max_val;
+}
+
 /// The min value of an array of floats
 pub fn min(values: []const f64) f64 {
     if (values.len == 0) return 0;
@@ -76,46 +120,6 @@ pub fn stddevPopulation(values: []const f64) f64 {
 /// The variance of data assumed to be from a sample
 pub fn stddevSample(values: []const f64) f64 {
     return @sqrt(varianceSample(values));
-}
-
-/// The median value of an array of floats
-pub fn median(allocator: std.mem.Allocator, values: []const f64) !f64 {
-    if (values.len == 0) return 0;
-    const sorted = try allocator.alloc(f64, values.len);
-    defer allocator.free(sorted);
-    std.mem.copyForwards(f64, sorted, values);
-    std.sort.insertion(f64, sorted, {}, std.sort.asc(f64));
-
-    const mid = values.len / 2;
-    if (values.len % 2 == 0) {
-        return (sorted[mid - 1] + sorted[mid]) / 2.0;
-    } else {
-        return sorted[mid];
-    }
-}
-
-/// The most common value of an array of floats
-pub fn mode(allocator: std.mem.Allocator, values: []const f64) !f64 {
-    var freq = std.HashMap(f64, usize, FloatContext, 80).init(allocator);
-    defer freq.deinit();
-
-    for (values) |v| {
-        const count = freq.get(v) orelse 0;
-        try freq.put(v, count + 1);
-    }
-
-    var max_val: f64 = 0;
-    var max_count: usize = 0;
-
-    var iter = freq.iterator();
-    while (iter.next()) |entry| {
-        if (entry.value_ptr.* > max_count) {
-            max_val = entry.key_ptr.*;
-            max_count = entry.value_ptr.*;
-        }
-    }
-
-    return max_val;
 }
 
 /// The covariance of data assumed to be from a sample
@@ -215,12 +219,12 @@ pub fn linearRegressionSample(x: []const f64, y: []const f64) RegressionResult {
 
 /// The error function, solved numerically for probability distributions (gaussian)
 fn erf(x: f64) f64 {
-    const a1 = 0.254829592;
-    const a2 = -0.284496736;
-    const a3 = 1.421413741;
-    const a4 = -1.453152027;
-    const a5 = 1.061405429;
-    const p = 0.3275911;
+    const a1: f64 = 0.254829592;
+    const a2: f64 = -0.284496736;
+    const a3: f64 = 1.421413741;
+    const a4: f64 = -1.453152027;
+    const a5: f64 = 1.061405429;
+    const p: f64 = 0.3275911;
 
     const sign: f64 = if (x < 0) -1.0 else 1.0;
     const abs_x = @abs(x);
@@ -232,38 +236,34 @@ fn erf(x: f64) f64 {
 }
 
 /// The z-score of an input relative to the input mean and std
-pub fn z_score(x: f64, mu: f64, sigma: f64) f64 {
-    if (sigma == 0) {return 0;}
+pub fn zScore(x: f64, mu: f64, sigma: f64) f64 {
+    if (sigma == 0) {
+        return 0;
+    }
     return (x - mu) / sigma;
 }
 
 /// The normal probability distribution function
-pub fn normal_pdf(x: f64, mu: f64, sigma: f64) f64 {
+pub fn normalPdf(x: f64, mu: f64, sigma: f64) f64 {
     const sqrt2pi = 2.5066282746310002; // ≈ sqrt(2π)
-    const z = z_score(x, mu, sigma);
+    const z = zScore(x, mu, sigma);
     return (@exp(-0.5 * z * z)) / (sigma * sqrt2pi);
 }
 
 /// The normal cumulative distribution function
-pub fn normal_cdf(x: f64, mu: f64, sigma: f64) f64 {
+pub fn normalCdf(x: f64, mu: f64, sigma: f64) f64 {
     const z = (x - mu) / (sigma * @sqrt(2.0));
     return 0.5 * (1.0 + erf(z));
 }
 
 /// The normal probability distribution function with mean 0 and std 1
-pub fn standard_normal_pdf(x: f64) f64 {
-    return normal_pdf(x, 0.0, 1.0);
+pub fn standardNormalPdf(x: f64) f64 {
+    return normalPdf(x, 0.0, 1.0);
 }
 
 /// The normal cumulative distribution function with mean 0 and std 1
-pub fn standard_normal_cdf(x: f64) f64 {
-    return normal_cdf(x, 0.0, 1.0);
-}
-
-pub fn z_test(sample_mean: f64, population_mean: f64, stddev: f64, n: usize) f64 {
-    if (stddev == 0 or n == 0) {return 0;}
-    const se = stddev / @sqrt(@as(f64, @floatFromInt(n)));
-    return (sample_mean - population_mean) / se;
+pub fn standardNormalCdf(x: f64) f64 {
+    return normalCdf(x, 0.0, 1.0);
 }
 
 // === TESTING ===
@@ -373,39 +373,29 @@ test "linear regression: constant Y" {
 }
 
 test "z_score" {
-    try testing.expectApproxEqAbs(@as(f64, 1.0), z_score(6.0, 5.0, 1.0), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, -1.0), z_score(4.0, 5.0, 1.0), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, 0.0), z_score(5.0, 5.0, 1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 1.0), zScore(6.0, 5.0, 1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, -1.0), zScore(4.0, 5.0, 1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.0), zScore(5.0, 5.0, 1.0), 1e-6);
 }
 
 test "standard_normal_pdf" {
-    try testing.expectApproxEqAbs(@as(f64, 0.39894228), standard_normal_pdf(0.0), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, 0.24197072), standard_normal_pdf(1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.39894228), standardNormalPdf(0.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.24197072), standardNormalPdf(1.0), 1e-6);
 }
 
 test "standard_normal_cdf" {
-    try testing.expectApproxEqAbs(@as(f64, 0.5), standard_normal_cdf(0.0), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, 0.8413447), standard_normal_cdf(1.0), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, 0.1586553), standard_normal_cdf(-1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.5), standardNormalCdf(0.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.8413447), standardNormalCdf(1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.1586553), standardNormalCdf(-1.0), 1e-6);
 }
 
 test "normal_pdf (non-standard)" {
-    try testing.expectApproxEqAbs(@as(f64, 0.39894228), normal_pdf(5.0, 5.0, 1.0), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, 0.24197072), normal_pdf(6.0, 5.0, 1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.39894228), normalPdf(5.0, 5.0, 1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.24197072), normalPdf(6.0, 5.0, 1.0), 1e-6);
 }
 
 test "normal_cdf (non-standard)" {
-    try testing.expectApproxEqAbs(@as(f64, 0.5), normal_cdf(5.0, 5.0, 1.0), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, 0.8413447), normal_cdf(6.0, 5.0, 1.0), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, 0.1586553), normal_cdf(4.0, 5.0, 1.0), 1e-6);
-}
-
-test "z_test" {
-    // sample mean = 105, population mean = 100, stddev = 15, n = 25
-    // z = (105 - 100) / (15 / sqrt(25)) = 5 / 3 = 1.666...
-    try testing.expectApproxEqAbs(@as(f64, 1.6666667), z_test(105.0, 100.0, 15.0, 25), 1e-6);
-
-    // Should return 0 for edge cases
-    try testing.expectApproxEqAbs(@as(f64, 0.0), z_test(105.0, 100.0, 0.0, 25), 1e-6);
-    try testing.expectApproxEqAbs(@as(f64, 0.0), z_test(105.0, 100.0, 15.0, 0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.5), normalCdf(5.0, 5.0, 1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.8413447), normalCdf(6.0, 5.0, 1.0), 1e-6);
+    try testing.expectApproxEqAbs(@as(f64, 0.1586553), normalCdf(4.0, 5.0, 1.0), 1e-6);
 }

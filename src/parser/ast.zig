@@ -334,6 +334,11 @@ pub const ReturnStmt = struct {
     value: ?*Expr,
 };
 
+pub const EnumDeclarationStmt = struct {
+    name: []const u8,
+    variants: []const []const u8,
+};
+
 pub const Stmt = union(enum) {
     block: BlockStmt,
     var_decl: VarDeclarationStmt,
@@ -348,6 +353,7 @@ pub const Stmt = union(enum) {
     continue_stmt: ContinueStmt,
     return_stmt: ReturnStmt,
     match_stmt: Match,
+    enum_decl: EnumDeclarationStmt,
 
     pub fn toString(self: *Stmt, allocator: std.mem.Allocator) ![]const u8 {
         var buffer = std.ArrayList(u8).init(allocator);
@@ -487,6 +493,18 @@ pub const Stmt = union(enum) {
                     try indent(writer, indent_level + 2);
                     try writer.print("Body:\n", .{});
                     try stmt.body.writeTo(writer, indent_level + 3);
+                }
+            },
+            .enum_decl => |e| {
+                try indent(writer, indent_level);
+                try writer.print("EnumDecl:\n", .{});
+                try indent(writer, indent_level + 1);
+                try writer.print("Name: {s}\n", .{e.name});
+                try indent(writer, indent_level + 1);
+                try writer.print("Variants:\n", .{});
+                for (e.variants) |variant| {
+                    try indent(writer, indent_level + 2);
+                    try writer.print("{s}\n", .{variant});
                 }
             },
         }

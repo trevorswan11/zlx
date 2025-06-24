@@ -7,7 +7,6 @@ const syntax = @import("utils/syntax.zig");
 const driver = @import("utils/driver.zig");
 const getArgs = driver.getArgs;
 const readFile = driver.readFile;
-const printStmt = driver.printStmt;
 
 pub fn main() !void {
     const start = std.time.nanoTimestamp();
@@ -73,7 +72,7 @@ pub fn main() !void {
         if (input.dump) {
             try writer_out.print("Dumping AST...\n", .{});
         }
-        printStmt(block, allocator) catch |err| {
+        writer_out.print("{s}", .{try block.toString(allocator)}) catch |err| {
             try writer_err.print("Error parsing main block statement: {!}\n", .{err});
         };
     }
@@ -143,6 +142,7 @@ test {
     _ = @import("builtins/modules/time.zig");
     _ = @import("builtins/modules/csv.zig");
     _ = @import("builtins/modules/json.zig");
+    _ = @import("builtins/modules/stat.zig");
     _ = @import("builtins/modules/stat_helpers.zig");
 
     // Builtin Standard Library Structs

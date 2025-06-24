@@ -4,7 +4,7 @@ const parser = @import("parser.zig");
 const token = @import("../lexer/token.zig");
 const ast = @import("ast.zig");
 const lus = @import("lookups.zig");
-const expr = @import("expr.zig");
+const expr = @import("expr_parsers.zig");
 const types = @import("types.zig");
 const driver = @import("../utils/driver.zig");
 
@@ -448,6 +448,33 @@ pub fn parseMatchStmt(p: *parser.Parser) !ast.Stmt {
         .match_stmt = .{
             .expression = exp,
             .cases = cases,
+        },
+    };
+}
+
+pub fn parseEnumDeclStmt(p: *parser.Parser) !ast.Stmt {
+    _ = try p.expect(.ENUM);
+    const name_tok = try p.expect(.IDENTIFIER);
+    _ = try p.expect(.OPEN_CURLY);
+
+    var variants = std.ArrayList([]const u8).init(p.allocator);
+    while (p.currentTokenKind() != .CLOSE_CURLY) {
+        const variant_tok = try p.expect(.IDENTIFIER);
+        try variants.append(variant_tok.value);
+
+        if (p.currentTokenKind() != .COMMA) {
+            break;
+        } else {
+            _ = p.advance();
+        }
+    }
+
+    _ = try p.expect(.CLOSE_CURLY);
+
+    return .{
+        .enum_decl = .{
+            .name = name_tok.value,
+            .variants = try variants.toOwnedSlice(),
         },
     };
 }

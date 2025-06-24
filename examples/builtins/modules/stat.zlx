@@ -1,0 +1,53 @@
+import stat;
+
+println(stat.mean([2.0, 4.0, 6.0, 8.0]));
+println(stat.min([7.0, 2.0, 5.0, 9.0]));
+println(stat.max([7.0, 2.0, 5.0, 9.0]));
+println(stat.range([3.0, 6.0, 9.0]));
+
+println(stat.variance([2.0, 4.0, 6.0], stat.population));
+println(stat.variance([2.0, 4.0, 6.0], stat.sample));
+
+println(stat.stddev([2.0, 4.0, 6.0], stat.population));
+println(stat.stddev([2.0, 4.0, 6.0], stat.sample));
+
+println(stat.median([3.0, 1.0, 2.0]));
+println(stat.median([5.0, 3.0, 1.0, 2.0]));
+
+println(stat.mode([1.0, 2.0, 2.0, 3.0, 3.0, 3.0]));
+
+println(stat.covariance([2.0, 4.0, 6.0], [3.0, 6.0, 9.0], stat.population));
+println(stat.covariance([2.0, 4.0, 6.0], [3.0, 6.0, 9.0], stat.sample));
+
+println(stat.correlation([1.0, 2.0, 3.0], [4.0, 4.0, 4.0], stat.population));
+println(stat.correlation([1.0, 2.0, 3.0], [4.0, 4.0, 4.0], stat.sample));
+
+let lr_pop = stat.linear_regression([2.0, 4.0, 6.0], [3.0, 6.0, 9.0], stat.population);
+println(lr_pop.slope, lr_pop.intercept, lr_pop.r_squared);
+
+let lr_sample = stat.linear_regression([2.0, 4.0, 6.0], [3.0, 6.0, 9.0], stat.sample);
+println(lr_sample.slope, lr_sample.intercept, lr_sample.r_squared);
+
+let lr_flat = stat.linear_regression([1.0, 2.0, 3.0], [5.0, 5.0, 5.0], stat.population);
+println(lr_flat.slope, lr_flat.intercept, lr_flat.r_squared);
+
+let lr_flat_s = stat.linear_regression([1.0, 2.0, 3.0], [5.0, 5.0, 5.0], stat.sample);
+println(lr_flat_s.slope, lr_flat_s.intercept, lr_flat_s.r_squared);
+
+println(stat.z_score(6.0, 5.0, 1.0));
+println(stat.z_score(4.0, 5.0, 1.0));
+println(stat.z_score(5.0, 5.0, 1.0));
+
+println(stat.normal_pdf(0.0));
+println(stat.normal_pdf(1.0));
+
+println(stat.normal_cdf(0.0));
+println(stat.normal_cdf(1.0));
+println(stat.normal_cdf(-1.0));
+
+println(stat.normal_pdf(5.0, 5.0, 1.0));
+println(stat.normal_pdf(6.0, 5.0, 1.0));
+
+println(stat.normal_cdf(5.0, 5.0, 1.0));
+println(stat.normal_cdf(6.0, 5.0, 1.0));
+println(stat.normal_cdf(4.0, 5.0, 1.0));

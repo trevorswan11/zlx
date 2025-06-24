@@ -26,7 +26,7 @@ fn colorForKind(kind: TokenKind) []const u8 {
         // Core keywords
         .IF, .ELSE, .WHILE, .FOR, .FOREACH, .BREAK, .CONTINUE => colors.keyword,
         .IMPORT, .FROM, .TYPEOF, .DELETE => colors.keyword,
-        .LET, .CONST, .FN, .STRUCT, .NEW, .IN, .RETURN, .MATCH => colors.keyword,
+        .LET, .CONST, .FN, .STRUCT, .NEW, .IN, .RETURN, .MATCH, .ENUM => colors.keyword,
 
         // Literals
         .TRUE, .FALSE => colors.boolean,

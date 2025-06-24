@@ -25,3 +25,11 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Compound assignment now works on more types with more consistent behavior
 - Modularized reused helpers for builtin modules
 - Fixed inconsistent casing in some builtin functions
+- Resolved inconsistent formatting in verbose output dumping
+- Added enums!
+    - Declared using the "enum" keyword
+    - Simply represent an object of numbers starting from 0 and increasing for every entry
+    - Can be used in match statements and expressions!
+- Added stat module!
+    - Full suite of statistical functions with some working on numbers and others on arrays
+    - Linear regression analysis works, but more complex analysis functions may be implemented in the future 

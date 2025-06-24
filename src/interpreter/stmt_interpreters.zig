@@ -336,3 +336,18 @@ pub fn match(m: *ast.Match, env: *Environment) !Value {
 
     return .nil;
 }
+
+pub fn enumerate(e: *ast.EnumDeclarationStmt, env: *Environment) !Value {
+    var enum_obj = std.StringHashMap(Value).init(env.allocator);
+
+    for (e.variants, 0..) |variant, i| {
+        try enum_obj.put(variant, .{
+            .number = @floatFromInt(i),
+        });
+    }
+
+    try env.define(e.name, .{
+        .object = enum_obj,
+    });
+    return .nil;
+}

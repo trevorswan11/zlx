@@ -1,0 +1,3 @@
+enum Status { OK, ERROR, TIMEOUT }
+println(Status.OK);
+println(Status.ERROR == 1);
