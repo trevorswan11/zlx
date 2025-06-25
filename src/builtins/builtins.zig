@@ -18,6 +18,16 @@ pub fn pack(map: *std.StringHashMap(Value), name: []const u8, builtin: BuiltinMo
     );
 }
 
+pub const FloatContext = struct {
+    pub fn hash(_: @This(), v: f64) u64 {
+        return @bitCast(v);
+    }
+
+    pub fn eql(_: @This(), a: f64, b: f64) bool {
+        return a == b;
+    }
+};
+
 pub fn expectStringArgs(
     args: []const *ast.Expr,
     env: *Environment,

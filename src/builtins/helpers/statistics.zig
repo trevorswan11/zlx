@@ -1,14 +1,6 @@
 const std = @import("std");
 
-const FloatContext = struct {
-    pub fn hash(_: @This(), v: f64) u64 {
-        return @bitCast(v);
-    }
-
-    pub fn eql(_: @This(), a: f64, b: f64) bool {
-        return a == b;
-    }
-};
+const FloatContext = @import("../builtins.zig").FloatContext;
 
 /// The mean value of an array of floats
 pub fn mean(values: []const f64) f64 {
@@ -268,7 +260,7 @@ pub fn standardNormalCdf(x: f64) f64 {
 
 // === TESTING ===
 
-const testing = @import("../../../testing/testing.zig");
+const testing = @import("../../testing/testing.zig");
 
 test "mean" {
     const data = [_]f64{ 2.0, 4.0, 6.0, 8.0 };

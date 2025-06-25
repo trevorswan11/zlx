@@ -4,7 +4,7 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-const statistics = @import("helpers/statistics.zig");
+const statistics = @import("../helpers/statistics.zig");
 
 const eval = interpreter.eval;
 const Environment = interpreter.Environment;
