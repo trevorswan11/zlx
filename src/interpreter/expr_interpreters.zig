@@ -477,8 +477,8 @@ pub fn function(f: *ast.FunctionExpr, env: *Environment) !Value {
 
     return .{
         .function = .{
-            .body = f.body,
             .parameters = param_names,
+            .body = f.body,
             .closure = env,
         },
     };
@@ -550,16 +550,19 @@ pub fn object(o: *ast.ObjectExpr, env: *Environment) !Value {
 }
 
 pub fn match(m: *ast.Match, env: *Environment) !Value {
-    const target = try evalExpr(m.expression, env);
+    var child_env = Environment.init(env.allocator, env);
+    defer child_env.deinit();
+
+    const target = try evalExpr(m.expression, &child_env);
 
     for (m.cases.items) |case| {
         if (case.pattern.* == .symbol and std.mem.eql(u8, case.pattern.symbol.value, "_")) {
-            return try evalExpr(case.body.expression.expression, env);
+            return try evalExpr(case.body.expression.expression, &child_env);
         }
 
-        const pattern_val = try evalExpr(case.pattern, env);
+        const pattern_val = try evalExpr(case.pattern, &child_env);
         if (target.eql(pattern_val)) {
-            return try evalExpr(case.body.expression.expression, env);
+            return try evalExpr(case.body.expression.expression, &child_env);
         }
     }
 

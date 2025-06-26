@@ -82,6 +82,13 @@ pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
         return error.TypeMismatch;
     }
 
+    var child_arena = std.heap.ArenaAllocator.init(env.allocator);
+    defer child_arena.deinit(); 
+    const child_allocator = child_arena.allocator();
+
+    var child_env = Environment.init(child_allocator, env);
+    defer child_env.deinit();
+
     if (cond.boolean) {
         return try evalStmt(i.consequent, env);
     } else if (i.alternate) |alt| {
@@ -116,8 +123,13 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
     iterable = iterable.deref();
 
     for (iterable.array.items, 0..) |item, i| {
-        var child_env = Environment.init(env.allocator, env);
+        var child_arena = std.heap.ArenaAllocator.init(env.allocator);
+        defer child_arena.deinit(); 
+        const child_allocator = child_arena.allocator();
+
+        var child_env = Environment.init(child_allocator, env);
         defer child_env.deinit();
+
         try child_env.define(f.value, item);
         if (f.index) {
             try child_env.define(f.index_name.?, .{
@@ -151,8 +163,13 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
             break;
         }
 
-        var child_env = Environment.init(env.allocator, env);
+        var child_arena = std.heap.ArenaAllocator.init(env.allocator);
+        defer child_arena.deinit(); 
+        const child_allocator = child_arena.allocator();
+
+        var child_env = Environment.init(child_allocator, env);
         defer child_env.deinit();
+        
         for (w.body.items) |stmt| {
             const val = try evalStmt(stmt, &child_env);
             switch (val) {
@@ -321,18 +338,20 @@ pub fn returns(r: *ast.ReturnStmt, env: *Environment) !Value {
 }
 
 pub fn match(m: *ast.Match, env: *Environment) !Value {
-    const match_val = try evalExpr(m.expression, env);
+    var child_env = Environment.init(env.allocator, env);
+    defer child_env.deinit();
+    const match_val = try evalExpr(m.expression, &child_env);
 
     for (m.cases.items) |case| {
         // Use '_' for wildcard (else)
         if (case.pattern.* == .symbol and std.mem.eql(u8, case.pattern.symbol.value, "_")) {
-            return try evalStmt(case.body, env);
+            return try evalStmt(case.body, &child_env);
         }
 
-        const pattern_val = try evalExpr(case.pattern, env);
+        const pattern_val = try evalExpr(case.pattern, &child_env);
 
         if (match_val.eql(pattern_val)) {
-            return try evalStmt(case.body, env);
+            return try evalStmt(case.body, &child_env);
         }
     }
 
