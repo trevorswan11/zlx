@@ -43,3 +43,6 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Added linear algebra module!
     - Matrix multiplication, normalization, determination, and more
     - Vector operations and 2D/3D space behavior
+- Fixed issue where scoped variables memory would leak out of their scope while beingn unaccessible by an environment
+    - Small performance hit due to arena allocation management, but only by a few millis
+

@@ -83,7 +83,7 @@ pub fn conditional(i: *ast.IfStmt, env: *Environment) !Value {
     }
 
     var child_arena = std.heap.ArenaAllocator.init(env.allocator);
-    defer child_arena.deinit(); 
+    defer child_arena.deinit();
     const child_allocator = child_arena.allocator();
 
     var child_env = Environment.init(child_allocator, env);
@@ -124,7 +124,7 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
 
     for (iterable.array.items, 0..) |item, i| {
         var child_arena = std.heap.ArenaAllocator.init(env.allocator);
-        defer child_arena.deinit(); 
+        defer child_arena.deinit();
         const child_allocator = child_arena.allocator();
 
         var child_env = Environment.init(child_allocator, env);
@@ -164,12 +164,12 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
         }
 
         var child_arena = std.heap.ArenaAllocator.init(env.allocator);
-        defer child_arena.deinit(); 
+        defer child_arena.deinit();
         const child_allocator = child_arena.allocator();
 
         var child_env = Environment.init(child_allocator, env);
         defer child_env.deinit();
-        
+
         for (w.body.items) |stmt| {
             const val = try evalStmt(stmt, &child_env);
             switch (val) {
