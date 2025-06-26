@@ -53,12 +53,19 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
 fn pqConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("heap(max_at_top) expects 1 argument but got {d}\n", .{args.len});
+    if (args.len > 1) {
+        try writer_err.print("heap(max_at_top) expects 0 or 1 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
-    const max = try eval.evalExpr(args[0], env);
+    const max: Value = if (args.len == 1) blk: {
+        break :blk try eval.evalExpr(args[0], env);
+    } else blk: {
+        break :blk .{
+            .boolean = true,
+        };
+    };
+
     if (max != .boolean) {
         try writer_err.print("heap(max_at_top) expects a boolean argument but got a(n) {s}\n", .{@tagName(max)});
         return error.TypeMismatch;

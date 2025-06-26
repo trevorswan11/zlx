@@ -55,7 +55,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
 fn meanHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "mean");
-    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "mean"))[0];
 
     return .{
         .number = statistics.mean(float_array),
@@ -64,7 +64,7 @@ fn meanHandler(args: []const *ast.Expr, env: *Environment) !Value {
 
 fn medianHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "median");
-    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "median"))[0];
 
     return .{
         .number = try statistics.median(env.allocator, float_array),
@@ -73,7 +73,7 @@ fn medianHandler(args: []const *ast.Expr, env: *Environment) !Value {
 
 fn modeHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "mode");
-    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "mode"))[0];
     const result = statistics.mode(env.allocator, float_array) catch |err| switch (err) {
         error.NoMode => return .nil,
         else => return err,
@@ -86,7 +86,7 @@ fn modeHandler(args: []const *ast.Expr, env: *Environment) !Value {
 
 fn minHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "min");
-    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "min"))[0];
 
     return .{
         .number = statistics.min(float_array),
@@ -95,7 +95,7 @@ fn minHandler(args: []const *ast.Expr, env: *Environment) !Value {
 
 fn maxHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "max");
-    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "max"))[0];
 
     return .{
         .number = statistics.max(float_array),
@@ -104,7 +104,7 @@ fn maxHandler(args: []const *ast.Expr, env: *Environment) !Value {
 
 fn rangeHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const parts = try expectArrayArgs(args, env, 1, "stat", "range");
-    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "range"))[0];
 
     return .{
         .number = statistics.range(float_array),
@@ -119,7 +119,7 @@ fn varianceHandler(args: []const *ast.Expr, env: *Environment) !Value {
     }
 
     const parts = try expectArrayArgs(args[0..1], env, 1, "stat", "variance");
-    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "variance"))[0];
     const population = (try expectNumberArgs(args[1..], env, 1, "stat", "variance"))[0] == flags.population;
 
     return .{
@@ -139,7 +139,7 @@ fn stddevHandler(args: []const *ast.Expr, env: *Environment) !Value {
     }
 
     const parts = try expectArrayArgs(args[0..1], env, 1, "stat", "stddev");
-    const float_array = (try expectNumberArrays(env.allocator, parts))[0];
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "stddev"))[0];
     const population = (try expectNumberArgs(args[1..], env, 1, "stat", "stddev"))[0] == flags.population;
 
     return .{
@@ -159,7 +159,7 @@ fn covarianceHandler(args: []const *ast.Expr, env: *Environment) !Value {
     }
 
     const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "covariance");
-    const float_arrays = try expectNumberArrays(env.allocator, arr_parts);
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "covariance");
     const population = (try expectNumberArgs(args[2..], env, 1, "stat", "covariance"))[0] == flags.population;
 
     return .{
@@ -179,7 +179,7 @@ fn correlationHandler(args: []const *ast.Expr, env: *Environment) !Value {
     }
 
     const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "correlation");
-    const float_arrays = try expectNumberArrays(env.allocator, arr_parts);
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "correlation");
     const population = (try expectNumberArgs(args[2..], env, 1, "stat", "correlation"))[0] == flags.population;
 
     return .{
@@ -199,7 +199,7 @@ fn linearRegressionHandler(args: []const *ast.Expr, env: *Environment) !Value {
     }
 
     const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "linear_regression");
-    const float_arrays = try expectNumberArrays(env.allocator, arr_parts);
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "linear_regression");
     const population = (try expectNumberArgs(args[2..], env, 1, "stat", "linear_regression"))[0] == flags.population;
     const result = if (population) blk: {
         break :blk statistics.linearRegressionPopulation(float_arrays[0], float_arrays[1]);

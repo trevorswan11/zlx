@@ -115,7 +115,8 @@ pub fn expectNumberArgs(
     return try result.toOwnedSlice();
 }
 
-pub fn expectNumberArrays(allocator: std.mem.Allocator, arrays: []const std.ArrayList(Value)) ![]const []const f64 {
+pub fn expectNumberArrays(allocator: std.mem.Allocator, arrays: []const std.ArrayList(Value), module_name: []const u8,
+    func_name: []const u8,) ![]const []const f64 {
     const writer_err = driver.getWriterErr();
     var result = std.ArrayList([]const f64).init(allocator);
     defer result.deinit();
@@ -125,7 +126,7 @@ pub fn expectNumberArrays(allocator: std.mem.Allocator, arrays: []const std.Arra
         defer nums.deinit();
         for (arr.items, 0..) |val, idx| {
             if (val != .number) {
-                try writer_err.print("Expected array packed with numbers but found type {s} @ index {d}\n", .{ @tagName(val), idx });
+                try writer_err.print("{s} module: {s} expected array packed with numbers but found type {s} @ index {d}\n", .{ module_name, func_name, @tagName(val), idx });
                 return error.TypeMismatch;
             }
             try nums.append(val.number);
