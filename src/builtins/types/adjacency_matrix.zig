@@ -63,6 +63,7 @@ fn adjMatrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("adj_matrix(size) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const size_val = try interpreter.evalExpr(args[0], env);
     if (size_val != .number) {
         try writer_err.print("adj_matrix(size) expects a number argument but got a(n) {s}\n", .{@tagName(size_val)});
@@ -115,6 +116,7 @@ fn adjMatrixAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !V
         try writer_err.print("adj_matrix.add_edge(val_from, val_to) expects 2 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     if (from != .number or to != .number) {
@@ -216,6 +218,7 @@ fn adjMatrixRemoveEdge(this: *Value, args: []const *ast.Expr, env: *Environment)
         try writer_err.print("adj_matrix.remove_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     if (from != .number or to != .number) {
@@ -247,6 +250,7 @@ fn adjMatrixContainsEdge(this: *Value, args: []const *ast.Expr, env: *Environmen
         try writer_err.print("adj_matrix.contains_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     if (from != .number or to != .number) {
@@ -269,14 +273,26 @@ fn adjMatrixContainsEdge(this: *Value, args: []const *ast.Expr, env: *Environmen
     };
 }
 
-fn adjMatrixSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("adjacency_matrix.size() expects 0 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMatrixInstance(this);
     return .{
         .number = @floatFromInt(inst.size),
     };
 }
 
-fn adjMatrixEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("adjacency_matrix.empty() expects 0 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMatrixInstance(this);
     for (inst.matrix) |row| {
         for (row) |entry| {
@@ -292,7 +308,13 @@ fn adjMatrixEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     };
 }
 
-fn adjMatrixClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("adjacency_matrix.clear() expects 0 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMatrixInstance(this);
     for (inst.matrix) |row| {
         for (row) |*entry| {
@@ -302,14 +324,26 @@ fn adjMatrixClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     return .nil;
 }
 
-fn adjMatrixEdges(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn adjMatrixEdges(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("adjacency_matrix.edges() expects 0 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMatrixInstance(this);
     return .{
         .number = @floatFromInt(inst.edge_count),
     };
 }
 
-fn adjMatrixStr(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
+fn adjMatrixStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("adjacency_matrix.str() expects 0 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMatrixInstance(this);
     return .{
         .string = try toString(env.allocator, inst),

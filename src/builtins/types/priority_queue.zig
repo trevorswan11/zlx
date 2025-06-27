@@ -156,6 +156,7 @@ fn pqInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("heap.insert(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const value = try eval.evalExpr(args[0], env);
     const inst = try getPriorityQueueInstance(this);
     try inst.array.push(value);
@@ -163,7 +164,13 @@ fn pqInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     return .nil;
 }
 
-fn pqPoll(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqPoll(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("pq.poll() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getPriorityQueueInstance(this);
     if (inst.array.len == 0) {
         return .nil;
@@ -177,32 +184,62 @@ fn pqPoll(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
     return top;
 }
 
-fn pqPeek(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqPeek(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("pq.peek() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getPriorityQueueInstance(this);
     return if (inst.array.len == 0) .nil else try inst.array.get(0);
 }
 
-fn pqSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("pq.size() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getPriorityQueueInstance(this);
     return .{
         .number = @floatFromInt(inst.array.len),
     };
 }
 
-fn pqEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("pq.empty() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getPriorityQueueInstance(this);
     return .{
         .boolean = inst.array.len == 0,
     };
 }
 
-fn pqClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("pq.clear() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getPriorityQueueInstance(this);
     inst.array.clear();
     return .nil;
 }
 
-pub fn pqItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
+pub fn pqItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("pq.items() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getPriorityQueueInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -215,7 +252,13 @@ pub fn pqItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     };
 }
 
-fn pqStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn pqStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("pq.str() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getPriorityQueueInstance(this);
     const strFn = @import("array_list.zig").toString;
     return .{

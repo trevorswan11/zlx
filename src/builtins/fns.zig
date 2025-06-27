@@ -372,7 +372,7 @@ pub fn format(args: []const *ast.Expr, env: *Environment) !Value {
 
         if (i < values.items.len) {
             const v = values.items[i];
-            try writer.print("{s}", .{try v.toString(env.allocator)});
+            try writer.print("{s}", .{try toPrintableString(v, env)});
             i += 1;
         }
     }

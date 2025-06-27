@@ -56,11 +56,18 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return LIST_TYPE;
 }
 
-fn listConstructor(_: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const list = try List.init(env.allocator);
+fn listConstructor(args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
 
+    const list = try List.init(env.allocator);
     const wrapped = try env.allocator.create(ListInstance);
-    wrapped.* = .{ .list = list };
+    wrapped.* = .{
+        .list = list,
+    };
 
     const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
@@ -90,6 +97,7 @@ fn listAppend(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("list.append(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const val = try interpreter.evalExpr(args[0], env);
     const inst = try getListInstance(this);
     try inst.list.append(val);
@@ -102,18 +110,31 @@ fn listPrepend(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
         try writer_err.print("list.prepend(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const val = try interpreter.evalExpr(args[0], env);
     const inst = try getListInstance(this);
     try inst.list.prepend(val);
     return .nil;
 }
 
-fn listPopHead(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listPopHead(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list.pop_head() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     return inst.list.popHead() orelse .nil;
 }
 
-fn listPopTail(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listPopTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list.pop_tail() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     return inst.list.popTail() orelse .nil;
 }
@@ -124,6 +145,7 @@ fn listGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("list.get(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const index_val = try interpreter.evalExpr(args[0], env);
     if (index_val != .number) {
         try writer_err.print("list.get(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
@@ -140,6 +162,7 @@ fn listRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("list.remove(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const index_val = try interpreter.evalExpr(args[0], env);
     if (index_val != .number) {
         try writer_err.print("list.remove(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
@@ -156,6 +179,7 @@ fn listDiscard(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
         try writer_err.print("list.discard(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const index_val = try interpreter.evalExpr(args[0], env);
     if (index_val != .number) {
         try writer_err.print("list.discard(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
@@ -167,37 +191,73 @@ fn listDiscard(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
     return .nil;
 }
 
-fn listPeekHead(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listPeekHead(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list.peek_head() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     return inst.list.peekHead() orelse .nil;
 }
 
-fn listPeekTail(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listPeekTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list.peek_tail() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     return inst.list.peekTail() orelse .nil;
 }
 
-fn listClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("list.clear() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     inst.list.clear();
     return .nil;
 }
 
-fn listEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list.empty() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     return .{
         .boolean = inst.list.empty(),
     };
 }
 
-fn listSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list.size() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     return .{
         .number = @floatFromInt(inst.list.len),
     };
 }
 
-pub fn listItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
+pub fn listItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list.items() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -211,7 +271,13 @@ pub fn listItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     };
 }
 
-fn listStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn listStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("list.str() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getListInstance(this);
     return .{
         .string = try toString(inst.list),

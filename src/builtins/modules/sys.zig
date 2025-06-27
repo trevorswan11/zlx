@@ -31,10 +31,15 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn argsHandler(_: []const *ast.Expr, env: *Environment) !Value {
-    const args = try std.process.argsAlloc(env.allocator);
+fn argsHandler(args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("sys.args() expects 0 arguments, got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+    const sys_args = try std.process.argsAlloc(env.allocator);
     var array = std.ArrayList(Value).init(env.allocator);
-    for (args) |arg| {
+    for (sys_args) |arg| {
         try array.append(
             .{
                 .string = arg,

@@ -52,10 +52,18 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return QUEUE_TYPE;
 }
 
-fn queueConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+fn queueConstructor(args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("queue() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const queue = try Queue.init(env.allocator);
     const wrapped = try env.allocator.create(QueueInstance);
-    wrapped.* = .{ .queue = queue };
+    wrapped.* = .{
+        .queue = queue,
+    };
 
     const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
@@ -85,45 +93,82 @@ fn queuePush(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("queue.push(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const value = try eval.evalExpr(args[0], env);
     const inst = try getQueueInstance(this);
     try inst.queue.push(value);
     return .nil;
 }
 
-fn queuePoll(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queuePoll(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("queue.poll() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getQueueInstance(this);
     const result = inst.queue.poll();
     return result orelse .nil;
 }
 
-fn queuePeek(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queuePeek(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("queue.peek() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getQueueInstance(this);
     const result = inst.queue.peek();
     return result orelse .nil;
 }
 
-fn queueSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queueSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("queue.size() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getQueueInstance(this);
     return .{
         .number = @floatFromInt(inst.queue.list.len),
     };
 }
 
-fn queueEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queueEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("queue.empty() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getQueueInstance(this);
     return .{
         .boolean = inst.queue.list.empty(),
     };
 }
 
-fn queueClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queueClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("queue.clear() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getQueueInstance(this);
     inst.queue.list.clear();
     return .nil;
 }
 
-pub fn queueItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
+pub fn queueItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("queue.items() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getQueueInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -137,7 +182,13 @@ pub fn queueItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value 
     };
 }
 
-fn queueStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn queueStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("queue.str() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getQueueInstance(this);
     const strFn = @import("list.zig").toString;
     return .{

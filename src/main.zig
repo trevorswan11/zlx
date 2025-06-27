@@ -146,8 +146,6 @@ test {
 
     // Builtin Helper Functions
     _ = @import("builtins/helpers/statistics.zig");
-    _ = @import("builtins/helpers/matrix.zig");
-    _ = @import("builtins/helpers/vector.zig");
 
     // Builtin Standard Library Structs
     _ = @import("builtins/types/adjacency_list.zig");

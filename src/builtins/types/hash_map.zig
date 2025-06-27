@@ -51,10 +51,18 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return MAP_TYPE;
 }
 
-fn mapConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+fn mapConstructor(args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("map() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const map = try HashMap.init(env.allocator);
     const wrapped = try env.allocator.create(HashMapInstance);
-    wrapped.* = .{ .map = map };
+    wrapped.* = .{
+        .map = map,
+    };
 
     const internal_ptr = try env.allocator.create(Value);
     internal_ptr.* = .{
@@ -84,6 +92,7 @@ fn mapPut(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("map.put(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const key = try interpreter.evalExpr(args[0], env);
     const val = try interpreter.evalExpr(args[1], env);
     const inst = try getMapInstance(this);
@@ -97,6 +106,7 @@ fn mapGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("map.get(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const key = try interpreter.evalExpr(args[0], env);
     const inst = try getMapInstance(this);
     return inst.map.find(key) orelse .nil;
@@ -108,6 +118,7 @@ fn mapRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("map.remove(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const key = try interpreter.evalExpr(args[0], env);
     const inst = try getMapInstance(this);
     return inst.map.remove(key) orelse .nil;
@@ -119,6 +130,7 @@ fn mapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
         try writer_err.print("map.contains(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const key = try interpreter.evalExpr(args[0], env);
     const inst = try getMapInstance(this);
     return .{
@@ -126,27 +138,51 @@ fn mapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
     };
 }
 
-fn mapClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn mapClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("map.clear() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMapInstance(this);
     inst.map.clear();
     return .nil;
 }
 
-fn mapSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn mapSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("map.size() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMapInstance(this);
     return .{
         .number = @floatFromInt(inst.map.size()),
     };
 }
 
-fn mapEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn mapEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("map.empty() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMapInstance(this);
     return .{
         .boolean = inst.map.size() == 0,
     };
 }
 
-pub fn mapItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
+pub fn mapItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("map.items() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMapInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -165,7 +201,13 @@ pub fn mapItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     };
 }
 
-fn mapStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn mapStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("map.str() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getMapInstance(this);
     return .{
         .string = try toString(inst.map),

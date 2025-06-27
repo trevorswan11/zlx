@@ -37,6 +37,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try GRAPH_METHODS.put("has_node", graphHasNode);
     try GRAPH_METHODS.put("has_edge", graphHasEdge);
     try GRAPH_METHODS.put("clear", graphClear);
+    try GRAPH_METHODS.put("size", graphSize);
     try GRAPH_METHODS.put("str", graphStr);
 
     GRAPH_TYPE = .{
@@ -50,7 +51,13 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     return GRAPH_TYPE;
 }
 
-fn graphConstructor(_: []const *ast.Expr, env: *Environment) !Value {
+fn graphConstructor(args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("graph() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const graph = AdjacencyList.init(env.allocator);
     const wrapped = try env.allocator.create(GraphInstance);
     wrapped.* = .{
@@ -85,6 +92,7 @@ fn graphAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
         try writer_err.print("graph.add_edge(val_from, val_to) expects 2 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     const inst = try getGraphInstance(this);
@@ -100,6 +108,7 @@ fn graphHasNode(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
         try writer_err.print("graph.has_node(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const id = try interpreter.evalExpr(args[0], env);
     const inst = try getGraphInstance(this);
     return .{
@@ -113,6 +122,7 @@ fn graphHasEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
         try writer_err.print("graph.has_edge(val_from, val_to) expects 2 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     const inst = try getGraphInstance(this);
@@ -129,13 +139,38 @@ fn graphHasEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
     };
 }
 
-fn graphClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn graphClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("graph.clear() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getGraphInstance(this);
     inst.graph.clear();
     return .nil;
 }
 
-fn graphStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn graphSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("graph.size() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const inst = try getGraphInstance(this);
+    return .{
+        .number = @floatFromInt(inst.graph.size()),
+    };
+}
+
+fn graphStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("graph.str() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getGraphInstance(this);
     const strFn = @import("adjacency_list.zig").toString;
     return .{

@@ -1,0 +1,46 @@
+import vector;
+
+let v = new vector(1.0, 2.0, 3.0);
+let original = v.str();
+println(format("original       = {}", original));
+
+v.add(new vector(3.0, 2.0, 1.0));
+let added = v.str();
+println(format("after add      = {}", added));
+
+v.sub(new vector(1.0, 1.0, 1.0));
+let subbed = v.str();
+println(format("after sub      = {}", subbed));
+
+v.scale(2.0);
+let scaled = v.str();
+println(format("after scale    = {}", scaled));
+
+let norm = v.norm();
+println(format("norm           = {}", norm));
+
+let angle = v.angle(new vector(0.0, 0.0, 1.0));
+println(format("angle          = {}", angle));
+
+let dot = v.dot(new vector(0.0, 0.0, 1.0));
+println(format("dot            = {}", dot));
+
+let equals_true = v.equals(new vector(6.0, 6.0, 6.0));
+println(format("equals_true    = {}", equals_true));
+
+let equals_false = v.equals(new vector(4.0, 2.0, 6.0));
+println(format("equals_false   = {}", equals_false));
+
+let cross = (new vector(1.0, 0.0, 0.0)).cross(new vector(0.0, 1.0, 0.0));
+let cross_str = cross.str();
+println(format("cross(i x j)   = {}", cross_str));
+
+let dim = v.size();
+println(format("size           = {}", dim));
+
+v.set(0, 10.0);
+let first = v.get(0);
+println(format("first element  = {}", first));
+
+let items = v.items();
+println(format("items          = {}", items));

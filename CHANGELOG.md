@@ -47,4 +47,7 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Fixed issue where scoped variables memory would leak out of their scope while being unaccessible by an environment
     - Small performance hit due to arena allocation management, but only by a few millis
 - Updated error message in builtin module helper
-
+- format builtin now inherently converts values to their printable representation
+    - In other words, format now accepts std instance arguments
+- Enforced argument count being 0 for almost all builtin functions and modules
+    - This will be enforced in future modules

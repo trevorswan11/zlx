@@ -98,6 +98,7 @@ fn arrayListPush(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
         try writer_err.print("array_list.push(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const val = try interpreter.evalExpr(args[0], env);
     const inst = try getArrayListInstance(this);
     try inst.array.push(val);
@@ -110,6 +111,7 @@ fn arrayListInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
         try writer_err.print("array_list.insert(index, value) expects 2 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const index_val = try interpreter.evalExpr(args[0], env);
     const value = try interpreter.evalExpr(args[1], env);
     if (index_val != .number) {
@@ -128,6 +130,7 @@ fn arrayListRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
         try writer_err.print("array_list.remove(index) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const index_val = try interpreter.evalExpr(args[0], env);
     if (index_val != .number) {
         try writer_err.print("array_list.remove(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
@@ -138,7 +141,13 @@ fn arrayListRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
     return try inst.array.remove(@intFromFloat(index_val.number));
 }
 
-fn arrayListPop(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListPop(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("array_list.pop() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getArrayListInstance(this);
     return try inst.array.pop();
 }
@@ -149,6 +158,7 @@ fn arrayListGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
         try writer_err.print("array_list.get(index) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const index_val = try interpreter.evalExpr(args[0], env);
     if (index_val != .number) {
         try writer_err.print("array_list.get(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
@@ -165,6 +175,7 @@ fn arrayListSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
         try writer_err.print("array_list.set(index, value) expects 2 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const index_val = try interpreter.evalExpr(args[0], env);
     const value = try interpreter.evalExpr(args[1], env);
     if (index_val != .number) {
@@ -177,27 +188,51 @@ fn arrayListSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
     return .nil;
 }
 
-fn arrayListClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("array_list.clear() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getArrayListInstance(this);
     inst.array.clear();
     return .nil;
 }
 
-fn arrayListEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("array_list.empty() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getArrayListInstance(this);
     return .{
         .boolean = inst.array.empty(),
     };
 }
 
-fn arrayListSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("array_list.size() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getArrayListInstance(this);
     return .{
         .number = @floatFromInt(inst.array.len),
     };
 }
 
-pub fn arrayListItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
+pub fn arrayListItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("array_list.items() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getArrayListInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -210,7 +245,13 @@ pub fn arrayListItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Va
     };
 }
 
-fn arrayListStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn arrayListStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("array_list.str() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getArrayListInstance(this);
     return .{
         .string = try toString(inst.array),

@@ -115,8 +115,12 @@ pub fn expectNumberArgs(
     return try result.toOwnedSlice();
 }
 
-pub fn expectNumberArrays(allocator: std.mem.Allocator, arrays: []const std.ArrayList(Value), module_name: []const u8,
-    func_name: []const u8,) ![]const []const f64 {
+pub fn expectNumberArrays(
+    allocator: std.mem.Allocator,
+    arrays: []const std.ArrayList(Value),
+    module_name: []const u8,
+    func_name: []const u8,
+) ![]const []const f64 {
     const writer_err = driver.getWriterErr();
     var result = std.ArrayList([]const f64).init(allocator);
     defer result.deinit();
@@ -330,6 +334,10 @@ pub const builtin_modules = [_]BuiltinModule{
     .{
         .name = "treap",
         .loader = @import("types/treap.zig").load,
+    },
+    .{
+        .name = "vector",
+        .loader = @import("types/vector.zig").load,
     },
 };
 

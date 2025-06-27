@@ -54,12 +54,15 @@ fn setConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     const set = try HashSet.init(env.allocator);
     const wrapped = try env.allocator.create(HashSetInstance);
-    wrapped.* = .{ .set = set };
+    wrapped.* = .{
+        .set = set,
+    };
 
     if (args.len > 1) {
         try writer_err.print("set(optional_array) expects at most 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     if (args.len == 1) {
         const input = try interpreter.evalExpr(args[0], env);
         const raw_input = input.deref();
@@ -102,6 +105,7 @@ fn setInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("set.insert(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const val = try interpreter.evalExpr(args[0], env);
     const inst = try getSetInstance(this);
     try inst.set.insert(val);
@@ -114,6 +118,7 @@ fn setRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         try writer_err.print("set.remove(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const val = try interpreter.evalExpr(args[0], env);
     const inst = try getSetInstance(this);
     return .{
@@ -127,6 +132,7 @@ fn setContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
         try writer_err.print("set.contains(value) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
+
     const val = try interpreter.evalExpr(args[0], env);
     const inst = try getSetInstance(this);
     return .{
@@ -134,27 +140,51 @@ fn setContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
     };
 }
 
-fn setClear(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn setClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("set.clear() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getSetInstance(this);
     inst.set.clear();
     return .nil;
 }
 
-fn setSize(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn setSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("set.size() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getSetInstance(this);
     return .{
         .number = @floatFromInt(inst.set.size()),
     };
 }
 
-fn setEmpty(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn setEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("set.empty() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getSetInstance(this);
     return .{
         .boolean = inst.set.empty(),
     };
 }
 
-pub fn setItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
+pub fn setItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("set.items() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getSetInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -168,7 +198,13 @@ pub fn setItems(this: *Value, _: []const *ast.Expr, env: *Environment) !Value {
     };
 }
 
-fn setStr(this: *Value, _: []const *ast.Expr, _: *Environment) !Value {
+fn setStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 0) {
+        try writer_err.print("set.str() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
     const inst = try getSetInstance(this);
     return .{
         .string = try toString(inst.set),
