@@ -34,7 +34,10 @@ While I originally intended to just build the parser, I ended up going much deep
 - You can run the projects tests, which mimic the code found in the `examples` folder, with `zig build test`
 
 ## External Libraries
-This project uses a two external librarys, the main one being [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. The second dependency is my [zig-containers](https://github.com/trevorswan11/zig-containers) library that drives the standard libraries builtin data structures.
+This project has three independent dependencies:
+1.  [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. 
+2. [zig-containers](https://github.com/trevorswan11/zig-containers) which drives the standard libraries builtin data structures.
+3. [raylib-zig](https://github.com/Not-Nik/raylib-zig) which drives the plotting module through basic window creation
 
 ## Language Documentation
 Documentation for the language, officially called `zlx`, will be written and polished over time. You can find the language reference in the `doc` folder. The "standard library" has a few built-in functions that work out of the box, and also has built-in modules that must be imported to use their defined functions and constants. While documentation is a WIP, you can view their source code in the `builtins` folder in the `src` directory.

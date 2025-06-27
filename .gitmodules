@@ -4,3 +4,6 @@
 [submodule "libs/zig-containers"]
 	path = libs/zig-containers
 	url = https://github.com/trevorswan11/zig-containers
+[submodule "libs/zig-raylib"]
+	path = libs/zig-raylib
+	url = https://github.com/Not-Nik/raylib-zig

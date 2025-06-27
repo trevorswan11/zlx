@@ -235,6 +235,10 @@ pub const builtin_modules = [_]BuiltinModule{
         .name = "vector",
         .loader = @import("types/vector.zig").load,
     },
+    .{
+        .name = "matrix",
+        .loader = @import("types/matrix.zig").load,
+    },
 };
 
 pub fn getStdStructName(value: *Value) ![]const u8 {

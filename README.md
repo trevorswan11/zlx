@@ -35,7 +35,10 @@ While I originally intended to just build the parser, I ended up going much deep
 - You can run the projects tests, which mimic the code found in the `examples` folder, with `zig build test`
 
 ## External Libraries
-This project uses a two external libraries, the main one being [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to remove this dependency from the project if and when the Zig team adds a Regex module to the standard library. The second dependency is my [zig-containers](https://github.com/trevorswan11/zig-containers) library that drives most the standard libraries builtin data structures.
+This project has three independent dependencies:
+1.  [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. 
+2. [zig-containers](https://github.com/trevorswan11/zig-containers) which drives the standard libraries builtin data structures.
+3. [raylib-zig](https://github.com/Not-Nik/raylib-zig) which drives the plotting module through basic window creation
 
 ## Syntax Highlighting
 While you can edit the source code for any zlx file in any editor, you can download the [zlx-syntax](https://marketplace.visualstudio.com/items?itemName=kyoshi11.zlx-syntax) extension through vscode to get syntax highlighting! This is a large WIP, but will hopefully grow to show doc strings and support intellisense eventually!
