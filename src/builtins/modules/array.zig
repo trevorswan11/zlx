@@ -11,27 +11,7 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
-
-fn expectArrayRef(args: []const *ast.Expr, env: *Environment) !*std.ArrayList(Value) {
-    const writer_err = driver.getWriterErr();
-    if (args.len < 1) {
-        try writer_err.print("array module: expected at least one argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .reference or val.reference.* != .array) {
-        try writer_err.print("array module: expression evaluation returned a value that is not a reference to an array\n", .{});
-        if (val == .reference) {
-            try writer_err.print("  Found a reference to a(n) {s}\n", .{@tagName(val)});
-        } else {
-            try writer_err.print("  Found a(n) {s}\n", .{@tagName(val.deref())});
-        }
-        return error.TypeMismatch;
-    }
-
-    return &val.reference.*.array;
-}
+const expectArrayRef = builtins.expectArrayRef;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);

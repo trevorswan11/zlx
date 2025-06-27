@@ -80,8 +80,8 @@ fn vectorConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const vec: []const f64 = blk: switch (args.len) {
         // Vector can be created out of an array
         1 => {
-            const arg = try expectArrayArgs(args, env, 1, "vector", "ctor");
-            const vals = (try expectNumberArrays(env.allocator, arg, "vector", "ctor"))[0];
+            const arg_arrays = try expectArrayArgs(args, env, 1, "vector", "ctor");
+            const vals = (try expectNumberArrays(env.allocator, arg_arrays, "vector", "ctor"))[0];
             if (vals.len == 0 or vals.len > 4) {
                 try writer_err.print("vector(array) expects an array of size 4 or less, found an array length {d}\n", .{vals.len});
                 return error.ArraySizeMismatch;

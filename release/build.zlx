@@ -48,7 +48,7 @@ const operating_sys = ["linux", "macos", "windows"];
 
 // Command line args
 const root = "zig build";
-const release_mode = "-Doptimize=ReleaseSafe";
+const release_mode = "--release=safe";
 const target_format = "-Dtarget={}-{}";
 const prefix = "-p " + target_path;
 let commands = new array_list();

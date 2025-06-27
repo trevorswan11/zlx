@@ -5,6 +5,7 @@ const interpreter = @import("../interpreter/interpreter.zig");
 const eval = @import("../interpreter/eval.zig");
 const driver = @import("../utils/driver.zig");
 const fns = @import("fns.zig");
+const expect_helpers = @import("helpers/expect.zig");
 
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
@@ -28,118 +29,13 @@ pub const FloatContext = struct {
     }
 };
 
-pub fn expectStringArgs(
-    args: []const *ast.Expr,
-    env: *Environment,
-    count: usize,
-    module_name: []const u8,
-    func_name: []const u8,
-) ![]const []const u8 {
-    const writer_err = driver.getWriterErr();
+// === Forward Expect Helpers ===
 
-    if (args.len != count) {
-        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
-        return error.ArgumentCountMismatch;
-    }
-
-    var result = std.ArrayList([]const u8).init(env.allocator);
-    defer result.deinit();
-
-    for (args, 0..) |arg, idx| {
-        const val = try eval.evalExpr(arg, env);
-        if (val != .string) {
-            try writer_err.print("{s} module: {s} expected a string, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
-            return error.TypeMismatch;
-        }
-        try result.append(val.string);
-    }
-
-    return try result.toOwnedSlice();
-}
-
-pub fn expectArrayArgs(
-    args: []const *ast.Expr,
-    env: *Environment,
-    count: usize,
-    module_name: []const u8,
-    func_name: []const u8,
-) ![]const std.ArrayList(Value) {
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != count) {
-        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
-        return error.ArgumentCountMismatch;
-    }
-
-    var result = std.ArrayList(std.ArrayList(Value)).init(env.allocator);
-    defer result.deinit();
-
-    for (args, 0..) |arg, idx| {
-        const val = try eval.evalExpr(arg, env);
-        if (val != .array) {
-            try writer_err.print("{s} module: {s} expected an array, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
-            return error.TypeMismatch;
-        }
-        try result.append(val.array);
-    }
-
-    return try result.toOwnedSlice();
-}
-
-pub fn expectNumberArgs(
-    args: []const *ast.Expr,
-    env: *Environment,
-    count: usize,
-    module_name: []const u8,
-    func_name: []const u8,
-) ![]const f64 {
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != count) {
-        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
-        return error.ArgumentCountMismatch;
-    }
-
-    var result = std.ArrayList(f64).init(env.allocator);
-    defer result.deinit();
-
-    for (args, 0..) |arg, idx| {
-        const val = try eval.evalExpr(arg, env);
-        if (val != .number) {
-            try writer_err.print("{s} module: {s} expected an array, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
-            return error.TypeMismatch;
-        }
-        try result.append(val.number);
-    }
-
-    return try result.toOwnedSlice();
-}
-
-pub fn expectNumberArrays(
-    allocator: std.mem.Allocator,
-    arrays: []const std.ArrayList(Value),
-    module_name: []const u8,
-    func_name: []const u8,
-) ![]const []const f64 {
-    const writer_err = driver.getWriterErr();
-    var result = std.ArrayList([]const f64).init(allocator);
-    defer result.deinit();
-
-    for (arrays) |arr| {
-        var nums = try std.ArrayList(f64).initCapacity(allocator, arr.items.len);
-        defer nums.deinit();
-        for (arr.items, 0..) |val, idx| {
-            if (val != .number) {
-                try writer_err.print("{s} module: {s} expected array packed with numbers but found type {s} @ index {d}\n", .{ module_name, func_name, @tagName(val), idx });
-                return error.TypeMismatch;
-            }
-            try nums.append(val.number);
-        }
-        try result.append(try nums.toOwnedSlice());
-    }
-
-    return try result.toOwnedSlice();
-}
+pub const expectStringArgs = expect_helpers.expectStringArgs;
+pub const expectArrayArgs = expect_helpers.expectArrayArgs;
+pub const expectArrayRef = expect_helpers.expectArrayRef;
+pub const expectNumberArgs = expect_helpers.expectNumberArgs;
+pub const expectNumberArrays = expect_helpers.expectNumberArrays;
 
 // === Builtin Functions ===
 
