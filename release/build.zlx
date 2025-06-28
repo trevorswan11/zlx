@@ -40,11 +40,12 @@ const lin = [
 
 const targets = {
     windows: win,
-    macos: mac,
-    linux: lin,
+    // macos: mac,
+    // linux: lin,
 };
 
-const operating_sys = ["linux", "macos", "windows"];
+// const operating_sys = ["linux", "macos", "windows"];
+const operating_sys = ["windows"];
 
 // Command line args
 const root = "zig build";
