@@ -73,7 +73,7 @@ fn min(vals: []const f64) !f64 {
 }
 
 fn max(vals: []const f64) !f64 {
-    if (vals.len == 0) {
+    if (vals.len == 0) { 
         return error.EmptyArray;
     }
 
