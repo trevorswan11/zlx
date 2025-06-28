@@ -18,10 +18,11 @@ While I originally intended to just build the parser, I ended up going much deep
 2. Install [Zig](https://ziglang.org/) and add it to your system's `PATH`, or place it somewhere accessible
     - You can also build Zig from source following the instructions [here](https://github.com/ziglang/zig), but this is much more involved 
 3. Build the binary with `zig build`. I used Zig 0.14.0, but other versions may also work
-    - The Zig language strives to be cross-platform, and all code written or used in this project is runnable on any platform
+    - The Zig language strives to be cross-platform, and this project is, in theory, also cross-platform
+    - Depending on your platform, you may need to jump through some hoops to get the project to build. I have only built this project on windows, but it should work on linux/macos with the inclusion of some system binaries and libraries
 
 ## Build Requirements
-Some distributions/architectures of linux may not build, but you may be able to remedy this by running the following:
+If you are running Ubuntu, I have found that these packages need to be installed in order to build:
 ```
 sudo apt-get update
 sudo apt-get install -y \
@@ -35,7 +36,7 @@ sudo apt-get install -y \
     libxrender-dev \
     libgl1-mesa-dev
 ```
-This is mainly to resolve issues with requiring X11 as the linux display backend.
+This is mainly to resolve issues with requiring X11 as the linux display backend. For other platforms, the only dependencies are `zig` and the submodules discussed in a latter section of this document.
 
 Raylib, which is used for the plotting library, may have some compatibility issues with some systems. To my knowledge and through successful CI runs, you should be able to run ZLX on most platforms. Unfortunately, raylib's reliance on system libraries prevents me from easily packing non-windows builds into future ZLX releases. If you are interested in running ZLX on your specific platform, however, just try and build it from source!
 
@@ -50,7 +51,7 @@ Raylib, which is used for the plotting library, may have some compatibility issu
     - `-v` prints verbose output, showing an indented and formatted abstract syntax tree - also optional
 - To interpret your own input file, pass the relative path as `zig build run -- run <path>`
 - If you're pulling the executable from the `zig-out` directory, you can use the same arguments as explained above
-    - The same applies for downloads from the `releases` tags
+    - The same applies for downloads from any `releases`
 - You can run the projects tests, which mimic the code found in the `examples` folder, with `zig build test`
 
 ## External Libraries

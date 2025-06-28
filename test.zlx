@@ -1,0 +1,9 @@
+import plot;
+
+let xs = 0..6;
+let ys = 3..9;
+
+plot.plot(xs, ys);
+plot.title("Sample Data");
+plot.grid();
+plot.show();
