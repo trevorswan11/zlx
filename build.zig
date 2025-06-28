@@ -32,6 +32,7 @@ pub fn build(b: *std.Build) void {
     const raylib_dep = b.dependency("raylib_zig", .{
         .target = target,
         .optimize = optimize,
+        .linux_display_backend = .X11,
     });
 
     const raylib = raylib_dep.module("raylib");
