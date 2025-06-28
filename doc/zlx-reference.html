@@ -354,6 +354,8 @@
                         <li><a href="#std_queue">Queue</a></li>
                         <li><a href="#std_list">LinkedList</a></li>
                         <li><a href="#std_deque">Deque</a></li>
+                        <li><a href="#std_vector">Vector</a></li>
+                        <li><a href="#std_matrix">Matrix</a></li>
                     </ul>
                 </li>
             </ul>
@@ -1614,6 +1616,81 @@ let d = new deque();
 d.push_tail(1);
 d.push_head(2);
 let front = d.pop_front();
+            </code></pre>
+
+            <h3 id="std_vector">Vector</h3>
+            <p><strong>Summary:</strong> A mathematical vector structure supporting 2D, 3D, and 4D operations such as
+                dot product, cross product, scaling, and projection.</p>
+
+            <p><strong>Constructor:</strong><br><code>let v = new vector(1.0, 2.0, 3.0);</code><br>
+                <code>let v = new vector([1.0, 2.0, 3.0]);</code>
+            </p>
+
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>v.str()</code>: Returns the string representation of the vector.</li>
+                <li><code>v.add(other)</code>: Adds another vector to this vector (in-place).</li>
+                <li><code>v.sub(other)</code>: Subtracts another vector from this vector (in-place).</li>
+                <li><code>v.dot(other)</code>: Computes the dot product with another vector.</li>
+                <li><code>v.scale(scalar)</code>: Scales the vector by the given scalar (in-place).</li>
+                <li><code>v.norm()</code>: Returns the Euclidean norm (magnitude) of the vector.</li>
+                <li><code>v.normalize()</code>: Normalizes the vector to unit length (in-place).</li>
+                <li><code>v.dim()</code>: Returns the number of components in the vector.</li>
+                <li><code>v.project(onto)</code>: Projects this vector onto another (in-place).</li>
+                <li><code>v.angle(other)</code>: Returns the angle (in radians) between this and another vector.</li>
+                <li><code>v.cross(other)</code>: Computes the cross product (3D only) and mutates the vector.</li>
+                <li><code>v.equals(other)</code>: Returns true if all components match.</li>
+                <li><code>v.set(index, value)</code>: Sets the value at the given index.</li>
+                <li><code>v.get(index)</code>: Returns the value at the given index.</li>
+                <li><code>v.items()</code>: Returns an array of numeric elements in the vector.</li>
+                <li><code>v.size()</code>: Returns the number of components (same as <code>dim()</code>).</li>
+            </ul>
+
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let v = new vector(1.0, 2.0, 3.0);
+v.add(new vector(3.0, 2.0, 1.0));
+let norm = v.norm();
+let s = v.str();
+            </code></pre>
+
+            <h3 id="std_matrix">Matrix</h3>
+            <p><strong>Summary:</strong> A rectangular 2D array structure supporting common matrix operations such as
+                addition, multiplication, scaling, inversion, and transposition. Only 2x2 to 4x4 square matrices support
+                inversion.</p>
+
+            <p><strong>Constructor:</strong><br>
+                <code>let m = new matrix([1.0, 2.0], [3.0, 4.0]);</code><br>
+                <code>let m = new matrix([[1.0, 2.0], [3.0, 4.0]]);</code><br>
+                <code>let m = new matrix(3); // creates a 3x3 identity matrix</code>
+            </p>
+
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>m.get(row, col)</code>: Returns the number at the given row and column.</li>
+                <li><code>m.set(row, col, value)</code>: Sets the value at the given row and column.</li>
+                <li><code>m.str()</code>: Returns a string representation of the matrix.</li>
+                <li><code>m.add(other)</code>: Adds another matrix to this matrix (in-place).</li>
+                <li><code>m.sub(other)</code>: Subtracts another matrix from this matrix (in-place).</li>
+                <li><code>m.scale(scalar)</code>: Scales the matrix by a scalar (in-place).</li>
+                <li><code>m.mul(other)</code>: Multiplies by another matrix or a vector. Returns a new result.</li>
+                <li><code>m.transpose()</code>: Returns the transpose of the matrix.</li>
+                <li><code>m.inverse()</code>: Returns the inverse of the matrix (only for 2x2, 3x3, 4x4).</li>
+                <li><code>m.equals(other)</code>: Returns true if both matrices are element-wise equal.</li>
+                <li><code>m.rows()</code>: Returns the number of rows.</li>
+                <li><code>m.cols()</code>: Returns the number of columns.</li>
+                <li><code>m.size()</code>: Returns the total number of elements.</li>
+                <li><code>m.items()</code>: Returns a nested array of all the values.</li>
+            </ul>
+
+            <p><strong>Example:</strong></p>
+            <pre><code>
+let m = new matrix([1.0, 2.0], [3.0, 4.0]);
+let value = m.get(0, 1);
+m.set(1, 1, 9.0);
+m.scale(0.5);
+let transposed = m.transpose();
+let stringified = m.str();
             </code></pre>
 
         </section>
