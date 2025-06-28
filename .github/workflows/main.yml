@@ -31,6 +31,21 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxinerama-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxfixes-dev \
+            libxrender-dev \
+            libgl1-mesa-dev
+
       - name: Set up Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
