@@ -181,6 +181,10 @@ pub const builtin_modules = [_]BuiltinModule{
         .name = "stat",
         .loader = @import("modules/stat.zig").load,
     },
+    .{
+        .name = "plot",
+        .loader = @import("modules/plot.zig").load,
+    },
 
     // Types
     .{

@@ -28,6 +28,20 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("dsa", dsa_mod);
 
+    // zig-raylib module
+    const raylib_dep = b.dependency("raylib_zig", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const raylib = raylib_dep.module("raylib");
+    const raygui = raylib_dep.module("raygui");
+    const raylib_artifact = raylib_dep.artifact("raylib");
+
+    exe.linkLibrary(raylib_artifact);
+    exe.root_module.addImport("raylib", raylib);
+    exe.root_module.addImport("raygui", raygui);
+
     // Add steps
     addRunStep(b, exe);
     addTestStep(b, exe_mod);
