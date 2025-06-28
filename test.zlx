@@ -1,4 +1,0 @@
-import matrix;
-
-let m = new matrix(2);
-println(typeof m);
