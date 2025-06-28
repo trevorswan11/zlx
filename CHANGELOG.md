@@ -44,8 +44,9 @@ All notably significant or outstanding changes to the zlx language will be docum
     - Matrix multiplication, normalization, determination, and more
     - Vector operations and 2D/3D space behavior
     - Derived from std_structs, using "size", "str", and "items" for inferred function calls and representation
-- Fixed issue where scoped variables memory would leak out of their scope while being unaccessible by an environment
+- Partially fixed issue where scoped variables memory would leak out of their scope while being unaccessible by an environment
     - Small performance hit due to arena allocation management, but only by a few millis
+    - This is still an issue with for and while loops, and should be handled at some point
 - Updated error message in builtin module helper
 - format builtin now inherently converts values to their printable representation
     - In other words, format now accepts std instance arguments
