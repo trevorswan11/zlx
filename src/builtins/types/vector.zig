@@ -31,14 +31,14 @@ pub const VectorInstance = struct {
     vector: std.ArrayList(f64),
 };
 
-fn getVectorInstance(this: *Value) !*VectorInstance {
+pub fn getVectorInstance(this: *Value) !*VectorInstance {
     const internal = this.std_instance.fields.get("__internal") orelse
         return error.MissingInternalField;
     return @ptrCast(@alignCast(internal.*.typed_val.value));
 }
 
-var VECTOR_METHODS: std.StringHashMap(StdMethod) = undefined;
-var VECTOR_TYPE: Value = undefined;
+pub var VECTOR_METHODS: std.StringHashMap(StdMethod) = undefined;
+pub var VECTOR_TYPE: Value = undefined;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     VECTOR_METHODS = std.StringHashMap(StdMethod).init(allocator);

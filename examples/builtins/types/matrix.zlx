@@ -1,0 +1,47 @@
+import matrix;
+
+println("=== 2D Matrix Test ===");
+let m2d = new matrix([1.0, 2.0], [3.0, 4.0]);
+let orig2d = m2d.str();
+println(format("Original:\n{}", orig2d));
+let get00 = m2d.get(0, 0);
+let get01 = m2d.get(0, 1);
+println(format("get(0, 0): {}", get00));
+println(format("get(0, 1): {}", get01));
+m2d.set(1, 1, 9.0);
+let get11 = m2d.get(1, 1);
+println(format("get(1, 1): {}", get11));
+m2d.scale(0.5);
+let scaled2d = m2d.str();
+println(format("Scaled:\n{}", scaled2d));
+println(format("Rows: {}", m2d.rows()));
+println(format("Cols: {}", m2d.cols()));
+println(format("Size: {}", m2d.size()));
+println(format("Items length: {}", len(m2d.items())));
+
+println("\n=== 3D Matrix (Identity) Test ===");
+let m3d = new matrix([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]);
+let inv3d = m3d.inverse();
+let same3d = inv3d.equals(m3d);
+println(format("Inverse equals original: {}", same3d));
+
+println("\n=== 4D Matrix (Identity) Test ===");
+let m4d = new matrix(4);
+let orig4d = m4d.str();
+println(format("Original 4x4:\n{}", orig4d));
+let inv4d = m4d.inverse();
+let reinv4d = inv4d.inverse();
+let roundtrip4d = reinv4d.equals(m4d);
+println(format("Inverse of inverse equals original: {}", roundtrip4d));
+
+println("\n=== Rectangular Matrix Test ===");
+let mrect = new matrix([1.0, 2.0, 3.0], [4.0, 5.0, 6.0]);
+let str_rect = mrect.str();
+println(format("Rectangular Matrix:\n{}", str_rect));
+println(format("Rows: {}", mrect.rows()));
+println(format("Cols: {}", mrect.cols()));
+
+let vec = new matrix([1.0], [0.0], [1.0]);
+let mul_result = mrect.mul(vec);
+let str_result = mul_result.str();
+println(format("Multiplication Result:\n{}", str_result));
