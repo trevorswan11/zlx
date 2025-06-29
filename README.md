@@ -8,6 +8,9 @@
   A lexer, parser, language, and interpreter written in Zig.
 </p>
 
+### Branch
+This is the plotting branch, which is has only been thoroughly tested on windows. Please switch to the main branch for a full cross-platform experience.
+
 ### Inspiration
 The backbone of this project was built with help from [tylerlaceby's](https://www.youtube.com/@tylerlaceby) lexer playlist on YouTube. I created this project to learn Zig and to tackle something I had little to no knowledge about: parsing! His short, focused playlist can be found [here](https://www.youtube.com/playlist?list=PL_2VhOvlMk4XDeq2eOOSDQMrbZj9zIU_b) if you're interested.
 
