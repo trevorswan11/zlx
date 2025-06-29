@@ -39,14 +39,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
 fn readHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const path = (try expectStringArgs(args, env, 1, "fs", "read"))[0];
-    const file = try std.fs.cwd().openFile(path, .{});
-    defer file.close();
+    const contents = try driver.readFile(env.allocator, path);
 
-    const stat = try file.stat();
-    const contents = try env.allocator.alloc(u8, @intCast(stat.size));
-    errdefer env.allocator.free(contents);
-
-    _ = try file.readAll(contents);
     return .{
         .string = contents,
     };

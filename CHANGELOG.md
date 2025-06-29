@@ -53,5 +53,8 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Enforced argument count being 0 for almost all builtin functions and modules
     - This will be enforced in future modules
 
-## [0.3.1]
--
+## [0.4.0]
+- Added tooling to the program
+    - Builtin hex-dumping option similar to `xxd`
+    - Builtin file compression using huffman encoding
+    - Both can be accessed through command line arguments. See the `README` for details!

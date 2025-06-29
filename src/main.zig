@@ -3,6 +3,8 @@ const std = @import("std");
 const parser = @import("parser/parser.zig");
 const interpreter = @import("interpreter/interpreter.zig");
 const syntax = @import("utils/syntax.zig");
+const hex = @import("tooling/hex.zig");
+const huff = @import("tooling/huffman.zig");
 
 const driver = @import("utils/driver.zig");
 const getArgs = driver.getArgs;
@@ -47,12 +49,40 @@ pub fn main() !void {
         try writer_err.print("Error reading file contents: {!}\n", .{err});
         parse = std.time.nanoTimestamp();
         if (input.time) {
-            try writer_out.print("Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(parse - start)) / 1_000_000.0});
+            try writer_out.print("Timing:\n", .{});
+            try writer_out.print("  Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(parse - start)) / 1_000_000.0});
         }
         return;
     };
     defer allocator.free(file_contents);
     args = std.time.nanoTimestamp();
+
+    // Tooling
+    if (input.compress or input.decompress or input.hex_dump) {
+        const tool_start = std.time.nanoTimestamp();
+        const tool_writer = if (input.file_out) |fo| blk: {
+            break :blk fo.writer().any();
+        } else blk: {
+            break :blk writer_out;
+        };
+
+        if (input.hex_dump) {
+            try hex.hexDump(file_contents, tool_writer, writer_err);
+        }
+        const tool_end = std.time.nanoTimestamp();
+
+        const arguments = @as(f128, @floatFromInt(args - start)) / 1_000_000.0;
+        const elapsed = @as(f128, @floatFromInt(tool_end - tool_start)) / 1_000_000.0;
+        const process = @as(f128, @floatFromInt(tool_end - start)) / 1_000_000.0;
+
+        if (input.time) {
+            try writer_out.print("Timing:\n", .{});
+            try writer_out.print("  Args Parsing took: {d} ms\n", .{arguments});
+            try writer_out.print("  {s} took: {d} ms\n", .{ input.tool_type, elapsed });
+            try writer_out.print("  Process took: {d} ms\n", .{process});
+        }
+        return;
+    }
 
     // Parse the file
     const block = parser.parse(allocator, file_contents) catch |err| switch (err) {

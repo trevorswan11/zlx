@@ -14,6 +14,10 @@ pub fn readFile(allocator: std.mem.Allocator, path: []const u8) ![]const u8 {
     defer file.close();
 
     const stat = try file.stat();
+    if (stat.size > std.math.maxInt(usize)) {
+        return error.FileTooLarge;
+    }
+
     const buffer = try allocator.alloc(u8, @intCast(stat.size));
     errdefer allocator.free(buffer);
 
@@ -25,9 +29,14 @@ const Args = struct {
     path: []const u8 = "",
     time: bool = false,
     verbose: bool = false,
-    run: bool = true,
+    run: bool = false,
     dump: bool = false,
     repl: bool = false,
+    compress: bool = false,
+    decompress: bool = false,
+    hex_dump: bool = false,
+    file_out: ?std.fs.File = null,
+    tool_type: []const u8 = "",
 };
 
 /// Handles parsing the command line arguments for the process
@@ -37,15 +46,20 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     defer arguments.deinit();
 
     if (!arguments.skip()) {
-        try writer_err.print("Usage: zlx <run|ast> <filepath> <time?> <-v?>\n", .{});
+        try writer_err.print("Usage: zlx <run|ast|dump> <filepath> <time?> <-v?>\n", .{});
         return error.InvalidUsage;
     }
 
     var filepath: ?[]const u8 = null;
     var time: bool = false;
     var verbose: bool = false;
-    var run: bool = true;
+    var run: bool = false;
     var dump: bool = false;
+    var compress: bool = false;
+    var decompress: bool = false;
+    var hex_dump: bool = false;
+    var file_out: ?std.fs.File = null;
+    var tool_type: []const u8 = undefined;
 
     // The first arg can specify either run or ast, defaulting to run
     const raw_args = try std.process.argsAlloc(allocator);
@@ -56,17 +70,28 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .repl = true,
         };
     } else if (raw_args.len >= 3) optional_arg: {
-        if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run") and !std.mem.eql(u8, raw_args[1], "dump")) {
+        if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run") and !std.mem.eql(u8, raw_args[1], "dump") and !std.mem.eql(u8, raw_args[1], "compress") and !std.mem.eql(u8, raw_args[1], "-c") and !std.mem.eql(u8, raw_args[1], "decompress") and !std.mem.eql(u8, raw_args[1], "-dc") and !std.mem.eql(u8, raw_args[1], "hex") and !std.mem.eql(u8, raw_args[1], "-x")) {
             break :optional_arg;
         }
 
-        if (arguments.next()) |r| {
+        if (arguments.next()) |next| {
+            const r = try toLower(allocator, next);
+            defer allocator.free(r);
             if (std.mem.eql(u8, r, "ast")) {
                 run = false;
             } else if (std.mem.eql(u8, r, "run")) {
                 run = true;
             } else if (std.mem.eql(u8, r, "dump")) {
                 dump = true;
+            } else if (std.mem.eql(u8, r, "compress") or std.mem.eql(u8, r, "-c")) {
+                compress = true;
+                tool_type = "Compression";
+            } else if (std.mem.eql(u8, r, "decompress") or std.mem.eql(u8, r, "-dc")) {
+                decompress = true;
+                tool_type = "Decompression";
+            } else if (std.mem.eql(u8, r, "hex") or std.mem.eql(u8, r, "-x")) {
+                hex_dump = true;
+                tool_type = "Hex Dumping";
             } else {
                 return error.InvalidRunTarget;
             }
@@ -89,24 +114,34 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
         filepath = fp;
     }
 
+    if (compress or decompress or hex_dump) blk: {
+        if (raw_args.len >= 4) {
+            const la = try toLower(allocator, raw_args[3]);
+            defer allocator.free(la);
+            if (std.mem.eql(u8, "time", la) or std.mem.eql(u8, "-v", la)) {
+                break :blk;
+            }
+        }
+
+        // Capture the output file for the tool
+        if (!hex_dump) {
+            if (arguments.next()) |out_file| {
+                file_out = try std.fs.cwd().createFile(out_file, .{});
+            }
+        }
+    }
+
     // Capture the optional time/bench arg
-    if (arguments.next()) |next| {
+    while (arguments.next()) |next| {
         const flag = try toLower(allocator, next);
         defer allocator.free(flag);
         if (std.mem.eql(u8, flag, "time")) {
             time = true;
-            if (arguments.next()) |v| {
-                const v_flag = try toLower(allocator, v);
-                defer allocator.free(v_flag);
-                verbose = std.mem.eql(u8, v_flag, "-v");
-            }
         } else if (std.mem.eql(u8, flag, "-v")) {
             verbose = true;
-            if (arguments.next()) |t| {
-                const t_flag = try toLower(allocator, t);
-                defer allocator.free(t_flag);
-                time = std.mem.eql(u8, t_flag, "time");
-            }
+        } else {
+            try writer_err.print("Unknown flag or too many arguments: {s}\n", .{flag});
+            return error.InvalidUsage;
         }
     }
 
@@ -119,8 +154,13 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .path = try allocator.dupe(u8, fp),
             .time = time,
             .verbose = verbose,
-            .run = if (!dump) run else false,
+            .run = run,
             .dump = dump,
+            .compress = compress,
+            .decompress = decompress,
+            .hex_dump = hex_dump,
+            .tool_type = tool_type,
+            .file_out = file_out,
         };
     } else return error.MalformedArgs;
 }

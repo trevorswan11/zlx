@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  A lexer, parser, language, and interpreter written in Zig.
+  A lexer, parser, language, interpreter, and tooling software written in Zig.
 </p>
 
 ### Inspiration
@@ -34,6 +34,10 @@ While I originally intended to just build the parser, I ended up going much deep
 - If you're pulling the executable from the `zig-out` directory, you can use the same arguments as explained above
     - The same applies for downloads from the `releases` tags
 - You can run the projects tests, which mimic the code found in the `examples` folder, with `zig build test`
+- ZLX also has built in tooling, which can be accessed through command line arguments as follows:
+    - `compress <filepath> <output?>` will use huffman encoding to compress the given file and will output it to either the output path (if given) or to a file of the same name with extension `.zcx`. You can use the flag `-c` as a shorthand for `compress`
+    - `decompress <filepath> <output?>` reverses the encoding done using ZLX's huffman encoding tool. You can use the flag `-dc` as a shorthand for `decompress`
+    - `hex <filepath>` mimics the well known `xxd` program. You can use the flag `-x` as a shorthand for `hex`
 
 ## External Libraries
 This project has three independent dependencies:

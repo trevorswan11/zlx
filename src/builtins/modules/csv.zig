@@ -32,15 +32,7 @@ fn readHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 1, "csv", "read");
     const filepath = parts[0];
 
-    const file = try std.fs.cwd().openFile(filepath, .{});
-    defer file.close();
-
-    const stat = try file.stat();
-    const contents = try env.allocator.alloc(u8, @intCast(stat.size));
-    errdefer env.allocator.free(contents);
-
-    _ = try file.readAll(contents);
-
+    const contents = try driver.readFile(env.allocator, filepath);
     return try parseCSV(env.allocator, contents);
 }
 
