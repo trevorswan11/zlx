@@ -144,7 +144,7 @@ test {
     _ = @import("builtins/modules/json.zig");
     _ = @import("builtins/modules/stat.zig");
 
-    // Builtin Helper Functions
+    // Builtin Helper Files
     _ = @import("builtins/helpers/statistics.zig");
 
     // Builtin Standard Library Structs
