@@ -44,7 +44,7 @@
     "builtin_modules": {
       "patterns": [
         {
-          "match": "\\b(array|debug|fs|math|path|random|string|sys|time|csv|json|stat)\\b",
+          "match": "\\b(array|debug|fs|math|path|random|string|sys|time|csv|json|stat|plot)\\b",
           "name": "support.type.builtin.zlx"
         }
       ]
