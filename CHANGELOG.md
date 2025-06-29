@@ -52,3 +52,6 @@ All notably significant or outstanding changes to the zlx language will be docum
     - In other words, format now accepts std instance arguments
 - Enforced argument count being 0 for almost all builtin functions and modules
     - This will be enforced in future modules
+
+## [0.3.1]
+-

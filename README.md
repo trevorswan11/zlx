@@ -18,7 +18,8 @@ While I originally intended to just build the parser, I ended up going much deep
 2. Install [Zig](https://ziglang.org/) and add it to your system's `PATH`, or place it somewhere accessible
     - You can also build Zig from source following the instructions [here](https://github.com/ziglang/zig), but this is much more involved 
 3. Build the binary with `zig build`. I used Zig 0.14.0, but other versions may also work
-    - The Zig language strives to be cross-platform, and all code written or used in this project is runnable on any platform  
+    - The Zig language strives to be cross-platform, and all code written or used in this project is runnable on any platform
+4. If you would like the plotting suite, then checkout the `plotting` library and repeat the build process. This branch has CI tests for all platforms, but I have only personally tested it on windows
 
 ## Building/Running the Program
 - You can build the binary using `zig build` as mentioned above, but you can specify optimization targets if desired using these extra arguments
@@ -38,7 +39,7 @@ While I originally intended to just build the parser, I ended up going much deep
 This project has three independent dependencies:
 1.  [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. 
 2. [zig-containers](https://github.com/trevorswan11/zig-containers) which drives the standard libraries builtin data structures.
-3. [raylib-zig](https://github.com/Not-Nik/raylib-zig) which drives the plotting module through basic window creation
+3. [raylib-zig](https://github.com/Not-Nik/raylib-zig) which drives the plotting module through basic window creation. This is only linked during the build process if building from the plotting branch
 
 ## Syntax Highlighting
 While you can edit the source code for any zlx file in any editor, you can download the [zlx-syntax](https://marketplace.visualstudio.com/items?itemName=kyoshi11.zlx-syntax) extension through vscode to get syntax highlighting! This is a large WIP, but will hopefully grow to show doc strings and support intellisense eventually!
