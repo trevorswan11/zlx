@@ -53,7 +53,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     var filepath: ?[]const u8 = null;
     var time: bool = false;
     var verbose: bool = false;
-    var run: bool = false;
+    var run: bool = true;
     var dump: bool = false;
     var compress: bool = false;
     var decompress: bool = false;
@@ -149,12 +149,25 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
         if (run and std.mem.endsWith(u8, fp, "ast_check.zlx")) {
             try writer_err.print("You should not run this file! It is meant for ast checking ONLY\n", .{});
             return error.UseASTForMe;
+        } else if ((compress or decompress) and file_out == null) {
+            const basename = std.fs.path.basename(fp);
+            const out_file = if (compress) blk: {
+                break :blk try std.fmt.allocPrint(allocator, "{s}.zcx", .{basename});
+            } else blk: {
+                break :blk stripSuffix(basename, ".zcx");
+            };
+
+            if (std.mem.eql(u8, basename, out_file)) {
+                try writer_err.print("Input filepath can not match output!\n", .{});
+                return error.ImproperFilepaths;
+            }
+            file_out = try std.fs.cwd().createFile(out_file, .{});
         }
         return .{
             .path = try allocator.dupe(u8, fp),
             .time = time,
             .verbose = verbose,
-            .run = run,
+            .run = if (dump or compress or decompress or hex_dump) false else run,
             .dump = dump,
             .compress = compress,
             .decompress = decompress,
@@ -232,6 +245,22 @@ pub fn repl(allocator: std.mem.Allocator) !void {
             try writer_out.print("{s}\n", .{result_str});
         }
     }
+}
+
+pub fn stripSuffix(s: []const u8, suffix: []const u8) []const u8 {
+    if (s.len >= suffix.len and std.mem.endsWith(u8, s, suffix)) {
+        return s[0 .. s.len - suffix.len];
+    }
+    return s;
+}
+
+pub fn toNullTerminatedString(allocator: std.mem.Allocator, input: []const u8) ![:0]const u8 {
+    var buffer = try allocator.alloc(u8, input.len + 1);
+    for (input, 0..) |c, i| {
+        buffer[i] = c;
+    }
+    buffer[input.len] = 0;
+    return buffer[0..input.len :0];
 }
 
 pub fn unescapeString(allocator: std.mem.Allocator, input: []const u8) ![]u8 {

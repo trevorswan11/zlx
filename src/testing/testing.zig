@@ -14,6 +14,7 @@ pub const expect = testing.expect;
 pub const expectEqual = testing.expectEqual;
 pub const expectApproxEqAbs = testing.expectApproxEqAbs;
 pub const expectEqualStrings = std.testing.expectEqualStrings;
+pub const expectEqualSlices = std.testing.expectEqualSlices;
 pub const expectError = std.testing.expectError;
 
 /// Returns the test allocator. This should only be used in temporary test programs
