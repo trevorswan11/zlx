@@ -10,23 +10,28 @@ pub fn compress(
     writer_out: std.io.AnyWriter,
     writer_err: std.io.AnyWriter,
 ) !void {
-    if (file_contents.len == 0) {
+    const normalized_contents = try huffman.normalizeLineEndings(file_contents, allocator);
+    defer allocator.free(normalized_contents);
+    if (normalized_contents.len == 0) {
         try writer_err.print("Compression Error: File Empty!\n", .{});
         return error.EmptyFile;
     }
 
-    var freqs = try huffman.frequencies(allocator, file_contents);
+    var freqs = try huffman.frequencies(allocator, normalized_contents);
     defer freqs.deinit();
 
-    try writer_out.writeAll("ZCX");
-    try writer_out.writeInt(u16, @intCast(freqs.count()), .big);
+    var buf_out = std.io.bufferedWriter(writer_out);
+    const buffer_writer = buf_out.writer();
+
+    try buffer_writer.writeAll("ZCX");
+    try buffer_writer.writeInt(u16, @intCast(freqs.count()), .big);
     var itr = freqs.iterator();
     while (itr.next()) |entry| {
-        try writer_out.writeByte(entry.key_ptr.*);
-        try writer_out.writeInt(u32, @intCast(entry.value_ptr.*), .big);
+        try buffer_writer.writeByte(entry.key_ptr.*);
+        try buffer_writer.writeInt(u32, @intCast(entry.value_ptr.*), .big);
     }
 
-    var heap = try Heap.init(allocator, .min_at_top, file_contents.len);
+    var heap = try Heap.init(allocator, .min_at_top, normalized_contents.len);
     itr = freqs.iterator();
     while (itr.next()) |entry| {
         const node = try Node.init(
@@ -52,19 +57,19 @@ pub fn compress(
         }
 
         try huffman.buildTable(allocator, tree_root, &[_]u8{}, &table);
-
-        for (file_contents) |b| {
+        for (normalized_contents) |b| {
             const code = table.get(b) orelse return error.MissingHuffmanCode;
             try encoded.appendSlice(code);
         }
         const pad_bits = try huffman.padToByteAlignment(&encoded);
-        try writer_out.writeByte(@intCast(pad_bits));
+        try buffer_writer.writeByte(@intCast(pad_bits));
         const bytes = try huffman.toEncodedBytes(encoded, writer_err);
-        try writer_out.writeAll(bytes);
+        try buffer_writer.writeAll(bytes);
     } else {
         try writer_err.print("Malformed frequency table!\n", .{});
         return error.MalformedFreqs;
     }
+    try buf_out.flush();
 }
 
 pub fn decompress(
@@ -82,6 +87,9 @@ pub fn decompress(
 
     var freqs = try huffman.readFrequencyTable(allocator, reader);
     defer freqs.deinit();
+
+    var buf_out = std.io.bufferedWriter(writer_out);
+    const buffer_writer = buf_out.writer();
 
     const root = try huffman.buildTreeFromFrequencies(allocator, freqs);
     var compressed = std.ArrayList(u8).init(allocator);
@@ -104,8 +112,9 @@ pub fn decompress(
     // Special case: only one symbol in the input
     if (root.left == null and root.right == null) {
         for (0..total_symbols) |_| {
-            try writer_out.writeByte(root.data);
+            try buffer_writer.writeByte(root.data);
         }
+        try buf_out.flush();
         return;
     }
 
@@ -118,13 +127,14 @@ pub fn decompress(
     var decoded: usize = 0;
     var node = root;
     for (compressed.items, 0..) |byte, i| {
+        try writer_err.print("Decoded: {c}\n", .{ byte });
         const bits_in_bytes = if (i == compressed.items.len - 1) blk: {
             break :blk 8 - pad_bits;
         } else blk: {
             break :blk 8;
         };
 
-        for (0..bits_in_bytes) |j| {
+        outer: for (0..bits_in_bytes) |j| {
             const bit = (byte >> @intCast(7 - j)) & 1;
             node = if (bit == 0) blk: {
                 break :blk node.left orelse return error.MalformedTree;
@@ -133,16 +143,17 @@ pub fn decompress(
             };
 
             if (node.left == null and node.right == null) {
-                try writer_out.writeByte(node.data);
+                try buffer_writer.writeByte(node.data);
                 decoded += 1;
                 node = root;
 
                 if (decoded >= total_symbols) {
-                    break;
+                    break : outer;
                 }
             }
         }
     }
+    try buf_out.flush();
 }
 
 // === TESTING ===

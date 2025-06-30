@@ -1,3 +1,238 @@
+COMPRESSION
+const std = @import("std");
+const huffman = @import("huffman.zig");
+
+const Heap = huffman.Heap;
+const Node = huffman.Node;
+
+pub fn compress(
+    allocator: std.mem.Allocator,
+    file_contents: []const u8,
+    writer_out: std.io.AnyWriter,
+    writer_err: std.io.AnyWriter,
+) !void {
+    const normalized_contents = try huffman.normalizeLineEndings(file_contents, allocator);
+    defer allocator.free(normalized_contents);
+    if (normalized_contents.len == 0) {
+        try writer_err.print("Compression Error: File Empty!\n", .{});
+        return error.EmptyFile;
+    }
+
+    var freqs = try huffman.frequencies(allocator, normalized_contents);
+    defer freqs.deinit();
+
+    var buf_out = std.io.bufferedWriter(writer_out);
+    const buffer_writer = buf_out.writer();
+
+    try buffer_writer.writeAll("ZCX");
+    try buffer_writer.writeInt(u16, @intCast(freqs.count()), .big);
+    var itr = freqs.iterator();
+    while (itr.next()) |entry| {
+        try buffer_writer.writeByte(entry.key_ptr.*);
+        try buffer_writer.writeInt(u32, @intCast(entry.value_ptr.*), .big);
+    }
+
+    var heap = try Heap.init(allocator, .min_at_top, normalized_contents.len);
+    itr = freqs.iterator();
+    while (itr.next()) |entry| {
+        const node = try Node.init(
+            allocator,
+            entry.key_ptr.*,
+            entry.value_ptr.*,
+            null,
+            null,
+        );
+        try heap.insert(node);
+    }
+    try huffman.encode(&heap);
+    const root = try heap.poll();
+
+    if (root) |tree_root| {
+        var table = std.AutoHashMap(u8, []const u8).init(allocator);
+        var encoded = std.ArrayList(u8).init(allocator);
+        defer {
+            table.deinit();
+            encoded.deinit();
+            tree_root.deinit();
+            allocator.destroy(tree_root);
+        }
+
+        try huffman.buildTable(allocator, tree_root, &[_]u8{}, &table);
+        for (normalized_contents) |b| {
+            const code = table.get(b) orelse return error.MissingHuffmanCode;
+            try encoded.appendSlice(code);
+        }
+        const pad_bits = try huffman.padToByteAlignment(&encoded);
+        try buffer_writer.writeByte(@intCast(pad_bits));
+        const bytes = try huffman.toEncodedBytes(encoded, writer_err);
+        try buffer_writer.writeAll(bytes);
+    } else {
+        try writer_err.print("Malformed frequency table!\n", .{});
+        return error.MalformedFreqs;
+    }
+    try buf_out.flush();
+}
+
+pub fn decompress(
+    allocator: std.mem.Allocator,
+    reader: std.io.AnyReader,
+    writer_out: std.io.AnyWriter,
+    writer_err: std.io.AnyWriter,
+) !void {
+    var magic: [3]u8 = undefined;
+    try reader.readNoEof(&magic);
+    if (!std.mem.eql(u8, &magic, "ZCX")) {
+        try writer_err.print("Invalid file header\n", .{});
+        return error.InvalidFileFormat;
+    }
+
+    var freqs = try huffman.readFrequencyTable(allocator, reader);
+    defer freqs.deinit();
+
+    var buf_out = std.io.bufferedWriter(writer_out);
+    const buffer_writer = buf_out.writer();
+
+    const root = try huffman.buildTreeFromFrequencies(allocator, freqs);
+    var compressed = std.ArrayList(u8).init(allocator);
+    defer {
+        compressed.deinit();
+        root.deinit();
+        allocator.destroy(root);
+    }
+
+    var total_symbols: usize = 0;
+    var itr = freqs.iterator();
+    while (itr.next()) |entry| {
+        total_symbols += entry.value_ptr.*;
+    }
+    const pad_bits = try reader.readByte();
+    if (pad_bits >= 8) {
+        return error.InvalidPadding;
+    }
+
+    // Special case: only one symbol in the input
+    if (root.left == null and root.right == null) {
+        for (0..total_symbols) |_| {
+            try buffer_writer.writeByte(root.data);
+        }
+        try buf_out.flush();
+        return;
+    }
+
+    // Read the rest of the data into memory
+    while (true) {
+        const byte = reader.readByte() catch break;
+        try compressed.append(byte);
+    }
+
+    var decoded: usize = 0;
+    var node = root;
+    for (compressed.items, 0..) |byte, i| {
+        try writer_err.print("Decoded: {c}\n", .{ byte });
+        const bits_in_bytes = if (i == compressed.items.len - 1) blk: {
+            break :blk 8 - pad_bits;
+        } else blk: {
+            break :blk 8;
+        };
+
+        outer: for (0..bits_in_bytes) |j| {
+            const bit = (byte >> @intCast(7 - j)) & 1;
+            node = if (bit == 0) blk: {
+                break :blk node.left orelse return error.MalformedTree;
+            } else blk: {
+                break :blk node.right orelse return error.MalformedTree;
+            };
+
+            if (node.left == null and node.right == null) {
+                try buffer_writer.writeByte(node.data);
+                decoded += 1;
+                node = root;
+
+                if (decoded >= total_symbols) {
+                    break : outer;
+                }
+            }
+        }
+    }
+    try buf_out.flush();
+}
+
+// === TESTING ===
+
+const testing = @import("../testing/testing.zig");
+
+// Round-trip test
+
+test "compress and decompress round-trip" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    const input = "the quick brown fox jumps over the lazy dog";
+
+    var compressed = std.ArrayList(u8).init(allocator);
+    defer compressed.deinit();
+
+    try compress(allocator, input, compressed.writer().any(), std.io.null_writer.any());
+
+    var decompressed = std.ArrayList(u8).init(allocator);
+    defer decompressed.deinit();
+
+    var reader = std.io.fixedBufferStream(compressed.items);
+    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+
+    try testing.expectEqualSlices(u8, input, decompressed.items);
+}
+
+test "compress fails on empty input" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    const input: []const u8 = "";
+
+    var compressed = std.ArrayList(u8).init(allocator);
+    defer compressed.deinit();
+
+    const result = compress(allocator, input, compressed.writer().any(), std.io.null_writer.any());
+    try testing.expectError(error.EmptyFile, result);
+}
+
+test "decompress fails with invalid magic" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    const fake = "BAD";
+    var stream = std.io.fixedBufferStream(fake);
+    var decompressed = std.ArrayList(u8).init(allocator);
+    defer decompressed.deinit();
+
+    const result = decompress(allocator, stream.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+    try testing.expectError(error.InvalidFileFormat, result);
+}
+
+test "compress and decompress repeated characters - special case" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    const input = "aaaaaa";
+
+    var compressed = std.ArrayList(u8).init(allocator);
+    defer compressed.deinit();
+
+    try compress(allocator, input, compressed.writer().any(), std.io.null_writer.any());
+
+    var decompressed = std.ArrayList(u8).init(allocator);
+    defer decompressed.deinit();
+
+    var reader = std.io.fixedBufferStream(compressed.items);
+    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+
+    try testing.expectEqualSlices(u8, input, decompressed.items);
+}
+HUFFMAN
 const std = @import("std");
 const dsa = @import("dsa");
 
