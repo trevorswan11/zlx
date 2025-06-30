@@ -4,7 +4,7 @@ const parser = @import("parser/parser.zig");
 const interpreter = @import("interpreter/interpreter.zig");
 const syntax = @import("utils/syntax.zig");
 const hex = @import("tooling/hex.zig");
-const huff = @import("tooling/huffman.zig");
+const compression = @import("tooling/compression.zig");
 
 const driver = @import("utils/driver.zig");
 const getArgs = driver.getArgs;
@@ -67,8 +67,10 @@ pub fn main() !void {
         };
 
         if (input.hex_dump) {
-            try hex.hexDump(file_contents, tool_writer, writer_err);
-        }
+            try hex.dump(file_contents, tool_writer, writer_err);
+        } else if (input.compress) {
+            try compression.compress(allocator, file_contents, tool_writer, writer_err);
+        } else if (input.decompress) {}
         const tool_end = std.time.nanoTimestamp();
 
         const arguments = @as(f128, @floatFromInt(args - start)) / 1_000_000.0;
@@ -107,7 +109,7 @@ pub fn main() !void {
         };
     }
 
-    // Successful parsing
+    // Successful parsing, so we can continue onto interpreting
     var env = interpreter.Environment.init(allocator, null);
     defer env.deinit();
 
