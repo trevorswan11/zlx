@@ -3,6 +3,7 @@ const huffman = @import("huffman.zig");
 
 const Heap = huffman.Heap;
 const Node = huffman.Node;
+const BitBuffer = huffman.BitBuffer;
 
 pub fn compress(
     allocator: std.mem.Allocator,
@@ -10,8 +11,9 @@ pub fn compress(
     writer_out: std.io.AnyWriter,
     writer_err: std.io.AnyWriter,
 ) !void {
-    const normalized_contents = try huffman.normalizeLineEndings(file_contents, allocator);
-    defer allocator.free(normalized_contents);
+    // const normalized_contents = try huffman.normalizeLineEndings(file_contents, allocator);
+    // defer allocator.free(normalized_contents);
+    const normalized_contents = file_contents;
     if (normalized_contents.len == 0) {
         try writer_err.print("Compression Error: File Empty!\n", .{});
         return error.EmptyFile;
@@ -48,10 +50,10 @@ pub fn compress(
 
     if (root) |tree_root| {
         var table = std.AutoHashMap(u8, []const u8).init(allocator);
-        var encoded = std.ArrayList(u8).init(allocator);
+        var bit_buffer = BitBuffer.init(allocator);
         defer {
             table.deinit();
-            encoded.deinit();
+            bit_buffer.deinit();
             tree_root.deinit();
             allocator.destroy(tree_root);
         }
@@ -59,12 +61,11 @@ pub fn compress(
         try huffman.buildTable(allocator, tree_root, &[_]u8{}, &table);
         for (normalized_contents) |b| {
             const code = table.get(b) orelse return error.MissingHuffmanCode;
-            try encoded.appendSlice(code);
+            try bit_buffer.appendBitsFromSlice(code);
         }
-        const pad_bits = try huffman.padToByteAlignment(&encoded);
-        try buffer_writer.writeByte(@intCast(pad_bits));
-        const bytes = try huffman.toEncodedBytes(encoded, writer_err);
-        try buffer_writer.writeAll(bytes);
+        const result = try bit_buffer.finishAndSlice();
+        try buffer_writer.writeByte(result.pad_bits);
+        try buffer_writer.writeAll(result.slice);
     } else {
         try writer_err.print("Malformed frequency table!\n", .{});
         return error.MalformedFreqs;
@@ -126,16 +127,16 @@ pub fn decompress(
 
     var decoded: usize = 0;
     var node = root;
-    for (compressed.items, 0..) |byte, i| {
-        try writer_err.print("Decoded: {c}\n", .{ byte });
-        const bits_in_bytes = if (i == compressed.items.len - 1) blk: {
-            break :blk 8 - pad_bits;
+    outer: for (compressed.items, 0..) |byte, i| {
+        const is_last = (i == compressed.items.len - 1);
+        const bits_in_bytes: u8 = if (is_last and pad_bits != 0) blk: {
+            break :blk @intCast(8 - pad_bits);
         } else blk: {
             break :blk 8;
         };
 
-        outer: for (0..bits_in_bytes) |j| {
-            const bit = (byte >> @intCast(7 - j)) & 1;
+        for (0..bits_in_bytes) |j| {
+            const bit: u1 = @intCast((byte >> @intCast(7 - j)) & 1);
             node = if (bit == 0) blk: {
                 break :blk node.left orelse return error.MalformedTree;
             } else blk: {
@@ -148,7 +149,7 @@ pub fn decompress(
                 node = root;
 
                 if (decoded >= total_symbols) {
-                    break : outer;
+                    break :outer;
                 }
             }
         }

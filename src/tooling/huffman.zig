@@ -1,7 +1,7 @@
 const std = @import("std");
 const dsa = @import("dsa");
 
-// Min-Heap Node Data Structure
+// Min-Heap & Data Structures
 pub const Heap = dsa.PriorityQueue(*Node, Node.less);
 pub const Node = struct {
     const Self = @This();
@@ -39,6 +39,76 @@ pub const Node = struct {
         return a.freq < b.freq;
     }
 };
+
+pub const BitBuffer = struct {
+    const Self = @This();
+
+    allocator: std.mem.Allocator,
+    list: std.ArrayList(u8),
+    current_byte: u8 = 0,
+    bit_index: u8 = 0,
+
+    pub fn init(allocator: std.mem.Allocator) Self {
+        return .{
+            .allocator = allocator,
+            .list = std.ArrayList(u8).init(allocator),
+        };
+    }
+
+    pub fn appendBit(self: *Self, bit: u1) !void {
+        self.current_byte |= @as(u8, bit) << @intCast(7 - self.bit_index);
+        self.bit_index += 1;
+
+        if (self.bit_index == 8) {
+            try self.list.append(self.current_byte);
+            self.current_byte = 0;
+            self.bit_index = 0;
+        }
+    }
+
+    pub fn appendBitsFromSlice(self: *Self, bits: []const u8) !void {
+        for (bits) |b| {
+            switch (b) {
+                '0' => try self.appendBit(0),
+                '1' => try self.appendBit(1),
+                else => return error.InvalidBit,
+            }
+        }
+    }
+
+    pub fn finish(self: *Self) !usize {
+        if (self.bit_index > 0) {
+            try self.list.append(self.current_byte);
+            return 8 - @as(u8, @intCast(self.bit_index));
+        }
+        return 0;
+    }
+
+    pub fn finishAndSlice(self: *Self) !struct {
+        pad_bits: u8,
+        slice: []u8,
+    } {
+        const pad = if (self.bit_index > 0) blk: {
+            const used: u8 = @intCast(self.bit_index);
+            try self.list.append(self.current_byte);
+            break :blk 8 - used;
+        } else 0;
+
+        return .{
+            .pad_bits = pad,
+            .slice = try self.list.toOwnedSlice(),
+        };
+    }
+
+    pub fn toOwnedSlice(self: *Self) ![]u8 {
+        return try self.list.toOwnedSlice();
+    }
+
+    pub fn deinit(self: *Self) void {
+        self.list.deinit();
+    }
+};
+
 
 // === COMPRESSION ===
 
@@ -99,43 +169,6 @@ pub fn buildTable(allocator: std.mem.Allocator, node: *Node, prefix: []const u8,
         next[prefix.len] = '1';
         try buildTable(allocator, right, next, table);
     }
-}
-
-pub fn padToByteAlignment(encoded: *std.ArrayList(u8)) !usize {
-    const extra = @rem(encoded.items.len, 8);
-    if (extra == 0) {
-        return 0;
-    }
-
-    const pad_bits = 8 - extra;
-    for (0..pad_bits) |_| {
-        try encoded.append('0');
-    }
-    return pad_bits;
-}
-
-pub fn toEncodedBytes(encoded: std.ArrayList(u8), writer_err: std.io.AnyWriter) ![]const u8 {
-    if (@rem(encoded.items.len, 8) != 0) {
-        try writer_err.print("Could not convert to bytes: encoded length of {d} is not divisible by 8\n", .{encoded.items.len});
-        return error.MalformedBytes;
-    }
-
-    const num_bytes = @divExact(encoded.items.len, 8);
-    var result = try std.ArrayList(u8).initCapacity(encoded.allocator, num_bytes);
-    defer result.deinit();
-
-    var i: usize = 0;
-    while (i < encoded.items.len) : (i += 8) {
-        var byte: u8 = 0;
-        for (0..8) |bit_index| {
-            if (encoded.items[i + bit_index] == '1') {
-                byte |= @as(u8, 1) << @intCast(7 - bit_index);
-            }
-        }
-        try result.append(byte);
-    }
-
-    return try result.toOwnedSlice();
 }
 
 pub fn normalizeLineEndings(input: []const u8, allocator: std.mem.Allocator) ![]u8 {
@@ -267,34 +300,6 @@ test "buildTable generates prefix codes for all leaves" {
             try testing.expect(code.len > 0);
         }
     }
-}
-
-test "padToByteAlignment adds correct number of bits" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator());
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    var encoded = std.ArrayList(u8).init(allocator);
-    defer encoded.deinit();
-
-    try encoded.appendSlice("1010101"); // 7 bits
-    const pad = try padToByteAlignment(&encoded);
-    try testing.expectEqual(@as(usize, 1), pad);
-    try testing.expectEqual(encoded.items.len, 8);
-    try testing.expectEqual(encoded.items[7], '0');
-}
-
-test "toEncodedBytes packs bits into bytes" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator());
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    var encoded = std.ArrayList(u8).init(allocator);
-    defer encoded.deinit();
-
-    try encoded.appendSlice("01000001"); // = 0x41
-    const bytes = try toEncodedBytes(encoded, std.io.null_writer.any());
-    try testing.expectEqualSlices(u8, &[1]u8{0x41}, bytes);
 }
 
 test "readFrequencyTable reads known map from buffer" {
