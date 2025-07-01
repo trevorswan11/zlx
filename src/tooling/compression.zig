@@ -114,6 +114,7 @@ pub fn decompress(
     for (entries) |entry| {
         total_symbols += entry.freq;
     }
+    
     const pad_bits = try reader.readByte();
     if (pad_bits >= 8) {
         return error.InvalidPadding;
