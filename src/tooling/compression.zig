@@ -20,8 +20,7 @@ pub fn compress(
     writer_err: std.io.AnyWriter,
 ) anyerror!void {
     if (file_contents.len == 0) {
-        try writer_err.print("Compression Error: File Empty!\n", .{});
-        return error.EmptyFile;
+        return;
     }
 
     var freqs = try huffman.frequencies(allocator, file_contents);
@@ -90,7 +89,7 @@ pub fn decompress(
     var magic: [3]u8 = undefined;
     try reader.readNoEof(&magic);
     if (std.mem.eql(u8, &magic, ARCHIVE_HEADER)) {
-        return try archiving.decompressArchive(allocator, reader, base_out_dir, writer_out, writer_err);
+        return try archiving.decompressArchive(allocator, reader, base_out_dir, writer_err);
     } else if (!std.mem.eql(u8, &magic, COMPRESSION_HEADER)) {
         try writer_err.print("Invalid file header\n", .{});
         return error.InvalidFileFormat;
@@ -114,7 +113,7 @@ pub fn decompress(
     for (entries) |entry| {
         total_symbols += entry.freq;
     }
-    
+
     const pad_bits = try reader.readByte();
     if (pad_bits >= 8) {
         return error.InvalidPadding;
