@@ -220,24 +220,6 @@ pub fn buildTable(allocator: std.mem.Allocator, node: *HuffmanNode, prefix: []co
     }
 }
 
-pub fn normalizeLineEndings(input: []const u8, allocator: std.mem.Allocator) ![]u8 {
-    var list = std.ArrayList(u8).init(allocator);
-    defer list.deinit();
-
-    var i: usize = 0;
-    while (i < input.len) {
-        if (input[i] == '\r' and i + 1 < input.len and input[i + 1] == '\n') {
-            try list.append('\n');
-            i += 2;
-        } else {
-            try list.append(input[i]);
-            i += 1;
-        }
-    }
-
-    return try list.toOwnedSlice();
-}
-
 // === DECOMPRESSION ===
 
 pub fn readFrequencyTableSorted(allocator: std.mem.Allocator, reader: std.io.AnyReader) ![]TableEntry {

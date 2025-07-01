@@ -38,6 +38,7 @@ const Args = struct {
     archive: bool = false,
     de_archive: bool = false,
     file_out: ?std.fs.File = null,
+    dir_out: ?[]const u8 = null,
     tool_type: []const u8 = "",
 };
 
@@ -63,6 +64,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     var archive: bool = false;
     var de_archive: bool = false;
     var file_out: ?std.fs.File = null;
+    var dir_out: ?[]const u8 = null;
     var tool_type: []const u8 = undefined;
 
     // The first arg can specify either run or ast, defaulting to run
@@ -160,9 +162,14 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
         }
 
         // Capture the output file for the tool
-        if (!hex_dump) {
+        if (!hex_dump and !de_archive) {
             if (arguments.next()) |out_file| {
                 file_out = try std.fs.cwd().createFile(out_file, .{});
+            }
+        } else if (!hex_dump and de_archive) {
+            if (arguments.next()) |out_file| {
+                try std.fs.cwd().makeDir(out_file);
+                dir_out = out_file;
             }
         }
     }
@@ -182,11 +189,11 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     }
 
     if (path) |fp| {
+        const basename = std.fs.path.basename(fp);
         if (run and std.mem.endsWith(u8, fp, "ast_check.zlx")) {
             try writer_err.print("You should not run this file! It is meant for ast checking ONLY\n", .{});
             return error.UseASTForMe;
         } else if ((compress or decompress or archive) and file_out == null) {
-            const basename = std.fs.path.basename(fp);
             const out_file = if (compress) blk: {
                 break :blk try std.fmt.allocPrint(allocator, "{s}.zcx", .{basename});
             } else if (archive) blk: {
@@ -200,6 +207,12 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
                 return error.ImproperFilepaths;
             }
             file_out = try std.fs.cwd().createFile(out_file, .{});
+        } else if (de_archive) {
+            if (file_out == null) {
+                dir_out = stripSuffix(basename, ".zacx");
+            } else {
+                dir_out = fp;
+            }
         }
         return .{
             .path = try allocator.dupe(u8, fp),
@@ -214,6 +227,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .de_archive = de_archive,
             .tool_type = tool_type,
             .file_out = file_out,
+            .dir_out = dir_out,
         };
     } else return error.MalformedArgs;
 }

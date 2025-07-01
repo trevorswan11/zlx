@@ -70,17 +70,22 @@ pub fn main() !void {
             break :blk writer_out;
         };
 
+        const base_out_dir: []const u8 = if (input.dir_out) |dir| blk: {
+            break :blk dir;
+        } else if (input.de_archive) {
+            try writer_err.print("Output directory not specified for archive decompression.\n", .{});
+            return;
+        } else ".";
+
         if (input.hex_dump) {
             try hex.dump(file_contents, tool_writer, writer_err);
         } else if (input.compress) {
             try compression.compress(allocator, file_contents, tool_writer, writer_err);
-        } else if (input.decompress) {
+        } else if (input.decompress or input.de_archive) {
             var stream = std.io.fixedBufferStream(file_contents);
-            try compression.decompress(allocator, stream.reader().any(), tool_writer, writer_err);
+            try compression.decompress(allocator, stream.reader().any(), base_out_dir, tool_writer, writer_err);
         } else if (input.archive) {
-
-        } else if (input.de_archive) {
-
+            try compression.compressArchive(allocator, input.path, tool_writer, writer_err);
         }
         const tool_end = std.time.nanoTimestamp();
 

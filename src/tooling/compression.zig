@@ -1,31 +1,36 @@
 const std = @import("std");
+
 const huffman = @import("huffman.zig");
+const archiving = @import("archiving.zig");
 
 const Heap = huffman.Heap;
 const HuffmanNode = huffman.HuffmanNode;
 const BitBuffer = huffman.BitBuffer;
+
+pub const compressArchive = archiving.compressArchive;
+pub const decompressArchive = archiving.decompressArchive;
+
+pub const COMPRESSION_HEADER: []const u8 = "ZCX";
+pub const ARCHIVE_HEADER: []const u8 = "ZAX";
 
 pub fn compress(
     allocator: std.mem.Allocator,
     file_contents: []const u8,
     writer_out: std.io.AnyWriter,
     writer_err: std.io.AnyWriter,
-) !void {
-    // const normalized_contents = try huffman.normalizeLineEndings(file_contents, allocator);
-    // defer allocator.free(normalized_contents);
-    const normalized_contents = file_contents;
-    if (normalized_contents.len == 0) {
+) anyerror!void {
+    if (file_contents.len == 0) {
         try writer_err.print("Compression Error: File Empty!\n", .{});
         return error.EmptyFile;
     }
 
-    var freqs = try huffman.frequencies(allocator, normalized_contents);
+    var freqs = try huffman.frequencies(allocator, file_contents);
     defer freqs.deinit();
 
     var buf_out = std.io.bufferedWriter(writer_out);
     const buffer_writer = buf_out.writer();
 
-    try buffer_writer.writeAll("ZCX");
+    try buffer_writer.writeAll(COMPRESSION_HEADER);
     try buffer_writer.writeInt(u16, @intCast(freqs.count()), .big);
     const entries = try huffman.sortedFrequencyEntries(allocator, freqs);
     defer allocator.free(entries);
@@ -35,7 +40,7 @@ pub fn compress(
         try buffer_writer.writeInt(u32, @intCast(entry.freq), .big);
     }
 
-    var heap = try Heap.init(allocator, .min_at_top, normalized_contents.len);
+    var heap = try Heap.init(allocator, .min_at_top, file_contents.len);
     var itr = freqs.iterator();
     while (itr.next()) |entry| {
         const node = try HuffmanNode.init(
@@ -61,7 +66,7 @@ pub fn compress(
         }
 
         try huffman.buildTable(allocator, tree_root, &[_]u8{}, &table);
-        for (normalized_contents) |b| {
+        for (file_contents) |b| {
             const raw_code = table.get(b) orelse return error.MissingHuffmanCode;
             try bit_buffer.appendBitsFromSlice(raw_code);
         }
@@ -78,12 +83,15 @@ pub fn compress(
 pub fn decompress(
     allocator: std.mem.Allocator,
     reader: std.io.AnyReader,
+    base_out_dir: []const u8,
     writer_out: std.io.AnyWriter,
     writer_err: std.io.AnyWriter,
-) !void {
+) anyerror!void {
     var magic: [3]u8 = undefined;
     try reader.readNoEof(&magic);
-    if (!std.mem.eql(u8, &magic, "ZCX")) {
+    if (std.mem.eql(u8, &magic, ARCHIVE_HEADER)) {
+        return try archiving.decompressArchive(allocator, reader, base_out_dir, writer_out, writer_err);
+    } else if (!std.mem.eql(u8, &magic, COMPRESSION_HEADER)) {
         try writer_err.print("Invalid file header\n", .{});
         return error.InvalidFileFormat;
     }
@@ -180,7 +188,7 @@ test "compress and decompress round-trip" {
     defer decompressed.deinit();
 
     var reader = std.io.fixedBufferStream(compressed.items);
-    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+    try decompress(allocator, reader.reader().any(), "", decompressed.writer().any(), std.io.null_writer.any());
 
     try testing.expectEqualSlices(u8, input, decompressed.items);
 }
@@ -209,7 +217,7 @@ test "decompress fails with invalid magic" {
     var decompressed = std.ArrayList(u8).init(allocator);
     defer decompressed.deinit();
 
-    const result = decompress(allocator, stream.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+    const result = decompress(allocator, stream.reader().any(), "", decompressed.writer().any(), std.io.null_writer.any());
     try testing.expectError(error.InvalidFileFormat, result);
 }
 
@@ -229,7 +237,7 @@ test "compress and decompress repeated characters - special case" {
     defer decompressed.deinit();
 
     var reader = std.io.fixedBufferStream(compressed.items);
-    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+    try decompress(allocator, reader.reader().any(), "", decompressed.writer().any(), std.io.null_writer.any());
 
     try testing.expectEqualSlices(u8, input, decompressed.items);
 }
