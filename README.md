@@ -36,7 +36,9 @@ While I originally intended to just build the parser, I ended up going much deep
 - You can run the projects tests, which mimic the code found in the `examples` folder, with `zig build test`
 - ZLX also has built in tooling, which can be accessed through command line arguments as follows:
     - `compress <filepath> <output?>` will use huffman encoding to compress the given file and will output it to either the output path (if given) or to a file of the same name with extension `.zcx`. You can use the flag `-c` as a shorthand for `compress`
-    - `decompress <filepath> <output?>` reverses the encoding done using ZLX's huffman encoding tool. You can use the flag `-dc` as a shorthand for `decompress`
+    - `decompress <filepath> <output?>` reverses the encoding done using ZLX's huffman encoding tool. You can use the flag `-dc` as a shorthand for `decompress`. The output is only optional if the filepath, stripped of `.zcx`, is not in the current working directory
+    - `archive <path> <output?>` recursively compresses files in a directory, preserving folder structure and outputting a single compressed archive to either the inferred output file or to the given output filepath. You can use the flag `-a` as a shorthand for `archive`. Using `-c` on a folder dispatches to `-a`
+    - `dearchive <filepath> <output?>` reverses the encoding done using ZLX's archiving tool. You can use the flag `-da` as a shorthand for `archive`, and can use the `-dc` flag which automatically determines if a compressed file is a single file or archive. The output is only optional if the filepath, stripped of `.zcx`, is not in the current working directory
     - `hex <filepath>` mimics the well known `xxd` program. You can use the flag `-x` as a shorthand for `hex`
 
 ## External Libraries

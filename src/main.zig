@@ -45,20 +45,24 @@ pub fn main() !void {
     }
 
     // Gather the file contents
-    const file_contents = readFile(allocator, input.path) catch |err| {
-        try writer_err.print("Error reading file contents: {!}\n", .{err});
-        parse = std.time.nanoTimestamp();
-        if (input.time) {
-            try writer_out.print("Timing:\n", .{});
-            try writer_out.print("  Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(parse - start)) / 1_000_000.0});
-        }
-        return;
+    const file_contents = if (!input.archive) blk: {
+        break :blk readFile(allocator, input.path) catch |err| {
+            try writer_err.print("Error reading file contents: {!}\n", .{err});
+            parse = std.time.nanoTimestamp();
+            if (input.time) {
+                try writer_out.print("Timing:\n", .{});
+                try writer_out.print("  Parsing failed in {d} ms\n", .{@as(f128, @floatFromInt(parse - start)) / 1_000_000.0});
+            }
+            return;
+        };
+    } else blk: {
+        break :blk try std.fmt.allocPrint(allocator, "{s}", .{"IsDir"});
     };
     defer allocator.free(file_contents);
     args = std.time.nanoTimestamp();
 
     // Tooling
-    if (input.compress or input.decompress or input.hex_dump) {
+    if (input.compress or input.decompress or input.hex_dump or input.archive or input.de_archive) {
         const tool_start = std.time.nanoTimestamp();
         const tool_writer = if (input.file_out) |fo| blk: {
             break :blk fo.writer().any();
@@ -73,6 +77,10 @@ pub fn main() !void {
         } else if (input.decompress) {
             var stream = std.io.fixedBufferStream(file_contents);
             try compression.decompress(allocator, stream.reader().any(), tool_writer, writer_err);
+        } else if (input.archive) {
+
+        } else if (input.de_archive) {
+
         }
         const tool_end = std.time.nanoTimestamp();
 

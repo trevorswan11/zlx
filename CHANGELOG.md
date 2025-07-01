@@ -62,3 +62,7 @@ All notably significant or outstanding changes to the zlx language will be docum
 ## [0.4.1]
 - Fixed Compression algorithm to work deterministically, eliminated bug when decompressing data
     - Shifted to more manual memory styles for the encoding table as hashmaps are not consistent across runs
+
+## [0.4.2]
+- Folders can now be compressed into archives, which have the `.zacx` file extension by default
+- Compression and Decompression work with archive calls to dispatch command line args correctly

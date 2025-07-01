@@ -35,6 +35,8 @@ const Args = struct {
     compress: bool = false,
     decompress: bool = false,
     hex_dump: bool = false,
+    archive: bool = false,
+    de_archive: bool = false,
     file_out: ?std.fs.File = null,
     tool_type: []const u8 = "",
 };
@@ -50,7 +52,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
         return error.InvalidUsage;
     }
 
-    var filepath: ?[]const u8 = null;
+    var path: ?[]const u8 = null;
     var time: bool = false;
     var verbose: bool = false;
     var run: bool = true;
@@ -58,6 +60,8 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     var compress: bool = false;
     var decompress: bool = false;
     var hex_dump: bool = false;
+    var archive: bool = false;
+    var de_archive: bool = false;
     var file_out: ?std.fs.File = null;
     var tool_type: []const u8 = undefined;
 
@@ -70,7 +74,21 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .repl = true,
         };
     } else if (raw_args.len >= 3) optional_arg: {
-        if (!std.mem.eql(u8, raw_args[1], "ast") and !std.mem.eql(u8, raw_args[1], "run") and !std.mem.eql(u8, raw_args[1], "dump") and !std.mem.eql(u8, raw_args[1], "compress") and !std.mem.eql(u8, raw_args[1], "-c") and !std.mem.eql(u8, raw_args[1], "decompress") and !std.mem.eql(u8, raw_args[1], "-dc") and !std.mem.eql(u8, raw_args[1], "hex") and !std.mem.eql(u8, raw_args[1], "-x")) {
+        if (!isStringOneOfMany(raw_args[1], &[_][]const u8{
+            "ast",
+            "run",
+            "dump",
+            "compress",
+            "-c",
+            "decompress",
+            "-dc",
+            "hex",
+            "-x",
+            "archive",
+            "-a",
+            "dearchive",
+            "-da",
+        })) {
             break :optional_arg;
         }
 
@@ -92,6 +110,12 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             } else if (std.mem.eql(u8, r, "hex") or std.mem.eql(u8, r, "-x")) {
                 hex_dump = true;
                 tool_type = "Hex Dumping";
+            } else if (std.mem.eql(u8, r, "archive") or std.mem.eql(u8, r, "-a")) {
+                archive = true;
+                tool_type = "Archiving";
+            } else if (std.mem.eql(u8, r, "dearchive") or std.mem.eql(u8, r, "-da")) {
+                de_archive = true;
+                tool_type = "De-archiving";
             } else {
                 return error.InvalidRunTarget;
             }
@@ -99,11 +123,23 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     }
 
     // Capture the mandatory filepath arg
-    if (arguments.next()) |fp| {
+    if (arguments.next()) |fp| blk: {
         const stat = std.fs.cwd().statFile(fp) catch |err| switch (err) {
             error.FileNotFound => {
                 try writer_err.print("File not found in current working directory!\n", .{});
                 return err;
+            },
+            error.IsDir => {
+                if (compress or archive) {
+                    // Dispatch dynamically, compression on folders calls archiving
+                    compress = false;
+                    archive = true;
+                    tool_type = "Archiving";
+                    path = fp;
+                    break :blk;
+                } else {
+                    return err;
+                }
             },
             else => return err,
         };
@@ -111,10 +147,10 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             try writer_err.print("Invalid file path!\n", .{});
             return error.InvalidFilename;
         }
-        filepath = fp;
+        path = fp;
     }
 
-    if (compress or decompress or hex_dump) blk: {
+    if (compress or decompress or hex_dump or archive or de_archive) blk: {
         if (raw_args.len >= 4) {
             const la = try toLower(allocator, raw_args[3]);
             defer allocator.free(la);
@@ -145,14 +181,16 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
         }
     }
 
-    if (filepath) |fp| {
+    if (path) |fp| {
         if (run and std.mem.endsWith(u8, fp, "ast_check.zlx")) {
             try writer_err.print("You should not run this file! It is meant for ast checking ONLY\n", .{});
             return error.UseASTForMe;
-        } else if ((compress or decompress) and file_out == null) {
+        } else if ((compress or decompress or archive) and file_out == null) {
             const basename = std.fs.path.basename(fp);
             const out_file = if (compress) blk: {
                 break :blk try std.fmt.allocPrint(allocator, "{s}.zcx", .{basename});
+            } else if (archive) blk: {
+                break :blk try std.fmt.allocPrint(allocator, "{s}.zacx", .{basename});
             } else blk: {
                 break :blk stripSuffix(basename, ".zcx");
             };
@@ -172,10 +210,21 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .compress = compress,
             .decompress = decompress,
             .hex_dump = hex_dump,
+            .archive = archive,
+            .de_archive = de_archive,
             .tool_type = tool_type,
             .file_out = file_out,
         };
     } else return error.MalformedArgs;
+}
+
+pub fn isStringOneOfMany(string: []const u8, many: []const []const u8) bool {
+    for (many) |compare| {
+        if (std.mem.eql(u8, string, compare)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 pub fn repl(allocator: std.mem.Allocator) !void {
