@@ -58,3 +58,7 @@ All notably significant or outstanding changes to the zlx language will be docum
     - Builtin hex-dumping option similar to `xxd`
     - Builtin file compression using huffman encoding
     - Both can be accessed through command line arguments. See the `README` for details!
+
+## [0.4.1]
+- Fixed Compression algorithm to work deterministically, eliminated bug when decompressing data
+    - Shifted to more manual memory styles for the encoding table as hashmaps are not consistent across runs

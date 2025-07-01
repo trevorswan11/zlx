@@ -2,7 +2,7 @@ const std = @import("std");
 const huffman = @import("huffman.zig");
 
 const Heap = huffman.Heap;
-const Node = huffman.Node;
+const HuffmanNode = huffman.HuffmanNode;
 const BitBuffer = huffman.BitBuffer;
 
 pub fn compress(
@@ -27,16 +27,18 @@ pub fn compress(
 
     try buffer_writer.writeAll("ZCX");
     try buffer_writer.writeInt(u16, @intCast(freqs.count()), .big);
-    var itr = freqs.iterator();
-    while (itr.next()) |entry| {
-        try buffer_writer.writeByte(entry.key_ptr.*);
-        try buffer_writer.writeInt(u32, @intCast(entry.value_ptr.*), .big);
+    const entries = try huffman.sortedFrequencyEntries(allocator, freqs);
+    defer allocator.free(entries);
+
+    for (entries) |entry| {
+        try buffer_writer.writeByte(entry.byte);
+        try buffer_writer.writeInt(u32, @intCast(entry.freq), .big);
     }
 
     var heap = try Heap.init(allocator, .min_at_top, normalized_contents.len);
-    itr = freqs.iterator();
+    var itr = freqs.iterator();
     while (itr.next()) |entry| {
-        const node = try Node.init(
+        const node = try HuffmanNode.init(
             allocator,
             entry.key_ptr.*,
             entry.value_ptr.*,
@@ -60,8 +62,8 @@ pub fn compress(
 
         try huffman.buildTable(allocator, tree_root, &[_]u8{}, &table);
         for (normalized_contents) |b| {
-            const code = table.get(b) orelse return error.MissingHuffmanCode;
-            try bit_buffer.appendBitsFromSlice(code);
+            const raw_code = table.get(b) orelse return error.MissingHuffmanCode;
+            try bit_buffer.appendBitsFromSlice(raw_code);
         }
         const result = try bit_buffer.finishAndSlice();
         try buffer_writer.writeByte(result.pad_bits);
@@ -86,13 +88,13 @@ pub fn decompress(
         return error.InvalidFileFormat;
     }
 
-    var freqs = try huffman.readFrequencyTable(allocator, reader);
-    defer freqs.deinit();
+    const entries = try huffman.readFrequencyTableSorted(allocator, reader);
+    defer allocator.free(entries);
 
     var buf_out = std.io.bufferedWriter(writer_out);
     const buffer_writer = buf_out.writer();
 
-    const root = try huffman.buildTreeFromFrequencies(allocator, freqs);
+    const root = try huffman.buildTreeFromFrequencySorted(allocator, entries);
     var compressed = std.ArrayList(u8).init(allocator);
     defer {
         compressed.deinit();
@@ -101,9 +103,8 @@ pub fn decompress(
     }
 
     var total_symbols: usize = 0;
-    var itr = freqs.iterator();
-    while (itr.next()) |entry| {
-        total_symbols += entry.value_ptr.*;
+    for (entries) |entry| {
+        total_symbols += entry.freq;
     }
     const pad_bits = try reader.readByte();
     if (pad_bits >= 8) {

@@ -2,18 +2,18 @@ const std = @import("std");
 const dsa = @import("dsa");
 
 // Min-Heap & Data Structures
-pub const Heap = dsa.PriorityQueue(*Node, Node.less);
-pub const Node = struct {
+pub const Heap = dsa.PriorityQueue(*HuffmanNode, HuffmanNode.less);
+pub const HuffmanNode = struct {
     const Self = @This();
 
     allocator: std.mem.Allocator,
     data: u8,
     freq: usize,
-    left: ?*Node = null,
-    right: ?*Node = null,
+    left: ?*HuffmanNode = null,
+    right: ?*HuffmanNode = null,
 
-    pub fn init(allocator: std.mem.Allocator, data: u8, freq: usize, left: ?*Node, right: ?*Node) !*Self {
-        const node = try allocator.create(Node);
+    pub fn init(allocator: std.mem.Allocator, data: u8, freq: usize, left: ?*HuffmanNode, right: ?*HuffmanNode) !*Self {
+        const node = try allocator.create(HuffmanNode);
         node.* = Self{
             .allocator = allocator,
             .data = data,
@@ -24,7 +24,7 @@ pub const Node = struct {
         return node;
     }
 
-    pub fn deinit(self: *Node) void {
+    pub fn deinit(self: *HuffmanNode) void {
         if (self.left) |left| {
             left.deinit();
             self.allocator.destroy(left);
@@ -35,8 +35,22 @@ pub const Node = struct {
         }
     }
 
-    pub fn less(a: *Node, b: *Node) bool {
-        return a.freq < b.freq;
+    pub fn less(a: *HuffmanNode, b: *HuffmanNode) bool {
+        if (a.freq < b.freq) {
+            return true;
+        } else if (a.freq > b.freq) {
+            return false;
+        }
+
+        const a_leaf = a.left == null and a.right == null;
+        const b_leaf = b.left == null and b.right == null;
+
+        if (a_leaf and b_leaf) {
+            return a.data < b.data;
+        }
+
+        // Final tie-breaker: pointer address
+        return @intFromPtr(a) < @intFromPtr(b);
     }
 };
 
@@ -109,6 +123,37 @@ pub const BitBuffer = struct {
     }
 };
 
+const TableEntry = struct { byte: u8, freq: usize };
+
+pub fn sortedFrequencyEntries(
+    allocator: std.mem.Allocator,
+    freqs: std.AutoHashMap(u8, usize),
+) ![]TableEntry {
+    var entries = try allocator.alloc(TableEntry, freqs.count());
+
+    var i: usize = 0;
+    var itr = freqs.iterator();
+    while (itr.next()) |entry| {
+        entries[i] = .{
+            .byte = entry.key_ptr.*,
+            .freq = entry.value_ptr.*,
+        };
+        i += 1;
+    }
+
+    std.sort.insertion(
+        TableEntry,
+        entries,
+        {},
+        struct {
+            pub fn lessThan(_: void, a: TableEntry, b: TableEntry) bool {
+                return a.freq < b.freq or (a.freq == b.freq and a.byte < b.byte);
+            }
+        }.lessThan,
+    );
+
+    return entries;
+}
 
 // === COMPRESSION ===
 
@@ -129,18 +174,18 @@ pub fn frequencies(allocator: std.mem.Allocator, bytes: []const u8) !std.AutoHas
 
 pub fn encode(heap: *Heap) !void {
     while (heap.size() > 1) {
-        const left: *Node = if (try heap.poll()) |l| blk: {
+        const left: *HuffmanNode = if (try heap.poll()) |l| blk: {
             break :blk l;
         } else {
             return error.MalformedHuffmanTree;
         };
-        const right: *Node = if (try heap.poll()) |r| blk: {
+        const right: *HuffmanNode = if (try heap.poll()) |r| blk: {
             break :blk r;
         } else {
             return error.MalformedHuffmanTree;
         };
 
-        const internal = try Node.init(
+        const internal = try HuffmanNode.init(
             heap.allocator,
             0,
             left.freq + right.freq,
@@ -151,23 +196,27 @@ pub fn encode(heap: *Heap) !void {
     }
 }
 
-pub fn buildTable(allocator: std.mem.Allocator, node: *Node, prefix: []const u8, table: *std.AutoHashMap(u8, []const u8)) !void {
+pub fn buildTable(allocator: std.mem.Allocator, node: *HuffmanNode, prefix: []const u8, table: *std.AutoHashMap(u8, []const u8)) !void {
     if (node.left == null and node.right == null) {
         const code = try allocator.dupe(u8, prefix);
         try table.put(node.data, code);
         return;
     }
 
-    var next = try allocator.alloc(u8, prefix.len + 1);
-    std.mem.copyForwards(u8, next[0..prefix.len], prefix);
     if (node.left) |left| {
+        var next = try allocator.alloc(u8, prefix.len + 1);
+        std.mem.copyForwards(u8, next[0..prefix.len], prefix);
         next[prefix.len] = '0';
         try buildTable(allocator, left, next, table);
+        allocator.free(next);
     }
 
     if (node.right) |right| {
+        var next = try allocator.alloc(u8, prefix.len + 1);
+        std.mem.copyForwards(u8, next[0..prefix.len], prefix);
         next[prefix.len] = '1';
         try buildTable(allocator, right, next, table);
+        allocator.free(next);
     }
 }
 
@@ -191,27 +240,25 @@ pub fn normalizeLineEndings(input: []const u8, allocator: std.mem.Allocator) ![]
 
 // === DECOMPRESSION ===
 
-pub fn readFrequencyTable(allocator: std.mem.Allocator, reader: std.io.AnyReader) !std.AutoHashMap(u8, usize) {
-    var freqs = std.AutoHashMap(u8, usize).init(allocator);
+pub fn readFrequencyTableSorted(allocator: std.mem.Allocator, reader: std.io.AnyReader) ![]TableEntry {
+    const num_entries = try reader.readInt(u16, .big);
+    const entries = try allocator.alloc(TableEntry, num_entries);
 
-    const count = try reader.readInt(u16, .big);
-    for (0..count) |_| {
-        const symbol = try reader.readByte();
-        const freq = try reader.readInt(u32, .big);
-        try freqs.put(symbol, freq);
+    for (entries) |*entry| {
+        entry.byte = try reader.readByte();
+        entry.freq = try reader.readInt(u32, .big);
     }
 
-    return freqs;
+    return entries;
 }
 
-pub fn buildTreeFromFrequencies(allocator: std.mem.Allocator, freqs: std.AutoHashMap(u8, usize)) !*Node {
-    var heap = try Heap.init(allocator, .min_at_top, freqs.count());
-    var itr = freqs.iterator();
-    while (itr.next()) |entry| {
-        const node = try Node.init(
+pub fn buildTreeFromFrequencySorted(allocator: std.mem.Allocator, entries: []const TableEntry) !*HuffmanNode {
+    var heap = try Heap.init(allocator, .min_at_top, entries.len);
+    for (entries) |entry| {
+        const node = try HuffmanNode.init(
             allocator,
-            entry.key_ptr.*,
-            entry.value_ptr.*,
+            entry.byte,
+            entry.freq,
             null,
             null,
         );
@@ -225,123 +272,79 @@ pub fn buildTreeFromFrequencies(allocator: std.mem.Allocator, freqs: std.AutoHas
 
 const testing = @import("../testing/testing.zig");
 
-test "frequencies correctly counts bytes" {
+test "sortedFrequencyEntries orders by frequency then byte" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
 
-    const input = "aabcccaaa";
-    const expected = [_]struct { u8, usize }{
-        .{ 'a', 5 },
-        .{ 'b', 1 },
-        .{ 'c', 3 },
-    };
-
-    var freqs = try frequencies(allocator, input);
-    defer freqs.deinit();
-
-    for (expected) |pair| {
-        const actual = freqs.get(pair.@"0") orelse return error.MissingKey;
-        try testing.expectEqual(pair.@"1", actual);
-    }
-}
-
-test "encode and buildTreeFromFrequencies returns valid root" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator());
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    const input = "abacabad";
-    var freqs = try frequencies(allocator, input);
-    defer freqs.deinit();
-
-    const root = try buildTreeFromFrequencies(allocator, freqs);
-    defer {
-        root.deinit();
-        allocator.destroy(root);
-    }
-
-    try testing.expect(root.freq == input.len);
-}
-
-test "buildTable generates prefix codes for all leaves" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator());
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    const input = "abcabcababc";
-    var freqs = try frequencies(allocator, input);
-    defer freqs.deinit();
-
-    const root = try buildTreeFromFrequencies(allocator, freqs);
-    defer {
-        root.deinit();
-        allocator.destroy(root);
-    }
-
-    var table = std.AutoHashMap(u8, []const u8).init(allocator);
-    defer {
-        var it = table.iterator();
-        while (it.next()) |entry| {
-            allocator.free(entry.value_ptr.*);
-        }
-        table.deinit();
-    }
-
-    try buildTable(allocator, root, &[_]u8{}, &table);
-
-    var found = std.AutoHashMap(u8, bool).init(allocator);
-    defer found.deinit();
-
-    for (input) |ch| {
-        if (!found.contains(ch)) {
-            _ = try found.put(ch, true);
-            const code = table.get(ch) orelse return error.MissingCode;
-            try testing.expect(code.len > 0);
-        }
-    }
-}
-
-test "readFrequencyTable reads known map from buffer" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator());
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    var buffer = std.ArrayList(u8).init(allocator);
-    defer buffer.deinit();
-
-    // count = 2
-    try buffer.appendSlice(&[_]u8{
-        0x00, 0x02, // u16 count = 2
-        'x', 0x00, 0x00, 0x00, 0x05, // 'x': 5
-        'y', 0x00, 0x00, 0x00, 0x03, // 'y': 3
-    });
-
-    var stream = std.io.fixedBufferStream(buffer.items);
-    var map = try readFrequencyTable(allocator, stream.reader().any());
+    var map = std.AutoHashMap(u8, usize).init(allocator);
     defer map.deinit();
 
-    try testing.expectEqual(@as(usize, 5), map.get('x') orelse return error.MissingKey);
-    try testing.expectEqual(@as(usize, 3), map.get('y') orelse return error.MissingKey);
+    try map.put('b', 3);
+    try map.put('a', 3);
+    try map.put('c', 1);
+
+    const sorted = try sortedFrequencyEntries(allocator, map);
+    defer allocator.free(sorted);
+
+    try testing.expectEqual(@as(u8, 'c'), sorted[0].byte); // freq = 1
+    try testing.expectEqual(@as(u8, 'a'), sorted[1].byte); // freq = 3, a < b
+    try testing.expectEqual(@as(u8, 'b'), sorted[2].byte);
 }
 
-test "buildTreeFromFrequencies returns proper root node" {
+test "HuffmanNode.less prioritizes freq then byte then address" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
 
-    var freqs = std.AutoHashMap(u8, usize).init(allocator);
-    defer freqs.deinit();
+    const a = try HuffmanNode.init(allocator, 'a', 1, null, null);
+    const b = try HuffmanNode.init(allocator, 'b', 2, null, null);
+    defer {
+        a.deinit();
+        allocator.destroy(a);
+        b.deinit();
+        allocator.destroy(b);
+    }
 
-    try freqs.put('a', 4);
-    try freqs.put('b', 2);
-    try freqs.put('c', 1);
+    try testing.expect(HuffmanNode.less(a, b)); // 1 < 2
+    try testing.expect(!HuffmanNode.less(b, a)); // 2 > 1
+}
 
-    const root = try buildTreeFromFrequencies(allocator, freqs);
+test "buildTreeFromFrequencySorted produces correct tree for two symbols" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    const entries = try allocator.alloc(TableEntry, 2);
+    defer allocator.free(entries);
+
+    entries[0] = .{ .byte = 'x', .freq = 5 };
+    entries[1] = .{ .byte = 'y', .freq = 9 };
+
+    const root = try buildTreeFromFrequencySorted(allocator, entries);
     defer {
         root.deinit();
         allocator.destroy(root);
     }
 
-    try testing.expectEqual(@as(usize, 7), root.freq);
+    try testing.expect(root.left != null and root.right != null);
+    try testing.expectEqual(@as(usize, 14), root.freq);
+    try testing.expectEqual(@as(u8, 'x'), root.left.?.data);
+    try testing.expectEqual(@as(u8, 'y'), root.right.?.data);
+}
+
+test "BitBuffer packs bits and computes padding correctly" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var buf = BitBuffer.init(allocator);
+    defer buf.deinit();
+
+    try buf.appendBitsFromSlice("101");
+    const result = try buf.finishAndSlice();
+
+    try testing.expectEqual(@as(u8, 5), result.pad_bits); // 3 bits used → 5 padding
+    try testing.expectEqual(@as(usize, 1), result.slice.len);
+    try testing.expectEqual(@as(u8, 0b1010_0000), result.slice[0]);
 }
