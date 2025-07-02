@@ -44,6 +44,8 @@ In an attempt to make a highly portable but usable program for my personal use, 
 - Standard compression cannot be dispatched using archive calls.
 - `hex <filepath>` mimics the well known `xxd` program. You can use the flag `-x` as a shorthand for `hex`
 
+Please remember that ZLX does not run as an administrator/root by default, and you may have to use an elevated shell to compress protected directories or files.
+
 ## External Libraries
 This project has three independent dependencies:
 1.  [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. 
