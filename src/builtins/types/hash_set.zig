@@ -13,7 +13,6 @@ const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
 const HashSet = @import("dsa").HashSet(Value, interpreter.ValueContext);
-
 pub const HashSetInstance = struct {
     set: HashSet,
 };

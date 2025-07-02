@@ -13,7 +13,6 @@ const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
 const HashMap = @import("dsa").HashMap(Value, Value, interpreter.ValueContext);
-
 pub const HashMapInstance = struct {
     map: HashMap,
 };

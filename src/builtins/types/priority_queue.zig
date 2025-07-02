@@ -12,11 +12,9 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
-const Array = @import("dsa").Array(Value);
-
+const PriorityQueue = @import("dsa").PriorityQueue(Value, Value.less);
 pub const PriorityQueueInstance = struct {
-    array: Array,
-    max_at_top: bool,
+    pq: PriorityQueue,
 };
 
 fn getPriorityQueueInstance(this: *Value) !*PriorityQueueInstance {
@@ -71,11 +69,10 @@ fn pqConstructor(args: []const *ast.Expr, env: *Environment) !Value {
         return error.TypeMismatch;
     }
 
-    const arr = try Array.init(env.allocator, 8);
+    const pq = try PriorityQueue.init(env.allocator, if (max.boolean) .max_at_top else .min_at_top, 8);
     const wrapped = try env.allocator.create(PriorityQueueInstance);
     wrapped.* = .{
-        .array = arr,
-        .max_at_top = max.boolean,
+        .pq = pq,
     };
 
     const internal_ptr = try env.allocator.create(Value);
@@ -100,56 +97,6 @@ fn pqConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     };
 }
 
-fn compare(inst: *PriorityQueueInstance, a: Value, b: Value) !bool {
-    const ord = a.compare(b);
-    return if (inst.max_at_top) ord == .gt else ord == .lt;
-}
-
-fn siftUp(inst: *PriorityQueueInstance) !void {
-    var i = inst.array.len - 1;
-    while (i > 0) {
-        const parent = (i - 1) / 2;
-        const a = try inst.array.get(parent);
-        const b = try inst.array.get(i);
-        if (!try compare(inst, b, a)) {
-            break;
-        }
-        try inst.array.swap(i, parent);
-        i = parent;
-    }
-}
-
-fn siftDown(inst: *PriorityQueueInstance) !void {
-    var i: usize = 0;
-    while (true) {
-        var selected = i;
-        const left = 2 * i + 1;
-        const right = 2 * i + 2;
-
-        if (left < inst.array.len) {
-            const a = try inst.array.get(selected);
-            const b = try inst.array.get(left);
-            if (try compare(inst, b, a)) {
-                selected = left;
-            }
-        }
-
-        if (right < inst.array.len) {
-            const a = try inst.array.get(selected);
-            const b = try inst.array.get(right);
-            if (try compare(inst, b, a)) {
-                selected = right;
-            }
-        }
-
-        if (selected == i) {
-            break;
-        }
-        try inst.array.swap(i, selected);
-        i = selected;
-    }
-}
-
 fn pqInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 1) {
@@ -159,8 +106,7 @@ fn pqInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
 
     const value = try eval.evalExpr(args[0], env);
     const inst = try getPriorityQueueInstance(this);
-    try inst.array.push(value);
-    try siftUp(inst);
+    try inst.pq.insert(value);
     return .nil;
 }
 
@@ -172,16 +118,11 @@ fn pqPoll(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const inst = try getPriorityQueueInstance(this);
-    if (inst.array.len == 0) {
+    if (try inst.pq.poll()) |popped| {
+        return popped;
+    } else {
         return .nil;
     }
-    const top = try inst.array.get(0);
-    const last = try inst.array.pop();
-    if (inst.array.len > 0) {
-        try inst.array.set(0, last);
-        try siftDown(inst);
-    }
-    return top;
 }
 
 fn pqPeek(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
@@ -192,7 +133,7 @@ fn pqPeek(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const inst = try getPriorityQueueInstance(this);
-    return if (inst.array.len == 0) .nil else try inst.array.get(0);
+    return if (inst.pq.size() == 0) .nil else try inst.pq.peek();
 }
 
 fn pqSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
@@ -204,7 +145,7 @@ fn pqSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
     const inst = try getPriorityQueueInstance(this);
     return .{
-        .number = @floatFromInt(inst.array.len),
+        .number = @floatFromInt(inst.pq.size()),
     };
 }
 
@@ -217,7 +158,7 @@ fn pqEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
     const inst = try getPriorityQueueInstance(this);
     return .{
-        .boolean = inst.array.len == 0,
+        .boolean = inst.pq.empty(),
     };
 }
 
@@ -229,7 +170,7 @@ fn pqClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const inst = try getPriorityQueueInstance(this);
-    inst.array.clear();
+    while (try inst.pq.poll()) |_| {}
     return .nil;
 }
 
@@ -243,8 +184,8 @@ pub fn pqItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
     const inst = try getPriorityQueueInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
-    for (inst.array.arr[0..inst.array.len]) |val| {
-        try vals.append(val);
+    for (0..inst.pq.size()) |idx| {
+        try vals.append(try inst.pq.get(idx));
     }
 
     return .{
@@ -260,9 +201,8 @@ fn pqStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const inst = try getPriorityQueueInstance(this);
-    const strFn = @import("array_list.zig").toString;
     return .{
-        .string = try strFn(inst.array),
+        .string = try inst.pq.toString(),
     };
 }
 

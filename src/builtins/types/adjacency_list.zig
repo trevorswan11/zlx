@@ -12,15 +12,10 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
-const Array = @import("dsa").Array(Value);
-const HashMap = @import("dsa").HashMap(Value, Array, interpreter.ValueContext);
-
+const AdjacencyList = @import("dsa").AdjacencyList(Value, interpreter.ValueContext);
 pub const AdjacencyListInstance = struct {
     graph: AdjacencyList,
 };
-
-const AdjacencyList = @This().GraphType;
-const GraphType = @import("dsa").AdjacencyList(Value, interpreter.ValueContext);
 
 fn getGraphInstance(this: *Value) !*AdjacencyListInstance {
     const internal = this.std_instance.fields.get("__internal") orelse
@@ -60,7 +55,7 @@ fn adjListConstructor(args: []const *ast.Expr, env: *Environment) !Value {
         return error.ArgumentCountMismatch;
     }
 
-    const graph = GraphType.init(env.allocator);
+    const graph = AdjacencyList.init(env.allocator);
     const wrapped = try env.allocator.create(AdjacencyListInstance);
     wrapped.* = .{
         .graph = graph,

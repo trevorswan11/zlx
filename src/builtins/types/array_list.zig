@@ -9,11 +9,10 @@ const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
-const ArrayList = @import("dsa").Array(Value);
-
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const ArrayList = @import("dsa").Array(Value);
 pub const ArrayListInstance = struct {
     array: ArrayList,
 };
@@ -254,22 +253,8 @@ fn arrayListStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
     const inst = try getArrayListInstance(this);
     return .{
-        .string = try toString(inst.array),
+        .string = try inst.array.toString(),
     };
-}
-
-pub fn toString(array_list: ArrayList) ![]const u8 {
-    var buffer = std.ArrayList(u8).init(array_list.allocator);
-    defer buffer.deinit();
-    const writer = buffer.writer();
-
-    try writer.print("[", .{});
-    for (array_list.arr[0..array_list.len]) |value| {
-        try writer.print(" {s}", .{try value.toString(array_list.allocator)});
-    }
-    try writer.print(" ]", .{});
-
-    return try buffer.toOwnedSlice();
 }
 
 // === TESTING ===

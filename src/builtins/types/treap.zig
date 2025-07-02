@@ -12,15 +12,7 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
-const Treap = @import("dsa").Treap(Value, lessThan, eql);
-fn lessThan(a: Value, b: Value) bool {
-    return a.compare(b) == .lt;
-}
-
-fn eql(a: Value, b: Value) bool {
-    return a.eql(b);
-}
-
+const Treap = @import("dsa").Treap(Value, Value.less, Value.eql);
 pub const TreapInstance = struct {
     treap: Treap,
 };

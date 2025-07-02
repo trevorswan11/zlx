@@ -12,13 +12,9 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
-const Array = @import("dsa").Array(Value);
-const Queue = @import("dsa").Queue(Value);
-const HashSet = @import("dsa").HashSet(Value, interpreter.ValueContext);
-const AdjacencyList = @import("dsa").AdjacencyList(Value, interpreter.ValueContext);
-
+const Graph = @import("dsa").Graph(Value, interpreter.ValueContext);
 pub const GraphInstance = struct {
-    graph: AdjacencyList,
+    graph: Graph,
 };
 
 fn getGraphInstance(this: *Value) !*GraphInstance {
@@ -58,7 +54,7 @@ fn graphConstructor(args: []const *ast.Expr, env: *Environment) !Value {
         return error.ArgumentCountMismatch;
     }
 
-    const graph = AdjacencyList.init(env.allocator);
+    const graph = Graph.init(env.allocator);
     const wrapped = try env.allocator.create(GraphInstance);
     wrapped.* = .{
         .graph = graph,
@@ -96,8 +92,6 @@ fn graphAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
     const from = try interpreter.evalExpr(args[0], env);
     const to = try interpreter.evalExpr(args[1], env);
     const inst = try getGraphInstance(this);
-    try inst.graph.put(from);
-    try inst.graph.put(to);
     try inst.graph.addEdge(from, to);
     return .nil;
 }
@@ -112,7 +106,7 @@ fn graphHasNode(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
     const id = try interpreter.evalExpr(args[0], env);
     const inst = try getGraphInstance(this);
     return .{
-        .boolean = inst.graph.containsNode(id),
+        .boolean = inst.graph.hasNode(id),
     };
 }
 
@@ -160,7 +154,7 @@ fn graphSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
     const inst = try getGraphInstance(this);
     return .{
-        .number = @floatFromInt(inst.graph.size()),
+        .number = @floatFromInt(inst.graph.adj_list.size()),
     };
 }
 
@@ -172,9 +166,8 @@ fn graphStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const inst = try getGraphInstance(this);
-    const strFn = @import("adjacency_list.zig").toString;
     return .{
-        .string = try strFn(inst.graph),
+        .string = try inst.graph.toString(),
     };
 }
 

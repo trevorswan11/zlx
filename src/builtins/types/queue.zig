@@ -13,7 +13,6 @@ const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
 const Queue = @import("dsa").Queue(Value);
-
 pub const QueueInstance = struct {
     queue: Queue,
 };

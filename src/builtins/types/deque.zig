@@ -12,10 +12,9 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
-const List = @import("dsa").List(Value);
-
+const Deque = @import("dsa").Deque(Value);
 pub const DequeInstance = struct {
-    list: List,
+    deque: Deque,
 };
 
 fn getDequeInstance(this: *Value) !*DequeInstance {
@@ -60,10 +59,10 @@ fn dequeConstructor(args: []const *ast.Expr, env: *Environment) !Value {
         return error.ArgumentCountMismatch;
     }
 
-    const list = try List.init(env.allocator);
+    const deque = try Deque.init(env.allocator);
     const wrapped = try env.allocator.create(DequeInstance);
     wrapped.* = .{
-        .list = list,
+        .deque = deque,
     };
 
     const internal_ptr = try env.allocator.create(Value);
@@ -97,7 +96,7 @@ fn dequePushHead(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
     const val = try interpreter.evalExpr(args[0], env);
     const inst = try getDequeInstance(this);
-    try inst.list.prepend(val);
+    try inst.deque.pushHead(val);
     return .nil;
 }
 
@@ -110,7 +109,7 @@ fn dequePushTail(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
     const val = try interpreter.evalExpr(args[0], env);
     const inst = try getDequeInstance(this);
-    try inst.list.append(val);
+    try inst.deque.pushTail(val);
     return .nil;
 }
 
@@ -122,7 +121,7 @@ fn dequePopHead(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const deque = try getDequeInstance(this);
-    return deque.list.popHead() orelse .nil;
+    return deque.deque.popHead() orelse .nil;
 }
 
 fn dequePopTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
@@ -133,7 +132,7 @@ fn dequePopTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const inst = try getDequeInstance(this);
-    return inst.list.popTail() orelse .nil;
+    return inst.deque.popTail() orelse .nil;
 }
 
 fn dequePeekHead(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
@@ -144,7 +143,7 @@ fn dequePeekHead(this: *Value, args: []const *ast.Expr, _: *Environment) !Value 
     }
 
     const inst = try getDequeInstance(this);
-    return inst.list.peekHead() orelse .nil;
+    return inst.deque.peekHead() orelse .nil;
 }
 
 fn dequePeekTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
@@ -155,7 +154,7 @@ fn dequePeekTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value 
     }
 
     const inst = try getDequeInstance(this);
-    return inst.list.peekTail() orelse .nil;
+    return inst.deque.peekTail() orelse .nil;
 }
 
 fn dequeClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
@@ -166,7 +165,7 @@ fn dequeClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const inst = try getDequeInstance(this);
-    inst.list.clear();
+    inst.deque.list.clear();
     return .nil;
 }
 
@@ -179,7 +178,7 @@ fn dequeEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
     const inst = try getDequeInstance(this);
     return .{
-        .boolean = inst.list.empty(),
+        .boolean = inst.deque.list.empty(),
     };
 }
 
@@ -192,7 +191,7 @@ fn dequeSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
     const inst = try getDequeInstance(this);
     return .{
-        .number = @floatFromInt(inst.list.len),
+        .number = @floatFromInt(inst.deque.list.len),
     };
 }
 
@@ -206,7 +205,7 @@ pub fn dequeItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Val
     const inst = try getDequeInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
-    var itr = inst.list.begin();
+    var itr = inst.deque.list.begin();
     while (itr.next()) |val| {
         try vals.append(val.*);
     }
@@ -224,9 +223,8 @@ fn dequeStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 
     const inst = try getDequeInstance(this);
-    const strFn = @import("list.zig").toString;
     return .{
-        .string = try strFn(inst.list),
+        .string = try inst.deque.toString(),
     };
 }
 

@@ -12,15 +12,9 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const AdjacencyMatrix = @import("dsa").AdjacencyMatrix(Value);
 pub const AdjacencyMatrixInstance = struct {
-    matrix: [][]Node,
-    size: usize,
-    edge_count: usize,
-};
-
-const Node = struct {
-    flag: bool,
-    weight: ?f64 = null,
+    matrix: AdjacencyMatrix,
 };
 
 fn getMatrixInstance(this: *Value) !*AdjacencyMatrixInstance {
@@ -37,8 +31,6 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     ADJ_MATRIX_METHODS = std.StringHashMap(StdMethod).init(allocator);
     try ADJ_MATRIX_METHODS.put("add_edge", adjMatrixAddEdge);
     try ADJ_MATRIX_METHODS.put("remove_edge", adjMatrixRemoveEdge);
-    try ADJ_MATRIX_METHODS.put("add_weighted_edge", adjMatrixAddWeightEdge);
-    try ADJ_MATRIX_METHODS.put("get_weight", adjMatrixGetWeight);
     try ADJ_MATRIX_METHODS.put("contains_edge", adjMatrixContainsEdge);
     try ADJ_MATRIX_METHODS.put("size", adjMatrixSize);
     try ADJ_MATRIX_METHODS.put("empty", adjMatrixEmpty);
@@ -70,22 +62,10 @@ fn adjMatrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
         return error.TypeMismatch;
     }
 
-    const size: usize = @intFromFloat(size_val.number);
-    const outer = try env.allocator.alloc([]Node, size);
-    for (outer) |*row| {
-        row.* = try env.allocator.alloc(Node, size);
-        for (0..size) |i| {
-            row.*[i] = Node{
-                .flag = false,
-            };
-        }
-    }
-
+    const matrix = try AdjacencyMatrix.init(env.allocator, @intFromFloat(size_val.number));
     const wrapped = try env.allocator.create(AdjacencyMatrixInstance);
     wrapped.* = .{
-        .matrix = outer,
-        .size = size,
-        .edge_count = 0,
+        .matrix = matrix,
     };
 
     const internal_ptr = try env.allocator.create(Value);
@@ -129,87 +109,13 @@ fn adjMatrixAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !V
     const inst = try getMatrixInstance(this);
     const i: usize = @intFromFloat(from.number);
     const j: usize = @intFromFloat(to.number);
-    if (i >= inst.size or j >= inst.size) {
-        try writer_err.print("adj_matrix.add_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.size });
+    if (i >= inst.matrix.size or j >= inst.matrix.size) {
+        try writer_err.print("adj_matrix.add_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.matrix.size });
         return error.IndexOutOfBounds;
     }
 
-    if (!inst.matrix[i][j].flag) {
-        inst.matrix[i][j].flag = true;
-        inst.edge_count += 1;
-    }
-
+    try inst.matrix.addEdge(i, j);
     return .nil;
-}
-
-fn adjMatrixAddWeightEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 3) {
-        try writer_err.print("adj_matrix.add_weight_edge(from, to, weight) expects 3 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const from = try interpreter.evalExpr(args[0], env);
-    const to = try interpreter.evalExpr(args[1], env);
-    const weight = try interpreter.evalExpr(args[2], env);
-
-    if (from != .number or to != .number or weight != .number) {
-        try writer_err.print("adj_matrix.add_weight_edge(from, to, weight) expects all number arguments.\n", .{});
-        return error.TypeMismatch;
-    }
-
-    const inst = try getMatrixInstance(this);
-    const i: usize = @intFromFloat(from.number);
-    const j: usize = @intFromFloat(to.number);
-
-    if (i >= inst.size or j >= inst.size) {
-        try writer_err.print("adj_matrix.add_weight_edge: Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.size });
-        return error.IndexOutOfBounds;
-    }
-
-    if (!inst.matrix[i][j].flag) {
-        inst.matrix[i][j].flag = true;
-        inst.edge_count += 1;
-    }
-    inst.matrix[i][j].weight = weight.number;
-
-    return .nil;
-}
-
-fn adjMatrixGetWeight(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("adj_matrix.get_weight(from, to) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const from = try interpreter.evalExpr(args[0], env);
-    const to = try interpreter.evalExpr(args[1], env);
-
-    if (from != .number or to != .number) {
-        try writer_err.print("adj_matrix.get_weight(from, to) expects two number arguments.\n", .{});
-        return error.TypeMismatch;
-    }
-
-    const inst = try getMatrixInstance(this);
-    const i: usize = @intFromFloat(from.number);
-    const j: usize = @intFromFloat(to.number);
-
-    if (i >= inst.size or j >= inst.size) {
-        try writer_err.print("adj_matrix.get_weight: Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.size });
-        return error.IndexOutOfBounds;
-    }
-
-    const node = inst.matrix[i][j];
-    if (!node.flag) {
-        return .nil;
-    }
-
-    return if (node.weight) |w| .{
-        .number = w,
-    } else .{
-        .number = 1.0,
-    };
 }
 
 fn adjMatrixRemoveEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
@@ -231,16 +137,12 @@ fn adjMatrixRemoveEdge(this: *Value, args: []const *ast.Expr, env: *Environment)
     const inst = try getMatrixInstance(this);
     const i: usize = @intFromFloat(from.number);
     const j: usize = @intFromFloat(to.number);
-    if (i >= inst.size or j >= inst.size) {
+    if (i >= inst.matrix.size or j >= inst.matrix.size) {
         try writer_err.print("adj_matrix.remove_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, args.len });
         return error.IndexOutOfBounds;
     }
 
-    if (inst.matrix[i][j].flag) {
-        inst.matrix[i][j].flag = false;
-        inst.edge_count -= 1;
-    }
-
+    try inst.matrix.removeEdge(i, j);
     return .nil;
 }
 
@@ -263,13 +165,13 @@ fn adjMatrixContainsEdge(this: *Value, args: []const *ast.Expr, env: *Environmen
     const inst = try getMatrixInstance(this);
     const i: usize = @intFromFloat(from.number);
     const j: usize = @intFromFloat(to.number);
-    if (i >= inst.size or j >= inst.size) {
-        try writer_err.print("adj_matrix.contains_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.size });
+    if (i >= inst.matrix.size or j >= inst.matrix.size) {
+        try writer_err.print("adj_matrix.contains_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.matrix.size });
         return error.IndexOutOfBounds;
     }
 
     return .{
-        .boolean = inst.matrix[i][j].flag,
+        .boolean = try inst.matrix.containsEdge(i, j),
     };
 }
 
@@ -282,7 +184,7 @@ fn adjMatrixSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value 
 
     const inst = try getMatrixInstance(this);
     return .{
-        .number = @floatFromInt(inst.size),
+        .number = @floatFromInt(inst.matrix.size),
     };
 }
 
@@ -294,7 +196,7 @@ fn adjMatrixEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value
     }
 
     const inst = try getMatrixInstance(this);
-    for (inst.matrix) |row| {
+    for (inst.matrix.matrix) |row| {
         for (row) |entry| {
             if (entry.flag) {
                 return .{
@@ -316,7 +218,7 @@ fn adjMatrixClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value
     }
 
     const inst = try getMatrixInstance(this);
-    for (inst.matrix) |row| {
+    for (inst.matrix.matrix) |row| {
         for (row) |*entry| {
             entry.flag = false;
         }
@@ -333,11 +235,11 @@ fn adjMatrixEdges(this: *Value, args: []const *ast.Expr, _: *Environment) !Value
 
     const inst = try getMatrixInstance(this);
     return .{
-        .number = @floatFromInt(inst.edge_count),
+        .number = @floatFromInt(inst.matrix.edge_count),
     };
 }
 
-fn adjMatrixStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+fn adjMatrixStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len != 0) {
         try writer_err.print("adjacency_matrix.str() expects 0 argument but got {d}\n", .{args.len});
@@ -346,33 +248,8 @@ fn adjMatrixStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
 
     const inst = try getMatrixInstance(this);
     return .{
-        .string = try toString(env.allocator, inst),
+        .string = try inst.matrix.toString(),
     };
-}
-
-pub fn toString(allocator: std.mem.Allocator, adj_matrix: *AdjacencyMatrixInstance) ![]const u8 {
-    var buffer = std.ArrayList(u8).init(allocator);
-    defer buffer.deinit();
-    const writer = buffer.writer();
-
-    for (0..adj_matrix.size) |i| {
-        for (0..adj_matrix.size) |j| {
-            const node = adj_matrix.matrix[i][j];
-            if (node.flag) {
-                if (node.weight) |w| {
-                    try writer.print("{d:.1} ", .{w});
-                } else {
-                    try writer.print("1 ", .{});
-                }
-            } else {
-                try writer.print("0 ", .{});
-            }
-        }
-        try writer.print("\n", .{});
-    }
-    _ = buffer.pop();
-
-    return try buffer.toOwnedSlice();
 }
 
 // === TESTING ===
@@ -397,9 +274,6 @@ test "adjacency_matrix_builtin" {
         \\let has12 = m.contains_edge(1, 2);
         \\let s = m.size();
         \\let e = m.edges();
-        \\m.add_weighted_edge(2, 3, 3.14);
-        \\let w = m.get_weight(2, 3);
-        \\let none = m.get_weight(3, 2);
     ;
 
     const block = try testing.parse(allocator, source);
@@ -409,12 +283,6 @@ test "adjacency_matrix_builtin" {
     const has12 = try env.get("has12");
     const s = try env.get("s");
     const e = try env.get("e");
-    const w = try env.get("w");
-    const none = try env.get("none");
-
-    try testing.expect(w == .number);
-    try testing.expectEqual(@as(f64, 3.14), w.number);
-    try testing.expect(none == .nil);
 
     try testing.expect(has01 == .boolean);
     try testing.expect(has12 == .boolean);

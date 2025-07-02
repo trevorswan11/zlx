@@ -1450,12 +1450,6 @@ g.add_edge("a", "b");
             <ul>
                 <li><code>g.add_edge(i, j)</code>: add an unweighted edge from node <code>i</code> to <code>j</code>.
                 </li>
-                <li><code>g.add_weighted_edge(i, j, weight)</code>: Add a weighted edge from <code>i</code> to
-                    <code>j</code>.
-                </li>
-                <li><code>g.get_weight(i, j)</code>: Gets the weight of an edge from <code>i</code> to
-                    <code>j</code>, returning 1.0 if unweighted and nil if not present.
-                </li>
                 <li><code>g.contains_edge(i, j)</code>: Return whether there's an edge from <code>i</code> to
                     <code>j</code>.
                 </li>
@@ -1468,7 +1462,7 @@ g.add_edge("a", "b");
             <p><strong>Example:</strong></p>
             <pre><code>
 let g = new adjacency_matrix();
-g.add_weighted_edge(i, j, 3.14);
+g.add_edge(i, j, 3.14);
             </code></pre>
 
             <h3 id="std_heap">PriorityQueue</h3>

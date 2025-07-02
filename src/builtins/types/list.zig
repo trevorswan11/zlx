@@ -13,7 +13,6 @@ const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
 const List = @import("dsa").List(Value);
-
 pub const ListInstance = struct {
     list: List,
 };

@@ -13,7 +13,6 @@ const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
 const Stack = @import("dsa").Stack(Value);
-
 pub const StackInstance = struct {
     stack: Stack,
 };

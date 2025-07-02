@@ -283,6 +283,13 @@ pub const Value = union(enum) {
         };
     }
 
+    pub fn less(a: Value, b: Value) bool {
+        return switch (a.compare(b)) {
+            .lt => true,
+            else => false,
+        };
+    }
+
     pub fn raw(self: *const Value) Value {
         var current = self.*;
         while (true) {

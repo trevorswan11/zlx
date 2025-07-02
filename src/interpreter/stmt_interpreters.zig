@@ -122,13 +122,13 @@ pub fn foreach(f: *ast.ForeachStmt, env: *Environment) !Value {
     }
     iterable = iterable.deref();
 
-    // This is not working -- TODO
-    // var child_arena = std.heap.ArenaAllocator.init(env.allocator);
-    // defer child_arena.deinit();
-    // const child_allocator = child_arena.allocator();
+    // Watch out for this 
+    var child_arena = std.heap.ArenaAllocator.init(env.allocator);
+    defer child_arena.deinit();
+    const child_allocator = child_arena.allocator();
 
     for (iterable.array.items, 0..) |item, i| {
-        var child_env = Environment.init(env.allocator, env);
+        var child_env = Environment.init(child_allocator, env);
         defer child_env.deinit();
 
         try child_env.define(f.value, item);
@@ -164,12 +164,12 @@ pub fn while_loop(w: *ast.WhileStmt, env: *Environment) !Value {
             break;
         }
 
-        // This is not working -- TODO
-        // var child_arena = std.heap.ArenaAllocator.init(env.allocator);
-        // defer child_arena.deinit();
-        // const child_allocator = child_arena.allocator();
+        // Watch out for this 
+        var child_arena = std.heap.ArenaAllocator.init(env.allocator);
+        defer child_arena.deinit();
+        const child_allocator = child_arena.allocator();
 
-        var child_env = Environment.init(env.allocator, env);
+        var child_env = Environment.init(child_allocator, env);
         defer child_env.deinit();
 
         for (w.body.items) |stmt| {

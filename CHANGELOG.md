@@ -68,4 +68,6 @@ All notably significant or outstanding changes to the zlx language will be docum
 - The compression command line arg dynamically dispatches to creating an archive if necessary
     - This does not work the other way around, and does not work at all for decompression due to safety checks
 
-## [0.5.0]
+## [0.4.3]
+- Rewrote type builtins to better use dsa library
+- Fixed an issue with a memory leak and memory corruption in certain scopes
