@@ -145,7 +145,11 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
                 return error.ArityMismatch;
             }
 
-            var call_env = Environment.init(env.allocator, func.closure);
+            var call_arena = std.heap.ArenaAllocator.init(env.allocator);
+            defer call_arena.deinit();
+            const call_allocator = call_arena.allocator();
+
+            var call_env = Environment.init(call_allocator, func.closure);
             for (func.parameters, 0..) |param, i| {
                 const arg_val = try evalExpr(c.arguments.items[i], env);
                 try call_env.define(param, arg_val);
@@ -169,7 +173,11 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
                 return error.ArityMismatch;
             }
 
-            var method_env = Environment.init(env.allocator, null);
+            var method_arena = std.heap.ArenaAllocator.init(env.allocator);
+            defer method_arena.deinit();
+            const method_allocator = method_arena.allocator();
+
+            var method_env = Environment.init(method_allocator, env);
             try method_env.define("this", .{
                 .reference = try env.allocator.create(Value),
             });

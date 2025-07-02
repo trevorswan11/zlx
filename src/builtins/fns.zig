@@ -374,7 +374,16 @@ pub fn format(args: []const *ast.Expr, env: *Environment) !Value {
 
     // Format using writer
     var output = std.ArrayList(u8).init(env.allocator);
+    defer output.deinit();
     const writer = output.writer();
+
+    // Handle single format specifier
+    if (fmt.len == 2 and fmt[0] == '{' and fmt[1] == '}') {
+        try writer.print("{s}", .{try toPrintableString(values.items[0], env)});
+        return .{
+            .string = try output.toOwnedSlice(),
+        };
+    }
 
     var it = std.mem.tokenizeAny(u8, fmt, "{}");
     var i: usize = 0;
