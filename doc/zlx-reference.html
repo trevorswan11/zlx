@@ -329,6 +329,7 @@
                         <li><a href="#ref">ref</a></li>
                         <li><a href="#deref">deref</a></li>
                         <li><a href="#detype">detype</a></li>
+                        <li><a href="#raw">raw</a></li>
                         <li><a href="#range">range</a></li>
                         <li><a href="#to_string">to_string</a></li>
                         <li><a href="#to_number">to_number</a></li>
@@ -511,10 +512,9 @@ let x: int = 42;
 print(x);
             </code></pre>
             <p>By default, all declarations get the "any (current_type)" type, and can be reassigned within reason
-                (without the const
-                keyword). The current type corresponds to the interpreters current understanding of the value. The type
-                of a value is represented by a pair of values with the second entry being a narrower context of the
-                first entry.To get the type of any value, use <code>typeof</code> as:</p>
+                (without the const keyword). The current type corresponds to the interpreters current understanding of
+                the value. The type of a value is represented by a pair of values with the second entry being a narrower
+                context of the first entry.To get the type of any value, use <code>typeof</code> as:</p>
             <pre><code>
 let x: int = 42;
 print(typeof x); >> Pair{"typed_val", "int"}
@@ -530,10 +530,8 @@ print(detype(x)); >> 42
                 operator. You cannot detype these data structures.</p>
             <h2>Strings</h2>
             <p>Strings in ZLX are somewhat unique. They can be declared only with double quotes, and multiline strings
-                can
-                be declared using 3 backticks. Multiline strings will capture all newline tokens starting from the
-                end
-                of the first triplet of backticks and ending with the start of the ending triplet.</p>
+                can be declared using 3 backticks. Multiline strings will capture all newline tokens starting from the
+                end of the first triplet of backticks and ending with the start of the ending triplet.</p>
             <pre><code>
 let s = ```This is
 a multiline
@@ -911,7 +909,7 @@ println(y);                     // 4
             <p>Returns the base-10 logarithm of <code>x</code>.</p>
 
             <h3 id="math-exp">exp(x)</h3>
-            <p>Returns Euler’s number <code>e</code> raised to the power of <code>x</code>.</p>
+            <p>Returns Euler's number <code>e</code> raised to the power of <code>x</code>.</p>
 
             <h3 id="math-floor">floor(x)</h3>
             <p>Rounds <code>x</code> down to the largest integer less than or equal to <code>x</code>.</p>
@@ -1241,11 +1239,8 @@ println(y);                     // 4
 
             <h3 id="print">print</h3>
             <p>The <code>print</code> takes in a variable number of values, and prints them as is with no delimiters
-                between
-                arguments.
-                As long as the backend of the language is up to date, all values should implement the print function in
-                some
-                way and can be passed as an argument to this function.</p>
+                between arguments. As long as the backend of the language is up to date, all values should implement
+                the print function in some way and can be passed as an argument to this function.</p>
 
             <h3 id="println">println</h3>
             <p>The <code>println</code> function is nearly identical to the print function, but print each argument
@@ -1256,10 +1251,8 @@ println(y);                     // 4
             <p>The len <code>function</code> returns the length of a string or array. This is self-explanatory</p>
             <h3 id="ref">ref</h3>
             <p>The <code>ref</code> function takes in any value and packs it into a heap allocated value. This is
-                particularly useful for
-                arrays, allowing them to be used with the array module and mutated freely. This is a copy of the
-                original
-                value, and does not make the input value an actual reference.</p>
+                particularly useful for arrays, allowing them to be used with the array module and mutated freely.
+                This is a copy of the original value, and does not make the input value an actual reference.</p>
 
             <h3 id="deref">deref</h3>
             <p>The <code>deref</code> function takes in a reference and returns the underlying value stored on the heap.
@@ -1267,18 +1260,20 @@ println(y);                     // 4
 
             <h3 id="detype">detype</h3>
             <p>The <code>detype</code> function takes in a typed value and returns the raw data underneath. This is
-                useful
-                for functions
-                that cannot operate on typed values, as they contain two types of data.</p>
+                useful for functions that cannot operate on typed values, as they contain two types of data.</p>
+
+            <h3 id="raw">raw</h3>
+            <p>The <code>raw</code> function takes in a nested typed value or reference and returns the raw data
+                underneath. This is useful for functions that cannot operate on typed values or references, as they
+                contain multiple types of data.</p>
 
             <h3 id="range">range</h3>
             <p>The <code>range</code> expression is similar to the <code>..</code> operator discussed earlier. This
-                function
-                starts at the start index and goes to (including) the end index. It increments by the step, returning
-                an array. Step must be a signed value.
-                The way this function is called is by using <code>range(start, end, step)</code>. This can be
-                particularly
-                useful for creating custom arrays for foreach expressions.</p>
+                function starts at the start index and goes to (including) the end index. It increments by the step,
+                returning an array. Step must be a signed value. The way this function is called is by using
+                <code>range(start, end, step)</code>. This can be particularly useful for creating custom arrays for
+                foreach expressions.
+            </p>
 
             <h3 id="to_string">to_string</h3>
             <p>The <code>to_string</code> function takes in any value and returns its string representation. This is
@@ -1290,15 +1285,11 @@ println(y);                     // 4
 
             <h3 id="to_bool">to_bool</h3>
             <p>The <code>to_bool</code> function takes in any value and coerces it into a bool. Most types are
-                considered to
-                be truthy and will return true, but others have specific behavior. Booleans can be passed into this
-                function
-                but are not converted for obvious reasons. Numbers are true if they are strictly positive. Strings are
-                true
-                if they are non-empty. The same applied for arrays. References are true if their underlying value is
-                true.
-                The same is true for typed values. Nil values are false. As mentioned earlier, all other values are
-                true.
+                considered to be truthy and will return true, but others have specific behavior. Booleans can be passed
+                into this function but are not converted for obvious reasons. Numbers are true if they are strictly
+                positive. Strings are true if they are non-empty. The same applied for arrays. References are true if
+                their underlying value is true. The same is true for typed values. Nil values are false. As mentioned
+                earlier, all other values are true.
             </p>
 
             <h3 id="to_ascii">to_ascii</h3>
@@ -1322,12 +1313,11 @@ println(y);                     // 4
             <h2>Standard Library Data Structures</h2>
             <p>
                 ZLX includes a rich set of built-in data structures, such as arrays, sets, maps, and graphs. They are
-                accessible
-                via simple imports like <code>import array;</code> or <code>import hashmap;</code>. Each structure is
-                instantiated using <code>new</code> and provides standard methods (e.g., <code>insert</code>,
-                <code>remove</code>, <code>size</code>, <code>clear</code>) via dot notation. These data structures are
-                fully integrated into the language and designed to be intuitive, memory-safe, and efficient for
-                general-purpose use.
+                accessible via simple imports like <code>import array;</code> or <code>import hashmap;</code>. Each
+                structure is instantiated using <code>new</code> and provides standard methods (e.g.,
+                <code>insert</code>, <code>remove</code>, <code>size</code>, <code>clear</code>) via dot notation. These
+                data structures are fully integrated into the language and designed to be intuitive, memory-safe, and
+                efficient for general-purpose use.
             </p>
             <h3 id="std_array_list">ArrayList</h3>
             <p><strong>Summary:</strong> A dynamic, resizable array similar to Python's `list` or JavaScript's `Array`,
@@ -1442,8 +1432,7 @@ g.add_edge("a", "b");
 
             <h3 id="std_adjacency_matrix">AdjacencyMatrix</h3>
             <p><strong>Summary:</strong> A graph structure backed by a 2D matrix where each node is stored as an index.
-                Supports weighted and
-                unweighted edges.</p>
+                Supports unweighted edges only.</p>
             <p><strong>Constructor:</strong><br><code>let g = new adjacency_matrix();</code></p>
             <p><strong>Methods:</strong></p>
 

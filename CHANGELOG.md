@@ -71,3 +71,6 @@ All notably significant or outstanding changes to the zlx language will be docum
 ## [0.4.3]
 - Rewrote type builtins to better use dsa library
 - Fixed an issue with a memory leak and memory corruption in certain scopes
+- Added `raw` builtin that combines `detype` and `deref` to continuously retrieve the raw underlying data
+- Fixed documentation formatting issue.
+- Heap type can now take in an option array arg, turning it into a heap!

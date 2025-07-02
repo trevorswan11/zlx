@@ -156,6 +156,18 @@ pub fn detype(args: []const *ast.Expr, env: *Environment) !Value {
     return val.typed_val.value.*;
 }
 
+pub fn raw(args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != 1) {
+        try writer_err.print("detype(typed_val): expected exactly 1 argument, got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const val = try eval.evalExpr(args[0], env);
+    return val.raw();
+}
+
 pub fn range(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
