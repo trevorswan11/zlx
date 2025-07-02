@@ -22,6 +22,7 @@ test {
     // Tooling & Helper Files
     _ = @import("builtins/helpers/statistics.zig");
     _ = @import("tooling/compression.zig");
+    _ = @import("tooling/archiving.zig");
     _ = @import("tooling/huffman.zig");
     _ = @import("tooling/hex.zig");
 

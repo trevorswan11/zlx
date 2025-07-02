@@ -64,28 +64,61 @@ pub fn main() !void {
     // Tooling
     if (input.compress or input.decompress or input.hex_dump or input.archive or input.de_archive) {
         const tool_start = std.time.nanoTimestamp();
-        const tool_writer = if (input.file_out) |fo| blk: {
-            break :blk fo.writer().any();
+        const tool_writer = if (input.file_out) |file_out| blk: {
+            if (!input.de_archive) {
+                const fo = try std.fs.cwd().createFile(file_out, .{});
+                break :blk fo.writer().any();
+            }
+            else {
+                break :blk writer_out;
+            }
         } else blk: {
             break :blk writer_out;
         };
 
-        const base_out_dir: []const u8 = if (input.dir_out) |dir| blk: {
-            break :blk dir;
+        var base_out_dir: std.fs.Dir = if (input.dir_out) |dir| blk: {
+            if (input.force_dir_out) {
+                try std.fs.cwd().deleteTree(dir);
+            }
+
+            try std.fs.cwd().makePath(dir);
+            break :blk try std.fs.cwd().openDir(dir, .{
+                .iterate = true,
+            });
+        } else if (input.file_out) |file_out| blk: {
+            if (!input.de_archive) {
+                break :blk std.fs.cwd();
+            }
+
+            if (input.force_dir_out) {
+                try std.fs.cwd().deleteTree(file_out);
+            }
+
+            try std.fs.cwd().makePath(file_out);
+            break :blk try std.fs.cwd().openDir(file_out, .{
+                .iterate = true,
+            });
         } else if (input.de_archive) {
             try writer_err.print("Output directory not specified for archive decompression.\n", .{});
             return;
-        } else ".";
+        } else std.fs.cwd();
+        defer base_out_dir.close();
 
         if (input.hex_dump) {
             try hex.dump(file_contents, tool_writer, writer_err);
         } else if (input.compress) {
             try compression.compress(allocator, file_contents, tool_writer, writer_err);
-        } else if (input.decompress or input.de_archive) {
+        } else if (input.decompress) {
             var stream = std.io.fixedBufferStream(file_contents);
-            try compression.decompress(allocator, stream.reader().any(), base_out_dir, tool_writer, writer_err);
+            try compression.decompress(allocator, stream.reader().any(), tool_writer, writer_err);
         } else if (input.archive) {
-            try compression.compressArchive(allocator, input.path, tool_writer, writer_err);
+            var base_dir = try std.fs.cwd().openDir(input.path, .{ .iterate = true });
+            defer base_dir.close();
+
+            try compression.compressArchive(allocator, base_dir, tool_writer, writer_err);
+        } else if (input.de_archive) {
+            var stream = std.io.fixedBufferStream(file_contents);
+            try compression.decompressArchive(allocator, stream.reader().any(), base_out_dir, writer_err);
         }
         const tool_end = std.time.nanoTimestamp();
 

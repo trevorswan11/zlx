@@ -38,13 +38,14 @@ While I originally intended to just build the parser, I ended up going much deep
     - `compress <filepath> <output?>` will use huffman encoding to compress the given file and will output it to either the output path (if given) or to a file of the same name with extension `.zcx`. You can use the flag `-c` as a shorthand for `compress`
     - `decompress <filepath> <output?>` reverses the encoding done using ZLX's huffman encoding tool. You can use the flag `-dc` as a shorthand for `decompress`. The output is only optional if the filepath, stripped of `.zcx`, is not in the current working directory
     - `archive <path> <output?>` recursively compresses files in a directory, preserving folder structure and outputting a single compressed archive to either the inferred output file or to the given output filepath. You can use the flag `-a` as a shorthand for `archive`. Using `-c` on a folder dispatches to `-a`
-    - `dearchive <filepath> <output?>` reverses the encoding done using ZLX's archiving tool. You can use the flag `-da` as a shorthand for `archive`, and can use the `-dc` flag which automatically determines if a compressed file is a single file or archive. The output is only optional if the filepath, stripped of `.zcx`, is not in the current working directory
+    - `dearchive <filepath> <output?>` reverses the encoding done using ZLX's archiving tool. You can use the flag `-da` as a shorthand for `archive`. The `-dc` flag cannot be used to decompress archives. The output is only optional if the filepath, stripped of `.zacx`, is not in the current working directory.
+    - Standard compression cannot be dispatched using archive calls.
     - `hex <filepath>` mimics the well known `xxd` program. You can use the flag `-x` as a shorthand for `hex`
 
 ## External Libraries
 This project has three independent dependencies:
 1.  [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. 
-2. [zig-containers](https://github.com/trevorswan11/zig-containers) which drives the standard libraries builtin data structures.
+2. [zig-containers](https://github.com/trevorswan11/zig-containers) which drives the standard libraries builtin data structures and compression tool.
 3. [raylib-zig](https://github.com/Not-Nik/raylib-zig) which drives the plotting module through basic window creation. This is only linked during the build process if building from the plotting branch
 
 ## Syntax Highlighting

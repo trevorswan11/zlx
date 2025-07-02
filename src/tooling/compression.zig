@@ -19,17 +19,19 @@ pub fn compress(
     writer_out: std.io.AnyWriter,
     writer_err: std.io.AnyWriter,
 ) anyerror!void {
+    try writer_out.writeAll(COMPRESSION_HEADER);
+    var buf_out = std.io.bufferedWriter(writer_out);
+    const buffer_writer = buf_out.writer();
     if (file_contents.len == 0) {
+        try buffer_writer.writeInt(u16, 0, .big);
+        try buffer_writer.writeByte(0);
+        try buf_out.flush();
         return;
     }
 
     var freqs = try huffman.frequencies(allocator, file_contents);
     defer freqs.deinit();
 
-    var buf_out = std.io.bufferedWriter(writer_out);
-    const buffer_writer = buf_out.writer();
-
-    try buffer_writer.writeAll(COMPRESSION_HEADER);
     try buffer_writer.writeInt(u16, @intCast(freqs.count()), .big);
     const entries = try huffman.sortedFrequencyEntries(allocator, freqs);
     defer allocator.free(entries);
@@ -40,6 +42,7 @@ pub fn compress(
     }
 
     var heap = try Heap.init(allocator, .min_at_top, file_contents.len);
+    defer heap.deinit();
     var itr = freqs.iterator();
     while (itr.next()) |entry| {
         const node = try HuffmanNode.init(
@@ -82,21 +85,24 @@ pub fn compress(
 pub fn decompress(
     allocator: std.mem.Allocator,
     reader: std.io.AnyReader,
-    base_out_dir: []const u8,
     writer_out: std.io.AnyWriter,
     writer_err: std.io.AnyWriter,
 ) anyerror!void {
     var magic: [3]u8 = undefined;
     try reader.readNoEof(&magic);
-    if (std.mem.eql(u8, &magic, ARCHIVE_HEADER)) {
-        return try archiving.decompressArchive(allocator, reader, base_out_dir, writer_err);
-    } else if (!std.mem.eql(u8, &magic, COMPRESSION_HEADER)) {
+    if (!std.mem.eql(u8, &magic, COMPRESSION_HEADER)) {
         try writer_err.print("Invalid file header\n", .{});
         return error.InvalidFileFormat;
     }
 
     const entries = try huffman.readFrequencyTableSorted(allocator, reader);
     defer allocator.free(entries);
+
+    if (entries.len == 0) {
+        // Still need to read the padding byte for completeness
+        _ = try reader.readByte();
+        return;
+    }
 
     var buf_out = std.io.bufferedWriter(writer_out);
     const buffer_writer = buf_out.writer();
@@ -188,23 +194,9 @@ test "compress and decompress round-trip" {
     defer decompressed.deinit();
 
     var reader = std.io.fixedBufferStream(compressed.items);
-    try decompress(allocator, reader.reader().any(), "", decompressed.writer().any(), std.io.null_writer.any());
+    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
 
     try testing.expectEqualSlices(u8, input, decompressed.items);
-}
-
-test "compress fails on empty input" {
-    var arena = std.heap.ArenaAllocator.init(testing.allocator());
-    const allocator = arena.allocator();
-    defer arena.deinit();
-
-    const input: []const u8 = "";
-
-    var compressed = std.ArrayList(u8).init(allocator);
-    defer compressed.deinit();
-
-    const result = compress(allocator, input, compressed.writer().any(), std.io.null_writer.any());
-    try testing.expectError(error.EmptyFile, result);
 }
 
 test "decompress fails with invalid magic" {
@@ -217,8 +209,29 @@ test "decompress fails with invalid magic" {
     var decompressed = std.ArrayList(u8).init(allocator);
     defer decompressed.deinit();
 
-    const result = decompress(allocator, stream.reader().any(), "", decompressed.writer().any(), std.io.null_writer.any());
+    const result = decompress(allocator, stream.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
     try testing.expectError(error.InvalidFileFormat, result);
+}
+
+test "compress and decompress empty file" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    const input: []const u8 = "";
+
+    var compressed = std.ArrayList(u8).init(allocator);
+    defer compressed.deinit();
+
+    try compress(allocator, input, compressed.writer().any(), std.io.null_writer.any());
+
+    var decompressed = std.ArrayList(u8).init(allocator);
+    defer decompressed.deinit();
+
+    var reader = std.io.fixedBufferStream(compressed.items);
+    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+
+    try testing.expectEqualSlices(u8, input, decompressed.items);
 }
 
 test "compress and decompress repeated characters - special case" {
@@ -237,7 +250,7 @@ test "compress and decompress repeated characters - special case" {
     defer decompressed.deinit();
 
     var reader = std.io.fixedBufferStream(compressed.items);
-    try decompress(allocator, reader.reader().any(), "", decompressed.writer().any(), std.io.null_writer.any());
+    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
 
     try testing.expectEqualSlices(u8, input, decompressed.items);
 }

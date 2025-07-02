@@ -37,8 +37,9 @@ const Args = struct {
     hex_dump: bool = false,
     archive: bool = false,
     de_archive: bool = false,
-    file_out: ?std.fs.File = null,
+    file_out: ?[]const u8 = null,
     dir_out: ?[]const u8 = null,
+    force_dir_out: bool = false,
     tool_type: []const u8 = "",
 };
 
@@ -63,8 +64,9 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     var hex_dump: bool = false;
     var archive: bool = false;
     var de_archive: bool = false;
-    var file_out: ?std.fs.File = null;
+    var file_out: ?[] const u8 = null;
     var dir_out: ?[]const u8 = null;
+    var force_dir_out: bool = false;
     var tool_type: []const u8 = undefined;
 
     // The first arg can specify either run or ast, defaulting to run
@@ -90,6 +92,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             "-a",
             "dearchive",
             "-da",
+            "-daf",
         })) {
             break :optional_arg;
         }
@@ -117,6 +120,10 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
                 tool_type = "Archiving";
             } else if (std.mem.eql(u8, r, "dearchive") or std.mem.eql(u8, r, "-da")) {
                 de_archive = true;
+                tool_type = "De-archiving";
+            } else if (std.mem.eql(u8, r, "-daf")) {
+                de_archive = true;
+                force_dir_out = true;
                 tool_type = "De-archiving";
             } else {
                 return error.InvalidRunTarget;
@@ -164,12 +171,15 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
         // Capture the output file for the tool
         if (!hex_dump and !de_archive) {
             if (arguments.next()) |out_file| {
-                file_out = try std.fs.cwd().createFile(out_file, .{});
+                file_out = try allocator.dupe(u8, out_file);
             }
         } else if (!hex_dump and de_archive) {
             if (arguments.next()) |out_file| {
+                if (force_dir_out) {
+                    try std.fs.cwd().deleteTree(out_file);
+                }
                 try std.fs.cwd().makeDir(out_file);
-                dir_out = out_file;
+                dir_out = try allocator.dupe(u8, out_file);
             }
         }
     }
@@ -204,15 +214,11 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
 
             if (std.mem.eql(u8, basename, out_file)) {
                 try writer_err.print("Input filepath can not match output!\n", .{});
-                return error.ImproperFilepaths;
+                return error.ImproperFilepath;
             }
-            file_out = try std.fs.cwd().createFile(out_file, .{});
-        } else if (de_archive) {
-            if (file_out == null) {
-                dir_out = stripSuffix(basename, ".zacx");
-            } else {
-                dir_out = fp;
-            }
+            file_out = try allocator.dupe(u8, out_file);
+        } else if (de_archive and dir_out == null) {
+            dir_out = try allocator.dupe(u8, stripSuffix(basename, ".zacx"));
         }
         return .{
             .path = try allocator.dupe(u8, fp),
@@ -227,6 +233,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
             .de_archive = de_archive,
             .tool_type = tool_type,
             .file_out = file_out,
+            .force_dir_out = force_dir_out,
             .dir_out = dir_out,
         };
     } else return error.MalformedArgs;
