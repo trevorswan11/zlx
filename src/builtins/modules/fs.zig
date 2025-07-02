@@ -234,11 +234,15 @@ fn appendHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const file = try std.fs.cwd().openFile(
         parts[0],
         .{
-            .mode = .write_only,
+            .mode = .read_write,
         },
     );
     defer file.close();
-    try file.writeAll(parts[1]);
+
+    const stat = try file.stat();
+    try file.seekTo(stat.size);
+
+    try file.writer().writeAll(parts[1]);
     return .nil;
 }
 

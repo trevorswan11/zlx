@@ -73,3 +73,6 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Fixed an issue with a memory leak and memory corruption in certain scopes
 - Added `raw` builtin that combines `detype` and `deref` to continuously retrieve the raw underlying data
 - Fixed documentation formatting issue.
+
+## [0.4.4]
+- Fixed fs.append to append to the end of the file instead of overwriting the current contents
