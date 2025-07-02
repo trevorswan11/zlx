@@ -30,7 +30,7 @@ pub fn compressArchive(
         const stat = try file.stat();
         const uncompressed_size = stat.size;
 
-        const contents = try compression_allocator.alloc(u8, uncompressed_size);
+        const contents = try compression_allocator.alloc(u8, @intCast(uncompressed_size));
         defer compression_allocator.free(contents);
         _ = try file.readAll(contents);
 
