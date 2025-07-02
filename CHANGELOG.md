@@ -67,3 +67,5 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Folders can now be compressed into archives, which have the `.zacx` file extension by default
 - The compression command line arg dynamically dispatches to creating an archive if necessary
     - This does not work the other way around, and does not work at all for decompression due to safety checks
+
+## [0.5.0]

@@ -1,4 +1,5 @@
 const std = @import("std");
+
 const ast = @import("../parser/ast.zig");
 
 fn toLower(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
@@ -44,7 +45,7 @@ const Args = struct {
 };
 
 /// Handles parsing the command line arguments for the process
-pub fn getArgs(allocator: std.mem.Allocator) !Args {
+pub fn getOrDispatchArgs(allocator: std.mem.Allocator) !Args {
     const writer_err = getWriterErr();
     var arguments = try std.process.argsWithAllocator(allocator);
     defer arguments.deinit();
@@ -64,7 +65,7 @@ pub fn getArgs(allocator: std.mem.Allocator) !Args {
     var hex_dump: bool = false;
     var archive: bool = false;
     var de_archive: bool = false;
-    var file_out: ?[] const u8 = null;
+    var file_out: ?[]const u8 = null;
     var dir_out: ?[]const u8 = null;
     var force_dir_out: bool = false;
     var tool_type: []const u8 = undefined;

@@ -7,7 +7,7 @@ const hex = @import("tooling/hex.zig");
 const compression = @import("tooling/compression.zig");
 
 const driver = @import("utils/driver.zig");
-const getArgs = driver.getArgs;
+const getOrDispatchArgs = driver.getOrDispatchArgs;
 const readFile = driver.readFile;
 
 pub fn main() !void {
@@ -28,11 +28,12 @@ pub fn main() !void {
     const allocator = arena.allocator();
     defer arena.deinit();
 
-    const input = getArgs(allocator) catch |err| switch (err) {
+    const input = getOrDispatchArgs(allocator) catch |err| switch (err) {
         error.MalformedArgs => {
             try writer_err.print("Usage: zlx <run|ast|dump> <filepath> <time?> <-v?>\n", .{});
             return;
         },
+        error.InternalDispatch => return,
         else => {
             try writer_err.print("Error parsing command line args: {!}\n", .{err});
             return;
@@ -68,8 +69,7 @@ pub fn main() !void {
             if (!input.de_archive) {
                 const fo = try std.fs.cwd().createFile(file_out, .{});
                 break :blk fo.writer().any();
-            }
-            else {
+            } else {
                 break :blk writer_out;
             }
         } else blk: {
