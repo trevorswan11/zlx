@@ -7,7 +7,7 @@ import time;
 
 import array_list;
 
-const version = "0.4.2";
+const version = "0.4.3";
 const target_path = path.join("release", "targets");
 const compressed_path = path.join("release", "compressed");
 
@@ -23,7 +23,7 @@ if fs.exists(compressed_path) {
 fs.mkdir(compressed_path);
 
 // Targets
-const win = ["x86_64", "aarch64"];
+const win = ["x86_64", "aarch64", "x86"];
 
 const mac = ["x86_64", "aarch64"];
 
