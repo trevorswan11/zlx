@@ -15,21 +15,25 @@ pub const ARCHIVE_HEADER: []const u8 = "ZAX";
 
 pub fn compress(
     allocator: std.mem.Allocator,
-    file_contents: []const u8,
+    file: *std.fs.File,
     writer_out: std.io.AnyWriter,
     writer_err: std.io.AnyWriter,
-) anyerror!void {
-    try writer_out.writeAll(COMPRESSION_HEADER);
-    var buf_out = std.io.bufferedWriter(writer_out);
+) anyerror!u64 {
+    var counting_writer = std.io.countingWriter(writer_out);
+    var buf_out = std.io.bufferedWriter(counting_writer.writer().any());
     const buffer_writer = buf_out.writer();
-    if (file_contents.len == 0) {
+    try buffer_writer.writeAll(COMPRESSION_HEADER);
+
+    const stat = try file.stat();
+    if (stat.size == 0) {
         try buffer_writer.writeInt(u16, 0, .big);
         try buffer_writer.writeByte(0);
         try buf_out.flush();
-        return;
+        return counting_writer.bytes_written;
     }
 
-    var freqs = try huffman.frequencies(allocator, file_contents);
+    // First pass, gather and write the frequencies
+    var freqs = try huffman.frequenciesFromReader(allocator, file.reader().any());
     defer freqs.deinit();
 
     try buffer_writer.writeInt(u16, @intCast(freqs.count()), .big);
@@ -41,7 +45,7 @@ pub fn compress(
         try buffer_writer.writeInt(u32, @intCast(entry.freq), .big);
     }
 
-    var heap = try Heap.init(allocator, .min_at_top, file_contents.len);
+    var heap = try Heap.init(allocator, .min_at_top, entries.len);
     defer heap.deinit();
     var itr = freqs.iterator();
     while (itr.next()) |entry| {
@@ -66,12 +70,12 @@ pub fn compress(
             tree_root.deinit();
             allocator.destroy(tree_root);
         }
-
         try huffman.buildTable(allocator, tree_root, &[_]u8{}, &table);
-        for (file_contents) |b| {
-            const raw_code = table.get(b) orelse return error.MissingHuffmanCode;
-            try bit_buffer.appendBitsFromSlice(raw_code);
-        }
+
+        // Rewind for encoding pass and encode the data
+        try file.seekTo(0);
+        const reader = file.reader();
+        try huffman.streamEncodeFromReader(reader.any(), &table, &bit_buffer);
         const result = try bit_buffer.finishAndSlice();
         try buffer_writer.writeByte(result.pad_bits);
         try buffer_writer.writeAll(result.slice);
@@ -80,6 +84,7 @@ pub fn compress(
         return error.MalformedFreqs;
     }
     try buf_out.flush();
+    return counting_writer.bytes_written;
 }
 
 pub fn decompress(
@@ -185,16 +190,39 @@ test "compress and decompress round-trip" {
 
     const input = "the quick brown fox jumps over the lazy dog";
 
+    var tmp_dir = std.testing.tmpDir(.{
+        .iterate = true,
+    });
+    defer tmp_dir.cleanup();
+
+    errdefer {
+        const path: []const u8 = &tmp_dir.sub_path;
+        var exists = true;
+        std.fs.cwd().access(path, .{}) catch {
+            exists = false;
+        };
+        if (exists) {
+            std.fs.cwd().deleteTree(path) catch {};
+        }
+    }
+
+    var file_path = try tmp_dir.dir.createFile("input.txt", .{
+        .read = true,
+    });
+    defer file_path.close();
+    try file_path.writeAll(input);
+    try file_path.seekTo(0);
+
     var compressed = std.ArrayList(u8).init(allocator);
     defer compressed.deinit();
 
-    try compress(allocator, input, compressed.writer().any(), std.io.null_writer.any());
+    _ = try compress(allocator, &file_path, compressed.writer().any(), std.io.null_writer.any());
 
     var decompressed = std.ArrayList(u8).init(allocator);
     defer decompressed.deinit();
 
-    var reader = std.io.fixedBufferStream(compressed.items);
-    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+    var decompression_reader = std.io.fixedBufferStream(compressed.items);
+    try decompress(allocator, decompression_reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
 
     try testing.expectEqualSlices(u8, input, decompressed.items);
 }
@@ -220,16 +248,39 @@ test "compress and decompress empty file" {
 
     const input: []const u8 = "";
 
+    var tmp_dir = std.testing.tmpDir(.{
+        .iterate = true,
+    });
+    defer tmp_dir.cleanup();
+
+    errdefer {
+        const path: []const u8 = &tmp_dir.sub_path;
+        var exists = true;
+        std.fs.cwd().access(path, .{}) catch {
+            exists = false;
+        };
+        if (exists) {
+            std.fs.cwd().deleteTree(path) catch {};
+        }
+    }
+
+    var file_path = try tmp_dir.dir.createFile("input.txt", .{
+        .read = true,
+    });
+    defer file_path.close();
+    try file_path.writeAll(input);
+    try file_path.seekTo(0);
+
     var compressed = std.ArrayList(u8).init(allocator);
     defer compressed.deinit();
 
-    try compress(allocator, input, compressed.writer().any(), std.io.null_writer.any());
+    _ = try compress(allocator, &file_path, compressed.writer().any(), std.io.null_writer.any());
 
     var decompressed = std.ArrayList(u8).init(allocator);
     defer decompressed.deinit();
 
-    var reader = std.io.fixedBufferStream(compressed.items);
-    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+    var decompression_reader = std.io.fixedBufferStream(compressed.items);
+    try decompress(allocator, decompression_reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
 
     try testing.expectEqualSlices(u8, input, decompressed.items);
 }
@@ -241,16 +292,39 @@ test "compress and decompress repeated characters - special case" {
 
     const input = "aaaaaa";
 
+    var tmp_dir = std.testing.tmpDir(.{
+        .iterate = true,
+    });
+    defer tmp_dir.cleanup();
+
+    errdefer {
+        const path: []const u8 = &tmp_dir.sub_path;
+        var exists = true;
+        std.fs.cwd().access(path, .{}) catch {
+            exists = false;
+        };
+        if (exists) {
+            std.fs.cwd().deleteTree(path) catch {};
+        }
+    }
+
+    var file_path = try tmp_dir.dir.createFile("input.txt", .{
+        .read = true,
+    });
+    defer file_path.close();
+    try file_path.writeAll(input);
+    try file_path.seekTo(0);
+
     var compressed = std.ArrayList(u8).init(allocator);
     defer compressed.deinit();
 
-    try compress(allocator, input, compressed.writer().any(), std.io.null_writer.any());
+    _ = try compress(allocator, &file_path, compressed.writer().any(), std.io.null_writer.any());
 
     var decompressed = std.ArrayList(u8).init(allocator);
     defer decompressed.deinit();
 
-    var reader = std.io.fixedBufferStream(compressed.items);
-    try decompress(allocator, reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
+    var decompression_reader = std.io.fixedBufferStream(compressed.items);
+    try decompress(allocator, decompression_reader.reader().any(), decompressed.writer().any(), std.io.null_writer.any());
 
     try testing.expectEqualSlices(u8, input, decompressed.items);
 }

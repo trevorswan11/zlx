@@ -24,15 +24,11 @@ pub fn compressArchive(
         defer compression_arena.deinit();
         const compression_allocator = compression_arena.allocator();
 
-        const file = try base_dir.openFile(entry.path, .{});
+        var file = try base_dir.openFile(entry.path, .{});
         defer file.close();
 
         const stat = try file.stat();
         const uncompressed_size = stat.size;
-
-        const contents = try compression_allocator.alloc(u8, @intCast(uncompressed_size));
-        defer compression_allocator.free(contents);
-        _ = try file.readAll(contents);
 
         try writer_out.writeInt(u16, @intCast(entry.path.len), .big);
         try writer_out.writeAll(entry.path);
@@ -41,7 +37,7 @@ pub fn compressArchive(
         var buffer = std.ArrayList(u8).init(compression_allocator);
         defer buffer.deinit();
 
-        try compression.compress(compression_allocator, contents, buffer.writer().any(), writer_err);
+        _ = try compression.compress(compression_allocator, &file, buffer.writer().any(), writer_err);
         try writer_out.writeInt(u64, buffer.items.len, .big);
         try writer_out.writeAll(buffer.items);
     }

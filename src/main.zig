@@ -46,7 +46,7 @@ pub fn main() !void {
     }
 
     // Gather the file contents
-    const file_contents = if (!input.archive) blk: {
+    const file_contents = if (!input.archive and !input.de_archive and !input.compress and !input.decompress) blk: {
         break :blk readFile(allocator, input.path) catch |err| {
             try writer_err.print("Error reading file contents: {!}\n", .{err});
             parse = std.time.nanoTimestamp();
@@ -57,7 +57,7 @@ pub fn main() !void {
             return;
         };
     } else blk: {
-        break :blk try std.fmt.allocPrint(allocator, "{s}", .{"IsDir"});
+        break :blk try std.fmt.allocPrint(allocator, "{s}", .{"NotRead"});
     };
     defer allocator.free(file_contents);
     args = std.time.nanoTimestamp();
@@ -107,18 +107,26 @@ pub fn main() !void {
         if (input.hex_dump) {
             try hex.dump(file_contents, tool_writer, writer_err);
         } else if (input.compress) {
-            try compression.compress(allocator, file_contents, tool_writer, writer_err);
+            var file = try std.fs.cwd().openFile(input.path, .{
+                .mode = .read_only,
+            });
+            _ = try compression.compress(allocator, &file, tool_writer, writer_err);
         } else if (input.decompress) {
-            var stream = std.io.fixedBufferStream(file_contents);
-            try compression.decompress(allocator, stream.reader().any(), tool_writer, writer_err);
+            var file = try std.fs.cwd().openFile(input.path, .{
+                .mode = .read_only,
+            });
+            try compression.decompress(allocator, file.reader().any(), tool_writer, writer_err);
         } else if (input.archive) {
             var base_dir = try std.fs.cwd().openDir(input.path, .{ .iterate = true });
             defer base_dir.close();
 
             try compression.compressArchive(allocator, base_dir, tool_writer, writer_err);
         } else if (input.de_archive) {
-            var stream = std.io.fixedBufferStream(file_contents);
-            try compression.decompressArchive(allocator, stream.reader().any(), base_out_dir, writer_err);
+            var file = try std.fs.cwd().openFile(input.path, .{
+                .mode = .read_only,
+            });
+
+            try compression.decompressArchive(allocator, file.reader().any(), base_out_dir, writer_err);
         }
         const tool_end = std.time.nanoTimestamp();
 

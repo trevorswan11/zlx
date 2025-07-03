@@ -172,6 +172,27 @@ pub fn frequencies(allocator: std.mem.Allocator, bytes: []const u8) !std.AutoHas
     return freqs;
 }
 
+pub fn frequenciesFromReader(
+    allocator: std.mem.Allocator,
+    reader: std.io.AnyReader,
+) !std.AutoHashMap(u8, usize) {
+    var freqs = std.AutoHashMap(u8, usize).init(allocator);
+    var buf: [4096]u8 = undefined;
+
+    while (true) {
+        const n = try reader.read(&buf);
+        if (n == 0) break;
+        for (buf[0..n]) |b| {
+            if (freqs.get(b)) |val| {
+                try freqs.put(b, val + 1);
+            } else {
+                try freqs.put(b, 1);
+            }
+        }
+    }
+    return freqs;
+}
+
 pub fn encode(heap: *Heap) !void {
     while (heap.size() > 1) {
         const left: *HuffmanNode = if (try heap.poll()) |l| blk: {
@@ -193,6 +214,22 @@ pub fn encode(heap: *Heap) !void {
             right,
         );
         try heap.insert(internal);
+    }
+}
+
+pub fn streamEncodeFromReader(
+    reader: std.io.AnyReader,
+    table: *const std.AutoHashMap(u8, []const u8),
+    bit_buffer: *BitBuffer,
+) !void {
+    var buf: [4096]u8 = undefined;
+    while (true) {
+        const n = try reader.read(&buf);
+        if (n == 0) break;
+        for (buf[0..n]) |b| {
+            const bits = table.get(b) orelse return error.MissingHuffmanCode;
+            try bit_buffer.appendBitsFromSlice(bits);
+        }
     }
 }
 
