@@ -66,7 +66,7 @@ fn equalStats(stats: []std.fs.File.Stat) StatCompareResult {
                 };
             }
         } else {
-            size = stat.size;
+            size = @intCast(stat.size);
         }
     }
     return StatCompareResult{

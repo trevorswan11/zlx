@@ -161,7 +161,7 @@ pub fn getOrDispatchArgs(allocator: std.mem.Allocator) !Args {
                 defer f.close();
                 const f_stat = try f.stat();
 
-                const contents = try f.readToEndAlloc(allocator, f_stat.size);
+                const contents = try f.readToEndAlloc(allocator, @intCast(f_stat.size));
                 defer allocator.free(contents);
                 try getWriterOut().print("{s}\n", .{contents});
                 return error.InternalDispatch;
