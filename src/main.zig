@@ -110,12 +110,12 @@ pub fn main() !void {
             var file = try std.fs.cwd().openFile(input.path, .{
                 .mode = .read_only,
             });
-            _ = try compression.compress(allocator, &file, tool_writer, writer_err);
+            try compression.compress(&file, tool_writer, writer_err);
         } else if (input.decompress) {
             var file = try std.fs.cwd().openFile(input.path, .{
                 .mode = .read_only,
             });
-            try compression.decompress(allocator, file.reader().any(), tool_writer, writer_err);
+            try compression.decompress(file.reader().any(), tool_writer, writer_err);
         } else if (input.archive) {
             var base_dir = try std.fs.cwd().openDir(input.path, .{ .iterate = true });
             defer base_dir.close();

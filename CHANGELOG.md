@@ -81,3 +81,5 @@ All notably significant or outstanding changes to the zlx language will be docum
 
 ## [0.5.0]
 - Added support for `cat` and `diff` tools through zlx
+- Switched to zig's standard library implementation for compression algorithms
+    - While it was cool to have my own implementations, it was very slow for what I want to use this project for :(
