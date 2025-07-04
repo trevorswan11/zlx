@@ -1,6 +1,8 @@
 const std = @import("std");
 const dsa = @import("dsa");
 
+const BUFFER_SIZE: usize = 65536;
+
 // Min-Heap & Data Structures
 pub const Heap = dsa.PriorityQueue(*HuffmanNode, HuffmanNode.less);
 pub const HuffmanNode = struct {
@@ -177,7 +179,7 @@ pub fn frequenciesFromReader(
     reader: std.io.AnyReader,
 ) !std.AutoHashMap(u8, usize) {
     var freqs = std.AutoHashMap(u8, usize).init(allocator);
-    var buf: [4096]u8 = undefined;
+    var buf: [BUFFER_SIZE]u8 = undefined;
 
     while (true) {
         const n = try reader.read(&buf);
@@ -222,7 +224,7 @@ pub fn streamEncodeFromReader(
     table: *const std.AutoHashMap(u8, []const u8),
     bit_buffer: *BitBuffer,
 ) !void {
-    var buf: [4096]u8 = undefined;
+    var buf: [BUFFER_SIZE]u8 = undefined;
     while (true) {
         const n = try reader.read(&buf);
         if (n == 0) break;

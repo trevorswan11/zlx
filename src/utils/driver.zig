@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const ast = @import("../parser/ast.zig");
+const diff = @import("../tooling/diff.zig");
 
 fn toLower(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     const lower = try allocator.alloc(u8, input.len);
@@ -79,22 +80,7 @@ pub fn getOrDispatchArgs(allocator: std.mem.Allocator) !Args {
             .repl = true,
         };
     } else if (raw_args.len >= 3) optional_arg: {
-        if (!isStringOneOfMany(raw_args[1], &[_][]const u8{
-            "ast",
-            "run",
-            "dump",
-            "compress",
-            "-c",
-            "decompress",
-            "-dc",
-            "hex",
-            "-x",
-            "archive",
-            "-a",
-            "dearchive",
-            "-da",
-            "-daf",
-        })) {
+        if (!isStringOneOfMany(raw_args[1], &[_][]const u8{ "ast", "run", "dump", "compress", "-c", "decompress", "-dc", "hex", "-x", "archive", "-a", "dearchive", "-da", "-daf", "diff", "cat", })) {
             break :optional_arg;
         }
 
@@ -126,6 +112,59 @@ pub fn getOrDispatchArgs(allocator: std.mem.Allocator) !Args {
                 de_archive = true;
                 force_dir_out = true;
                 tool_type = "De-archiving";
+            } else if (std.mem.eql(u8, r, "diff")) {
+                const remaining_args = raw_args[2..];
+                if (remaining_args.len < 2) {
+                    try writer_err.print("Cannot call diff on a single file\n", .{});
+                    return error.MalformedArgs;
+                }
+
+                var files = std.ArrayList(*std.fs.File).init(allocator);
+                defer {
+                    for (files.items) |file| {
+                        file.close();
+                        allocator.destroy(file);
+                    }
+                    files.deinit();
+                }
+
+                for (remaining_args) |a| {
+                    if (std.mem.eql(u8, a, "time") or std.mem.eql(u8, a, "-v")) {
+                        try writer_err.print("Command line args `time` and `-v` are not supported for diff tool\n", .{});
+                        return error.UnsupportedArgument;
+                    }
+
+                    std.fs.cwd().access(a, .{}) catch |err| {
+                        try writer_err.print("Could not access file: {s}\n", .{a});
+                        return err;
+                    };
+                    const f = try allocator.create(std.fs.File);
+                    f.* = try std.fs.cwd().openFile(a, .{});
+                    try files.append(f);
+                }
+
+                try diff.compareBytes(allocator, remaining_args, try files.toOwnedSlice(), writer_err);
+                return error.InternalDispatch;
+            } else if (std.mem.eql(u8, r, "cat")) {
+                const remaining_args = raw_args[2..];
+                if (remaining_args.len != 1) {
+                    try writer_err.print("Cat can only operate on one file, found {d} arguments\n", .{remaining_args.len});
+                    return error.MalformedArgs;
+                }
+                const filepath = remaining_args[0];
+
+                std.fs.cwd().access(filepath, .{}) catch |err| {
+                    try writer_err.print("Could not access file: {s}\n", .{filepath});
+                    return err;
+                };
+                const f = try std.fs.cwd().openFile(filepath, .{});
+                defer f.close();
+                const f_stat = try f.stat();
+
+                const contents = try f.readToEndAlloc(allocator, f_stat.size);
+                defer allocator.free(contents);
+                try getWriterOut().print("{s}\n", .{contents});
+                return error.InternalDispatch;
             } else {
                 return error.InvalidRunTarget;
             }

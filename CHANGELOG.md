@@ -78,3 +78,6 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Fixed fs.append to append to the end of the file instead of overwriting the current contents
 - Single file compression is now fully streamed and works in chunks
     - Archiving functions and decompression will not support this behavior as it requires a redesign of the compression system
+
+## [0.5.0]
+- Added support for `cat` and `diff` tools through zlx
