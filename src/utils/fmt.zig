@@ -2,8 +2,13 @@ const std = @import("std");
 
 const token = @import("../lexer/token.zig");
 const driver = @import("driver.zig");
+const tokenizer = @import("../lexer/tokenizer.zig");
+const parser = @import("../parser/parser.zig");
 
 const TokenKind = token.TokenKind;
+
+const tokenize = tokenizer.tokenize;
+const parse = parser.parse;
 
 const colors = struct {
     pub const reset = "\x1b[0m";
@@ -88,7 +93,6 @@ fn colorForKind(kind: TokenKind) []const u8 {
 }
 
 pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
-    const tokenize = @import("../lexer/tokenizer.zig").tokenize;
     const tokens = try tokenize(allocator, source);
     const writer_out = driver.getWriterOut();
 
@@ -123,4 +127,13 @@ pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
     if (last < source.len) {
         try writer_out.writeAll(source[last..]);
     }
+}
+
+pub fn canonicalFmtFile(allocator: std.mem.Allocator, source: []const u8, writer_out: std.io.AnyWriter) !void {
+    const parsed = try parse(allocator, source);
+    _ = parsed; _ = writer_out;
+}
+
+pub fn canonicalFmtDir(allocator: std.mem.Allocator, dir: std.fs.Dir) !void {
+    _ = allocator; _ = dir;
 }

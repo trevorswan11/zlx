@@ -83,3 +83,8 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Added support for `cat` and `diff` tools through zlx
 - Switched to zig's standard library implementation for compression algorithms
     - While it was cool to have my own implementations, it was very slow for what I want to use this project for :(
+
+## [0.5.1]
+- ZLX's main tools (run, ast, dump) now also accept fmt as an arg, this will act similar to zig's fmt command
+    - The default format is 4 space indents, spaces between most operands, and the non-c/c++ style curly brace placements
+- Updated README to reflect recent changes in project tooling 

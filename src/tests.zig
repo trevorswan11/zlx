@@ -21,8 +21,9 @@ test {
 
     // Tooling & Helper Files
     _ = @import("builtins/helpers/statistics.zig");
-    _ = @import("tooling/compression.zig");
-    _ = @import("tooling/hex.zig");
+    _ = @import("utils/compression.zig");
+    _ = @import("utils/hex.zig");
+    _ = @import("utils/fmt.zig");
 
     // Builtin Standard Library Structs
     _ = @import("builtins/types/adjacency_list.zig");

@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  A lexer, parser, language, interpreter, and tooling software written in Zig.
+  A lexer, parser, language, interpreter, and toolchain written in Zig.
 </p>
 
 ### Inspiration
@@ -26,10 +26,11 @@ While I originally intended to just build the parser, I ended up going much deep
     - `--release=fast`: Prioritize performance without safety checks
     - `--release=small`: Prioritize small binary size over performance and safety
     - `--release=safe`: Balance between fast and small release modes. This is the default when passing `--release` on its own
-- You can use the example language "tests" with `zig build run -- <run|dump|ast> examples/<filename> <time?> <-v?>`
+- You can use the example language "tests" with `zig build run -- <run|dump|ast|fmt> examples/<filename> <time?> <-v?>`
     - `run` interprets the program, `dump` prints the syntax-highlighted file, and `ast` simply parses the program
+    - `fmt` walks the file's AST or walks a directories ZLX files and rewrites to the canonical form 
     - `time` times the parser, interpreter, and program - this is an optional parameter
-    - `-v` prints verbose output, showing an indented and formatted abstract syntax tree - also optional
+    - `-v` prints verbose output, showing an indented and formatted abstract syntax tree - also optional. This does not work with the format (`fmt`) option
 - To interpret your own input file, pass the relative path as `zig build run -- run <path>`
 - If you're pulling the executable from the `zig-out` directory, you can use the same arguments as explained above
     - The same applies for downloads from the `releases` tags
@@ -43,6 +44,8 @@ In an attempt to make a highly portable but usable program for my personal use, 
 - `dearchive <filepath> <output?>` reverses the encoding done using ZLX's archiving tool. You can use the flag `-da` as a shorthand for `archive`. The `-dc` flag cannot be used to decompress archives. The output is only optional if the filepath, stripped of `.zacx`, is not in the current working directory.
 - Standard compression cannot be dispatched using archive calls.
 - `hex <filepath>` mimics the well known `xxd` program. You can use the flag `-x` as a shorthand for `hex`
+- `cat <filepath>` mimics the `cat` tool
+- `diff <filepath1> <filepath2> ...` mimics the `diff` tool. Compares the contents of the first filepath given to the rest of the arguments
 
 Please remember that ZLX does not run as an administrator/root by default, and you may have to use an elevated shell to compress protected directories or files.
 

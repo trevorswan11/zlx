@@ -2,9 +2,9 @@ const std = @import("std");
 
 const parser = @import("parser/parser.zig");
 const interpreter = @import("interpreter/interpreter.zig");
-const syntax = @import("utils/syntax.zig");
-const hex = @import("tooling/hex.zig");
-const compression = @import("tooling/compression.zig");
+const fmt = @import("utils/fmt.zig");
+const hex = @import("utils/hex.zig");
+const compression = @import("utils/compression.zig");
 
 const driver = @import("utils/driver.zig");
 const getOrDispatchArgs = driver.getOrDispatchArgs;
@@ -30,7 +30,6 @@ pub fn main() !void {
 
     const input = getOrDispatchArgs(allocator) catch |err| switch (err) {
         error.MalformedArgs => {
-            try writer_err.print("Usage: zlx <run|ast|dump> <filepath> <time?> <-v?>\n", .{});
             return;
         },
         error.InternalDispatch => return,
@@ -143,6 +142,42 @@ pub fn main() !void {
         return;
     }
 
+    // Formatting
+    if (input.format) {
+        const stat = try std.fs.cwd().statFile(input.path);
+        const fmt_start = std.time.nanoTimestamp(); 
+        switch (stat.kind) {
+            .file => {
+                var file = try std.fs.cwd().openFile(input.path, .{ .mode = .read_write });
+                defer file.close();
+
+                try fmt.canonicalFmtFile(allocator, file_contents, file.writer().any());
+            },
+            .directory => {
+                var dir = try std.fs.cwd().openDir(input.path, .{ .iterate = true });
+                defer dir.close();
+
+                try fmt.canonicalFmtDir(allocator, dir);
+            },
+            else => {
+                try writer_err.print("Cannot format input file/directory {s}\n", .{input.path});
+            },
+        }
+        const fmt_end = std.time.nanoTimestamp(); 
+
+        if (input.time) {
+            const arguments = @as(f128, @floatFromInt(args - start)) / 1_000_000.0;
+            const elapsed = @as(f128, @floatFromInt(fmt_end - fmt_start)) / 1_000_000.0;
+            const process = @as(f128, @floatFromInt(fmt_end - start)) / 1_000_000.0;
+
+            try writer_out.print("Timing:\n", .{});
+            try writer_out.print("  Args Parsing took: {d} ms\n", .{arguments});
+            try writer_out.print("  Formatting took: {d} ms\n", .{ elapsed });
+            try writer_out.print("  Process took: {d} ms\n", .{process});
+        }
+        return;
+    }
+
     // Parse the file
     const block = parser.parse(allocator, file_contents) catch |err| switch (err) {
         else => {
@@ -186,7 +221,7 @@ pub fn main() !void {
         if (input.verbose) {
             try writer_out.print("Dumping file contents...\n", .{});
         }
-        try syntax.highlight(allocator, file_contents);
+        try fmt.highlight(allocator, file_contents);
     } else {
         try writer_out.print("Parsing completed without error", .{});
     }
