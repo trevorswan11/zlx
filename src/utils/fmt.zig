@@ -136,6 +136,17 @@ pub fn canonicalFmtFile(allocator: std.mem.Allocator, source: []const u8, writer
 }
 
 pub fn canonicalFmtDir(allocator: std.mem.Allocator, dir: std.fs.Dir) !void {
-    _ = allocator;
-    _ = dir;
+    var walker = try dir.walk(allocator);
+    while (try walker.next()) |entry| {
+        var file = std.fs.cwd().openFile(entry.path, .{ .mode = .read_write }) catch |err| switch (err) {
+            error.IsDir => continue,
+            else => return err,
+        };
+        defer file.close();
+        const stat = try file.stat();
+
+        const contents = try file.readToEndAlloc(allocator, stat.size);
+        defer allocator.free(contents);
+        try canonicalFmtFile(allocator, contents, file.writer().any());
+    }
 }
