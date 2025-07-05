@@ -7,14 +7,14 @@ pub const ARCHIVE_HEADER: []const u8 = "ZAX";
 
 pub fn compress(
     file: *std.fs.File,
-    writer_out: std.io.AnyWriter,
+    writer_out: anytype,
     writer_err: std.io.AnyWriter,
 ) anyerror!void {
     var buf_out = std.io.bufferedWriter(writer_out);
     const buffer_writer = buf_out.writer();
     try buffer_writer.writeAll(COMPRESSION_HEADER);
 
-    std.compress.flate.compress(file.reader(), buffer_writer, .{}) catch |err| {
+    std.compress.zlib.compress(file.reader(), buffer_writer, .{}) catch |err| {
         try writer_err.print("Fatal error encountered while compressing: {!}\n", .{err});
         return err;
     };
@@ -29,8 +29,10 @@ pub fn compressArchive(
 ) !void {
     var walker = try base_dir.walk(allocator);
     defer walker.deinit();
+    var buf_out = std.io.bufferedWriter(writer_out);
+    const buffer_writer = buf_out.writer();
 
-    try writer_out.writeAll(ARCHIVE_HEADER);
+    try buffer_writer.writeAll(ARCHIVE_HEADER);
     while (try walker.next()) |entry| {
         if (entry.kind != .file) continue;
         var compression_arena = std.heap.ArenaAllocator.init(allocator);
@@ -43,24 +45,25 @@ pub fn compressArchive(
         const stat = try file.stat();
         const uncompressed_size = stat.size;
 
-        try writer_out.writeInt(u16, @intCast(entry.path.len), .big);
-        try writer_out.writeAll(entry.path);
-        try writer_out.writeInt(u64, uncompressed_size, .big);
+        try buffer_writer.writeInt(u16, @intCast(entry.path.len), .big);
+        try buffer_writer.writeAll(entry.path);
+        try buffer_writer.writeInt(u64, uncompressed_size, .big);
 
         var buffer = std.ArrayList(u8).init(compression_allocator);
         defer buffer.deinit();
 
-        try compress(&file, buffer.writer().any(), writer_err);
-        try writer_out.writeInt(u64, buffer.items.len, .big);
-        try writer_out.writeAll(buffer.items);
+        try compress(&file, buffer.writer(), writer_err);
+        try buffer_writer.writeInt(u64, buffer.items.len, .big);
+        try buffer_writer.writeAll(buffer.items);
     }
+    try buf_out.flush();
 }
 
 // === DECOMPRESSION ===
 
 pub fn decompress(
-    reader: std.io.AnyReader,
-    writer_out: std.io.AnyWriter,
+    reader: anytype,
+    writer_out: anytype,
     writer_err: std.io.AnyWriter,
 ) anyerror!void {
     var magic: [3]u8 = undefined;
@@ -70,10 +73,14 @@ pub fn decompress(
         return error.InvalidFileFormat;
     }
 
-    std.compress.flate.decompress(reader, writer_out) catch |err| {
+    var buf_out = std.io.bufferedWriter(writer_out);
+    const buffer_writer = buf_out.writer();
+
+    std.compress.zlib.decompress(reader, buffer_writer) catch |err| {
         try writer_err.print("Fatal error encountered while decompressing: {!}\n", .{err});
         return err;
     };
+    try buf_out.flush();
 }
 
 pub fn decompressArchive(
@@ -111,7 +118,7 @@ pub fn decompressArchive(
         var file = try out_dir.createFile(path_buf, .{ .truncate = true });
         defer file.close();
 
-        try decompress(limited.reader().any(), file.writer().any(), writer_err);
+        try decompress(limited.reader(), file.writer(), writer_err);
     }
 }
 

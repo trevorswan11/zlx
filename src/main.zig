@@ -145,7 +145,7 @@ pub fn main() !void {
     // Formatting
     if (input.format) {
         const stat = try std.fs.cwd().statFile(input.path);
-        const fmt_start = std.time.nanoTimestamp(); 
+        const fmt_start = std.time.nanoTimestamp();
         switch (stat.kind) {
             .file => {
                 var file = try std.fs.cwd().openFile(input.path, .{ .mode = .read_write });
@@ -163,7 +163,7 @@ pub fn main() !void {
                 try writer_err.print("Cannot format input file/directory {s}\n", .{input.path});
             },
         }
-        const fmt_end = std.time.nanoTimestamp(); 
+        const fmt_end = std.time.nanoTimestamp();
 
         if (input.time) {
             const arguments = @as(f128, @floatFromInt(args - start)) / 1_000_000.0;
@@ -172,7 +172,7 @@ pub fn main() !void {
 
             try writer_out.print("Timing:\n", .{});
             try writer_out.print("  Args Parsing took: {d} ms\n", .{arguments});
-            try writer_out.print("  Formatting took: {d} ms\n", .{ elapsed });
+            try writer_out.print("  Formatting took: {d} ms\n", .{elapsed});
             try writer_out.print("  Process took: {d} ms\n", .{process});
         }
         return;
