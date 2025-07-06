@@ -88,7 +88,7 @@ pub const TokenKind = enum(u32) {
     ARROW,
 };
 
-var reserved_identifiers: ?*std.StringHashMap(TokenKind) = null;
+pub var reserved_identifiers: ?*std.StringHashMap(TokenKind) = null;
 
 // Token
 pub const Token = struct {

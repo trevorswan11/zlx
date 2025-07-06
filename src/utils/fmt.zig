@@ -131,8 +131,7 @@ pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
 
 pub fn canonicalFmtFile(allocator: std.mem.Allocator, source: []const u8, writer_out: std.io.AnyWriter) !void {
     const parsed = try parse(allocator, source);
-    _ = parsed;
-    _ = writer_out;
+    try parsed.fmtTo(writer_out, 0);
 }
 
 pub fn canonicalFmtDir(allocator: std.mem.Allocator, dir: std.fs.Dir) !void {

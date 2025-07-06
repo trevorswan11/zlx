@@ -144,6 +144,11 @@ pub fn main() !void {
 
     // Formatting
     if (input.format) {
+        if (std.mem.eql(u8, input.path, "")) {
+            try writer_err.print("must specify file or directory to format\n", .{});
+            return error.VoidFilepath;
+        }
+        
         const stat = try std.fs.cwd().statFile(input.path);
         const fmt_start = std.time.nanoTimestamp();
         switch (stat.kind) {

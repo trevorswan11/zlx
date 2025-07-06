@@ -1,5 +1,7 @@
 const std = @import("std");
+
 const token = @import("../lexer/token.zig");
+const driver = @import("../utils/driver.zig");
 
 // === Shared Types ===
 
@@ -285,7 +287,7 @@ pub const Expr = union(enum) {
             },
             .boolean => |b| {
                 try canonicalIndent(writer, indent_level);
-                try writer.print("{any}", .{b});
+                try writer.print("{s}", .{if (b) "true" else "false"});
             },
             .symbol => |s| {
                 try canonicalIndent(writer, indent_level);
@@ -345,30 +347,79 @@ pub const Expr = union(enum) {
             },
             .function_expr => |f| {
                 try canonicalIndent(writer, indent_level);
-                _ = f;
+                try writer.print("fn(", .{});
+                for (f.parameters.items, 0..) |param, i| {
+                    try param.fmtTo(writer, 0);
+                    if (i != f.parameters.items.len) {
+                        try writer.print(", ", .{});
+                    }
+                }
+                try writer.print(")", .{});
+                try f.return_type.fmtTo(writer, 0);
+                try writer.print("{{\n", .{});
+                for (f.body.items) |stmt| {
+                    try stmt.fmtTo(writer, indent_level + 1);
+                }
+                try writer.print("\n}}", .{});
             },
             .array_literal => |a| {
                 try canonicalIndent(writer, indent_level);
-                _ = a;
+                try writer.print("[", .{});
+                for (a.contents.items, 0..) |val, i| {
+                    try val.fmtTo(writer, 0);
+                    if (i != a.contents.items.len) {
+                        try writer.print(", ", .{});
+                    }
+                }
+                try writer.print("]", .{});
             },
             .new_expr => |n| {
                 try canonicalIndent(writer, indent_level);
-                _ = n;
+                try writer.print("new ", .{});
+                try n.instantiation.method.fmtTo(writer, 0);
+                try writer.print("(", .{});
+                for (n.instantiation.arguments.items, 0..) |arg, i| {
+                    try arg.fmtTo(writer, 0);
+                    if (i != n.instantiation.arguments.items.len) {
+                        try writer.print(", ", .{});
+                    }
+                }
+                try writer.print(")", .{});
             },
             .object => |obj| {
                 try canonicalIndent(writer, indent_level);
-                _ = obj;
+                try writer.print("{{\n", .{});
+                for (obj.entries.items) |entry| {
+                    try canonicalIndent(writer, indent_level + 1);
+                    try writer.print("{s}: ", .{entry.key});
+                    try entry.value.fmtTo(writer, 0);
+                    try writer.print(",\n", .{});
+                }
+                try writer.print("}}", .{});
             },
             .match_expr => |m| {
                 try canonicalIndent(writer, indent_level);
-                _ = m;
+                try writer.print("match ", .{});
+                try writer.print("{{\n", .{});
+                try m.expression.fmtTo(writer, 0);
+                for (m.cases.items) |case| {
+                    try case.pattern.fmtTo(writer, indent_level + 1);
+                    try writer.print(" => ", .{});
+                    try writer.print("{{\n", .{});
+                    try case.body.fmtTo(writer, indent_level + 2);
+                    try writer.print("}},\n", .{});
+                }
+                try writer.print("}}", .{});
             },
             .compound_assignment => |c| {
                 try canonicalIndent(writer, indent_level);
-                _ = c;
+                try c.assignee.fmtTo(writer, 0);
+                try writer.print(" {s} ", .{c.operator.value});
+                try c.value.fmtTo(writer, 0);
             },
             .nil => {
                 try canonicalIndent(writer, indent_level);
+                try writer.print("nil", .{});
             },
         }
     }
@@ -614,57 +665,146 @@ pub const Stmt = union(enum) {
         switch (self.*) {
             .block => |b| {
                 try canonicalIndent(writer, indent_level);
-                _ = b;
+                for (b.body.items) |stmt| {
+                    try stmt.fmtTo(writer, 0);
+                    try writer.print("\n", .{});
+                }
             },
             .var_decl => |v| {
                 try canonicalIndent(writer, indent_level);
-                _ = v;
+                try writer.print("{s} {s}", .{if (v.constant) "const" else "let", v.identifier});
+                if (v.explicit_type) |et| {
+                    try et.fmtTo(writer, 0);
+                }
+
+                if (v.assigned_value) |av| {
+                    try writer.print(" = ", .{});
+                    try av.fmtTo(writer, 0);
+                }
+                try writer.print(";", .{});
             },
             .expression => |e| {
                 try canonicalIndent(writer, indent_level);
-                _ = e;
+                try e.expression.fmtTo(writer, 0);
             },
             .function_decl => |f| {
                 try canonicalIndent(writer, indent_level);
-                _ = f;
+                try writer.print("fn {s}(", .{f.name});
+                for (f.parameters.items, 0..) |param, i| {
+                    try param.fmtTo(writer, 0);
+                    if (i != f.parameters.items.len) {
+                        try writer.print(", ", .{});
+                    }
+                }
+                try writer.print(")", .{});
+                try f.return_type.fmtTo(writer, 0);
+                try writer.print("{{\n", .{});
+                for (f.body.items) |stmt| {
+                    try stmt.fmtTo(writer, indent_level + 1);
+                }
+                try writer.print("\n}}", .{});
             },
             .if_stmt => |i| {
                 try canonicalIndent(writer, indent_level);
-                _ = i;
+                try writer.print("if ", .{});
+                try i.condition.fmtTo(writer, 0);
+                try writer.print("{{\n", .{});
+                try i.consequent.fmtTo(writer, indent_level + 1);
+                try writer.print("\n}}", .{});
+                if (i.alternate) |alt| {
+                    try writer.print("else ", .{});
+                    try alt.fmtTo(writer, 0);
+                }
             },
             .import_stmt => |i| {
                 try canonicalIndent(writer, indent_level);
-                _ = i;
+                const reserved_map = token.reserved_identifiers;
+                var r: *std.StringHashMap(token.TokenKind) = undefined;
+                if (reserved_map) |res| {
+                    r = res;
+                } else {
+                    try driver.getWriterErr().print("Reserved identifier map uninitialized\n", .{});
+                    return error.MissingReservedMap;
+                }
+
+                if (r.contains(i.from)) {
+                    try writer.print("import {s};", .{i.name});
+                } else {
+                    try writer.print("import {s} from {s};", .{i.name, i.from});
+                }
             },
             .foreach_stmt => |f| {
                 try canonicalIndent(writer, indent_level);
-                _ = f;
+                try writer.print("for {s}", .{f.value});
+                if (f.index_name) |idx| {
+                    if (f.index) {
+                        try writer.print(", {s}", .{idx});
+                    }
+                }
+                try writer.print(" in ", .{});
+                try f.iterable.fmtTo(writer, 0);
+                try writer.print("{{\n", .{});
+                for (f.body.items) |stmt| {
+                    try stmt.fmtTo(writer, indent_level + 1);
+                }
+                try writer.print("\n}}", .{});
             },
             .while_stmt => |w| {
                 try canonicalIndent(writer, indent_level);
-                _ = w;
+                try writer.print("while ", .{});
+                try writer.print("{{\n", .{});
+                for (w.body.items) |stmt| {
+                    try stmt.fmtTo(writer, indent_level + 1);
+                }
+                try writer.print("\n}}", .{});
             },
             .struct_decl => |c| {
                 try canonicalIndent(writer, indent_level);
-                _ = c;
+
+                try writer.print("struct {s} {{\n", .{c.name});
+                for (c.body.items) |stmt| {
+                    try stmt.fmtTo(writer, indent_level + 1);
+                }
+                try writer.print("\n}}", .{});
             },
             .break_stmt => {
                 try canonicalIndent(writer, indent_level);
+                try writer.print("break;", .{});
             },
             .continue_stmt => {
                 try canonicalIndent(writer, indent_level);
+                try writer.print("continue;", .{});
             },
             .return_stmt => |r| {
                 try canonicalIndent(writer, indent_level);
-                _ = r;
+                if (r.value) |expr| {
+                    try writer.print("return ", .{});
+                    try expr.fmtTo(writer, 0);
+                    try writer.print(";", .{});
+                }
+                try writer.print("return;", .{});
             },
             .match_stmt => |m| {
                 try canonicalIndent(writer, indent_level);
-                _ = m;
+                try writer.print("match ", .{});
+                try writer.print("{{\n", .{});
+                try m.expression.fmtTo(writer, 0);
+                for (m.cases.items) |case| {
+                    try case.pattern.fmtTo(writer, indent_level + 1);
+                    try writer.print(" => ", .{});
+                    try writer.print("{{\n", .{});
+                    try case.body.fmtTo(writer, indent_level + 2);
+                    try writer.print("}},\n", .{});
+                }
+                try writer.print("}}", .{});
             },
             .enum_decl => |e| {
                 try canonicalIndent(writer, indent_level);
-                _ = e;
+                try writer.print("enum {s} {{\n", .{e.name});
+                for (e.variants) |variant| {
+                    try writer.print("{s},\n", .{variant});
+                }
+                try writer.print("}}", .{});
             },
         }
     }

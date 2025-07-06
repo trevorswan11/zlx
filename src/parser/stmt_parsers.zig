@@ -101,13 +101,11 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
         _ = try p.expect(.ASSIGNMENT);
         assignment_value = try expr.parseExpr(p, binding.ASSIGNMENT);
     } else if (explicit_type == null) {
-        try writer_err.print("Missing explicit type for variable declaration at token {d}/{d} @ Line {d}\n", .{
-            p.pos,
-            p.tokens.items.len,
-            p.tokens.items[p.pos].line,
-        });
-        try p.currentToken().debugRuntime();
-        return error.ExplicitVarDeclParse;
+        explicit_type = .{
+            .symbol = .{
+                .value_type = "any",
+            }
+        };
     }
 
     if (!p.repl) {
