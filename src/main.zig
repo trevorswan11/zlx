@@ -148,7 +148,7 @@ pub fn main() !void {
             try writer_err.print("must specify file or directory to format\n", .{});
             return error.VoidFilepath;
         }
-        
+
         const stat = try std.fs.cwd().statFile(input.path);
         const fmt_start = std.time.nanoTimestamp();
         switch (stat.kind) {
