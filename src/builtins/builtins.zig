@@ -49,68 +49,52 @@ const BuiltinFn = struct {
     handler: BuiltinFnHandler,
 };
 
-pub const builtin_fns = [_]BuiltinFn{
-    .{
-        .name = "print",
-        .handler = fns.print,
-    },
-    .{
-        .name = "println",
-        .handler = fns.println,
-    },
-    .{
-        .name = "len",
-        .handler = fns.len,
-    },
-    .{
-        .name = "ref",
-        .handler = fns.ref,
-    },
-    .{
-        .name = "deref",
-        .handler = fns.deref,
-    },
-    .{
-        .name = "detype",
-        .handler = fns.detype,
-    },
-    .{
-        .name = "raw",
-        .handler = fns.raw,
-    },
-    .{
-        .name = "range",
-        .handler = fns.range,
-    },
-    .{
-        .name = "to_string",
-        .handler = fns.to_string,
-    },
-    .{
-        .name = "to_number",
-        .handler = fns.to_number,
-    },
-    .{
-        .name = "to_bool",
-        .handler = fns.to_bool,
-    },
-    .{
-        .name = "to_ascii",
-        .handler = fns.to_ascii,
-    },
-    .{
-        .name = "from_ascii",
-        .handler = fns.from_ascii,
-    },
-    .{
-        .name = "format",
-        .handler = fns.format,
-    },
-    .{
-        .name = "zip",
-        .handler = fns.zip,
-    }
-};
+pub const builtin_fns = [_]BuiltinFn{ .{
+    .name = "print",
+    .handler = fns.print,
+}, .{
+    .name = "println",
+    .handler = fns.println,
+}, .{
+    .name = "len",
+    .handler = fns.len,
+}, .{
+    .name = "ref",
+    .handler = fns.ref,
+}, .{
+    .name = "deref",
+    .handler = fns.deref,
+}, .{
+    .name = "detype",
+    .handler = fns.detype,
+}, .{
+    .name = "raw",
+    .handler = fns.raw,
+}, .{
+    .name = "range",
+    .handler = fns.range,
+}, .{
+    .name = "to_string",
+    .handler = fns.to_string,
+}, .{
+    .name = "to_number",
+    .handler = fns.to_number,
+}, .{
+    .name = "to_bool",
+    .handler = fns.to_bool,
+}, .{
+    .name = "to_ascii",
+    .handler = fns.to_ascii,
+}, .{
+    .name = "from_ascii",
+    .handler = fns.from_ascii,
+}, .{
+    .name = "format",
+    .handler = fns.format,
+}, .{
+    .name = "zip",
+    .handler = fns.zip,
+} };
 
 // === Builtin Modules and Structs ===
 

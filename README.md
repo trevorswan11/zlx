@@ -26,11 +26,10 @@ While I originally intended to just build the parser, I ended up going much deep
     - `--release=fast`: Prioritize performance without safety checks
     - `--release=small`: Prioritize small binary size over performance and safety
     - `--release=safe`: Balance between fast and small release modes. This is the default when passing `--release` on its own
-- You can use the example language "tests" with `zig build run -- <run|dump|ast|fmt> examples/<filename> <time?> <-v?>`
+- You can use the example language "tests" with `zig build run -- <run|dump|ast> examples/<filename> <time?> <-v?>`
     - `run` interprets the program, `dump` prints the syntax-highlighted file, and `ast` simply parses the program
-    - `fmt` walks the file's AST or walks a directories ZLX files and rewrites to the canonical form 
     - `time` times the parser, interpreter, and program - this is an optional parameter
-    - `-v` prints verbose output, showing an indented and formatted abstract syntax tree - also optional. This does not work with the format (`fmt`) option
+    - `-v` prints verbose output, showing an indented and formatted abstract syntax tree - also optional.
 - To interpret your own input file, pass the relative path as `zig build run -- run <path>`
 - If you're pulling the executable from the `zig-out` directory, you can use the same arguments as explained above
     - The same applies for downloads from the `releases` tags

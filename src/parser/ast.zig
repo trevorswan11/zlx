@@ -333,7 +333,7 @@ pub const Expr = union(enum) {
                 try writer.print("(", .{});
                 for (c.arguments.items, 0..) |arg, i| {
                     try arg.fmtTo(writer, 0);
-                    if (i != c.arguments.items.len) {
+                    if (i != c.arguments.items.len - 1) {
                         try writer.print(", ", .{});
                     }
                 }
@@ -350,7 +350,7 @@ pub const Expr = union(enum) {
                 try writer.print("fn(", .{});
                 for (f.parameters.items, 0..) |param, i| {
                     try param.fmtTo(writer, 0);
-                    if (i != f.parameters.items.len) {
+                    if (i != f.parameters.items.len - 1) {
                         try writer.print(", ", .{});
                     }
                 }
@@ -367,7 +367,7 @@ pub const Expr = union(enum) {
                 try writer.print("[", .{});
                 for (a.contents.items, 0..) |val, i| {
                     try val.fmtTo(writer, 0);
-                    if (i != a.contents.items.len) {
+                    if (i != a.contents.items.len - 1) {
                         try writer.print(", ", .{});
                     }
                 }
@@ -380,7 +380,7 @@ pub const Expr = union(enum) {
                 try writer.print("(", .{});
                 for (n.instantiation.arguments.items, 0..) |arg, i| {
                     try arg.fmtTo(writer, 0);
-                    if (i != n.instantiation.arguments.items.len) {
+                    if (i != n.instantiation.arguments.items.len - 1) {
                         try writer.print(", ", .{});
                     }
                 }
@@ -667,7 +667,6 @@ pub const Stmt = union(enum) {
                 try canonicalIndent(writer, indent_level);
                 for (b.body.items) |stmt| {
                     try stmt.fmtTo(writer, 0);
-                    try writer.print("\n", .{});
                 }
             },
             .var_decl => |v| {
@@ -692,7 +691,7 @@ pub const Stmt = union(enum) {
                 try writer.print("fn {s}(", .{f.name});
                 for (f.parameters.items, 0..) |param, i| {
                     try param.fmtTo(writer, 0);
-                    if (i != f.parameters.items.len) {
+                    if (i != f.parameters.items.len - 1) {
                         try writer.print(", ", .{});
                     }
                 }
@@ -807,6 +806,7 @@ pub const Stmt = union(enum) {
                 try writer.print("}}", .{});
             },
         }
+        try writer.print("\n", .{});
     }
 };
 

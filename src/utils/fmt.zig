@@ -128,24 +128,3 @@ pub fn highlight(allocator: std.mem.Allocator, source: []const u8) !void {
         try writer_out.writeAll(source[last..]);
     }
 }
-
-pub fn canonicalFmtFile(allocator: std.mem.Allocator, source: []const u8, writer_out: std.io.AnyWriter) !void {
-    const parsed = try parse(allocator, source);
-    try parsed.fmtTo(writer_out, 0);
-}
-
-pub fn canonicalFmtDir(allocator: std.mem.Allocator, dir: std.fs.Dir) !void {
-    var walker = try dir.walk(allocator);
-    while (try walker.next()) |entry| {
-        var file = std.fs.cwd().openFile(entry.path, .{ .mode = .read_write }) catch |err| switch (err) {
-            error.IsDir => continue,
-            else => return err,
-        };
-        defer file.close();
-        const stat = try file.stat();
-
-        const contents = try file.readToEndAlloc(allocator, stat.size);
-        defer allocator.free(contents);
-        try canonicalFmtFile(allocator, contents, file.writer().any());
-    }
-}

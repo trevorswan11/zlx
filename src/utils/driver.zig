@@ -42,7 +42,6 @@ const Args = struct {
     file_out: ?[]const u8 = null,
     dir_out: ?[]const u8 = null,
     force_dir_out: bool = false,
-    format: bool = false,
     tool_type: []const u8 = "",
 };
 
@@ -70,7 +69,6 @@ pub fn getOrDispatchArgs(allocator: std.mem.Allocator) !Args {
     var file_out: ?[]const u8 = null;
     var dir_out: ?[]const u8 = null;
     var force_dir_out: bool = false;
-    var format: bool = false;
     var tool_type: []const u8 = undefined;
 
     // The first arg can specify either run or ast, defaulting to run
@@ -99,7 +97,6 @@ pub fn getOrDispatchArgs(allocator: std.mem.Allocator) !Args {
             "-daf",
             "diff",
             "cat",
-            "fmt",
         })) {
             break :optional_arg;
         }
@@ -113,8 +110,6 @@ pub fn getOrDispatchArgs(allocator: std.mem.Allocator) !Args {
                 run = true;
             } else if (std.mem.eql(u8, r, "dump")) {
                 dump = true;
-            } else if (std.mem.eql(u8, r, "fmt")) {
-                format = true;
             } else if (std.mem.eql(u8, r, "compress") or std.mem.eql(u8, r, "-c")) {
                 compress = true;
                 tool_type = "Compression";
@@ -296,7 +291,6 @@ pub fn getOrDispatchArgs(allocator: std.mem.Allocator) !Args {
             .tool_type = tool_type,
             .file_out = file_out,
             .force_dir_out = force_dir_out,
-            .format = format,
             .dir_out = dir_out,
         };
     } else return error.MalformedArgs;
