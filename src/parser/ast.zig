@@ -672,7 +672,7 @@ pub const Stmt = union(enum) {
             },
             .var_decl => |v| {
                 try canonicalIndent(writer, indent_level);
-                try writer.print("{s} {s}", .{if (v.constant) "const" else "let", v.identifier});
+                try writer.print("{s} {s}", .{ if (v.constant) "const" else "let", v.identifier });
                 if (v.explicit_type) |et| {
                     try et.fmtTo(writer, 0);
                 }
@@ -730,7 +730,7 @@ pub const Stmt = union(enum) {
                 if (r.contains(i.from)) {
                     try writer.print("import {s};", .{i.name});
                 } else {
-                    try writer.print("import {s} from {s};", .{i.name, i.from});
+                    try writer.print("import {s} from {s};", .{ i.name, i.from });
                 }
             },
             .foreach_stmt => |f| {

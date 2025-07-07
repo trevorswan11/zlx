@@ -1123,8 +1123,10 @@ println(y);                     // 4
                 strings. Each line becomes a row, and each comma-separated entry becomes a cell.</p>
 
             <h3 id="csv-write">write(path, csv_string)</h3>
-            <p>Writes the provided <code>csv_string</code> to a file at the specified <code>path</code>. If the file
-                exists, it is overwritten. Automatically creates parent directories if needed.</p>
+            <p>Writes the provided <code>csv_string</code> to a file at the specified <code>path</code>. The string
+                should be formatted with stringify before passing to the file, or should be formatted in a csv style
+                beforehand. In essence, this is the same as <code>fs.write</code>. If the file exists, it is
+                overwritten. Automatically creates parent directories if needed.</p>
 
             <h3 id="csv-append">append(path, csv_string)</h3>
             <p>Appends the provided <code>csv_string</code> to the file at <code>path</code>. Does not overwrite the

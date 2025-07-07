@@ -89,3 +89,5 @@ All notably significant or outstanding changes to the zlx language will be docum
     - The default format is 4 space indents, spaces between most operands, and the non-c/c++ style curly brace placements
 - Updated README to reflect recent changes in project tooling
 - Variables can now be declared uninitialized without a type specifier
+- Fixed an issue where the system input would read a return cartridge, preventing string comparison and operations
+- Fixed an issue where CSV.write would attempt to handle too much and would violate its own internal assumptions

@@ -104,7 +104,7 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
         explicit_type = .{
             .symbol = .{
                 .value_type = "any",
-            }
+            },
         };
     }
 

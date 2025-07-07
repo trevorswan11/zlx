@@ -39,7 +39,7 @@ fn readHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 fn writeHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const parts = try expectStringArgs(args, env, 2, "csv", "write");
     const filepath = parts[0];
-    const contents = try stringifyCSV(env.allocator, .{ .string = parts[1] });
+    const contents = parts[1];
 
     const dir_path = std.fs.path.dirname(filepath) orelse ".";
     try std.fs.cwd().makePath(dir_path);
