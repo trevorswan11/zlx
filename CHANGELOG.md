@@ -84,8 +84,12 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Switched to zig's standard library implementation for compression algorithms
     - While it was cool to have my own implementations, it was very slow for what I want to use this project for :(
 
-## [0.5.1]
+## [0.6.0]
 - ZLX's main tools (run, ast, dump) now also accept fmt as an arg, this will act similar to zig's fmt command
     - The default format is 4 space indents, spaces between most operands, and the non-c/c++ style curly brace placements
 - Updated README to reflect recent changes in project tooling
 - Variables can now be declared uninitialized without a type specifier
+- Fixed an issue where the system input would read a return cartridge, preventing string comparison and operations
+- Fixed an issue where CSV.write would attempt to handle too much and would violate its own internal assumptions
+- Fixed an issue where the format function would fail to include the first format specifier
+- Created `zip` function that takes in multiple arrays and returns a single array with each entry having `[[arr1[i], arr2[i + 1], etc...], ...]`

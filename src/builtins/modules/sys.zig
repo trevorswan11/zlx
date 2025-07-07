@@ -196,16 +196,17 @@ fn inputHandler(args: []const *ast.Expr, env: *Environment) !Value {
 
     try writer_out.print("{s}", .{prompt_val.string});
 
-    var line_buf = std.ArrayList(u8).init(env.allocator);
-    defer line_buf.deinit();
-
     const stdin = std.io.getStdIn().reader();
-
     const input_line = try stdin.readUntilDelimiterOrEofAlloc(env.allocator, '\n', 1024);
-    if (input_line == null) return .nil;
-    return .{
-        .string = input_line.?,
-    };
+
+    if (input_line) |il| {
+        const trimmed = std.mem.trimRight(u8, il, "\r\n");
+        return .{
+            .string = trimmed,
+        };
+    } else {
+        return .nil;
+    }
 }
 
 // === TESTING ===

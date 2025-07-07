@@ -101,9 +101,11 @@ pub fn parseVarDeclStmt(p: *parser.Parser) !ast.Stmt {
         _ = try p.expect(.ASSIGNMENT);
         assignment_value = try expr.parseExpr(p, binding.ASSIGNMENT);
     } else if (explicit_type == null) {
-        explicit_type = .{ .symbol = .{
-            .value_type = "any",
-        } };
+        explicit_type = .{
+            .symbol = .{
+                .value_type = "any",
+            },
+        };
     }
 
     if (!p.repl) {
