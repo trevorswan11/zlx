@@ -337,6 +337,7 @@
                         <li><a href="#to_ascii">to_ascii</a></li>
                         <li><a href="#from_ascii">from_ascii</a></li>
                         <li><a href="#format">format</a></li>
+                        <li><a href="#zip">zip</a></li>
                     </ul>
                 </li>
 
@@ -1309,6 +1310,13 @@ println(y);                     // 4
             <p>The <code>format</code> function takes in a string template followed by arguments to bake into the
                 template. The function will not crash if insufficient arguments are given. Arguments in the string are
                 indicated to be templates by using "{}". An example of this is <code>format("x = {}", 2);</code></p>
+
+            <h3 id="zip">zip</h3>
+            <p>The <code>zip</code> function takes multiple arrays and combines them element-wise into a single array of
+                tuples. Each tuple contains the corresponding elements from the input arrays at the same index. The
+                length of the result is equal to the shortest input array. For example,
+                <code>zip([1, 2], ["a", "b", "c"])</code> produces <code>[[1, "a"], [2, "b"]]</code>.</p>
+
         </section>
 
         <section id="dsa">

@@ -106,6 +106,10 @@ pub const builtin_fns = [_]BuiltinFn{
         .name = "format",
         .handler = fns.format,
     },
+    .{
+        .name = "zip",
+        .handler = fns.zip,
+    }
 };
 
 // === Builtin Modules and Structs ===

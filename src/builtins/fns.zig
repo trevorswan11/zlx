@@ -352,13 +352,13 @@ pub fn format(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len < 1) {
-        try writer_err.print("string.fmt(format, ...) expects at least 1 argument\n", .{});
+        try writer_err.print("format(format, ...) expects at least 1 argument\n", .{});
         return error.ArgumentCountMismatch;
     }
 
     const fmt_val = try eval.evalExpr(args[0], env);
     if (fmt_val != .string) {
-        try writer_err.print("string.fmt expects the first argument to be a string format\n", .{});
+        try writer_err.print("format(format, ...) expects the first argument to be a string format\n", .{});
         return error.TypeMismatch;
     }
 
@@ -377,29 +377,62 @@ pub fn format(args: []const *ast.Expr, env: *Environment) !Value {
     defer output.deinit();
     const writer = output.writer();
 
-    // Handle single format specifier
-    if (fmt.len == 2 and fmt[0] == '{' and fmt[1] == '}') {
-        try writer.print("{s}", .{try toPrintableString(values.items[0], env)});
-        return .{
-            .string = try output.toOwnedSlice(),
-        };
-    }
+    var i: usize = 0; // format argument index
+    var pos: usize = 0;
 
-    var it = std.mem.tokenizeAny(u8, fmt, "{}");
-    var i: usize = 0;
+    while (pos < fmt.len) {
+        if (fmt[pos] == '{' and pos + 1 < fmt.len and fmt[pos + 1] == '}') {
+            // Insert formatted argument
+            if (i >= values.items.len) {
+                try writer_err.print("Not enough arguments for format string\n", .{});
+                return error.ArgumentCountMismatch;
+            }
 
-    while (it.next()) |part| {
-        try writer.print("{s}", .{part});
-
-        if (i < values.items.len) {
-            const v = values.items[i];
-            try writer.print("{s}", .{try toPrintableString(v, env)});
+            try writer.print("{s}", .{try toPrintableString(values.items[i], env)});
             i += 1;
+            pos += 2;
+        } else {
+            try writer.writeByte(fmt[pos]);
+            pos += 1;
         }
     }
 
     return .{
         .string = try output.toOwnedSlice(),
+    };
+}
+
+pub fn zip(args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len < 1) {
+        try writer_err.print("zip(arrays...) expects at least 1 argument\n", .{});
+        return error.ArgumentCountMismatch;
+    }
+
+    // Collect the arrays and determine the minimum length
+    const arrays = try builtins.expectArrayArgs(args, env, args.len, "", "zip");
+    var min_length = arrays[0].items.len;
+    for (1..arrays.len) |i| {
+        if (arrays[i].items.len < min_length) {
+            min_length = arrays[i].items.len;
+        }
+    }
+
+    // Zip the args into a single array
+    var result = std.ArrayList(Value).init(env.allocator);
+    for (0..min_length) |i| {
+        var line = std.ArrayList(Value).init(env.allocator);
+        for (0..arrays.len) |j| {
+            try line.append(arrays[j].items[i]);
+        }
+        try result.append(.{
+            .array = line,
+        });
+    }
+
+    return .{
+        .array = result,
     };
 }
 
