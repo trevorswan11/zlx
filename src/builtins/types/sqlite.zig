@@ -53,6 +53,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     STATEMENT_METHODS = std.StringHashMap(StdMethod).init(allocator);
 
     try STATEMENT_METHODS.put("bind", stmtBind);
+    try STATEMENT_METHODS.put("bind_all", stmtBindAll);
     try STATEMENT_METHODS.put("step", stmtStep);
     try STATEMENT_METHODS.put("finalize", stmtFinalize);
 
@@ -381,6 +382,47 @@ fn stmtBind(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     return .nil;
 }
 
+fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != 1) {
+        try writer_err.print("statement.bindAll(vals) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const val = try eval.evalExpr(args[0], env);
+    const inst = try getStmtInstance(this);
+
+    if (val != .array) {
+        try writer_err.print("bindAll() expects an array argument\n", .{});
+        return error.TypeMismatch;
+    }
+
+    const vals = val.array.items;
+    var i: usize = 0;
+    while (i < vals.len) : (i += 1) {
+        const index: c_int = @intCast(i + 1);
+        const item = vals[i];
+
+        const rc = switch (item) {
+            .number => c.sqlite3_bind_double(inst.stmt, index, item.number),
+            .string => c.sqlite3_bind_text(inst.stmt, index, item.string.ptr, @intCast(item.string.len), c.SQLITE_TRANSIENT),
+            .nil => c.sqlite3_bind_null(inst.stmt, index),
+            else => {
+                try writer_err.print("Unsupported bindAll value at index {d}\n", .{i});
+                return error.UnsupportedBindValue;
+            },
+        };
+
+        if (rc != c.SQLITE_OK) {
+            try writer_err.print("sqlite.bindAll() failed at index {d}\n", .{i});
+            return error.SqliteBindFailed;
+        }
+    }
+
+    return .nil;
+}
+
 fn stmtStep(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getStmtInstance(this);
     const writer_err = driver.getWriterErr();
@@ -450,8 +492,7 @@ fn stmtFinalize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
 const testing = @import("../../testing/testing.zig");
 
-test "sqlite_builtin" {
-    if (true) return;
+test "sqlite_base_builtin" {
     var arena = std.heap.ArenaAllocator.init(testing.allocator());
     const allocator = arena.allocator();
     defer arena.deinit();
@@ -464,26 +505,11 @@ test "sqlite_builtin" {
     const writer = output_buffer.writer().any();
     driver.setWriterOut(writer);
 
-    var tmp_dir = std.testing.tmpDir(.{});
-    defer tmp_dir.cleanup();
-
-    const path: []const u8 = &tmp_dir.sub_path;
-    errdefer {
-        var exists = true;
-        std.fs.cwd().access(path, .{}) catch {
-            exists = false;
-        };
-        if (exists) {
-            std.fs.cwd().deleteTree(path) catch {};
-        }
-    }
-
-    const source = try std.fmt.allocPrint(allocator,
+    const source =
         \\import sqlite;
+        \\import fs;
         \\
-        \\const p = "{s}";
-        \\println(p);
-        \\let db = new sqlite(p + "/test.db");
+        \\let db = new sqlite("test.db");
         \\db.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER, name TEXT)");
         \\db.exec("INSERT INTO users VALUES (1, 'alice')");
         \\db.exec("INSERT INTO users VALUES (2, 'bob')");
@@ -497,18 +523,20 @@ test "sqlite_builtin" {
         \\let tables = db.tables();
         \\db.close();
         \\println(tables);
-    , .{path});
+        \\
+        \\fs.rm("test.db");
+    ;
 
     const block = try testing.parse(allocator, try allocator.dupe(u8, source));
     _ = try interpreter.evalStmt(block, &env);
 
     const expected =
         \\["[obj]: {
-        \\id: 1
-        \\name: alice
+        \\ id: 1
+        \\ name: alice
         \\}", "[obj]: {
-        \\id: 2
-        \\name: bob
+        \\ id: 2
+        \\ name: bob
         \\}"]
         \\["id", "name"]
         \\["users"]
@@ -516,4 +544,52 @@ test "sqlite_builtin" {
     ;
 
     try testing.expectEqualStrings(expected, output_buffer.items);
+}
+
+test "sqlite_stmt_builtin" {
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    driver.setWriterOut(writer);
+
+    const stmt_test =
+        \\import sqlite;
+        \\import fs;
+        \\
+        \\let db = new sqlite("test2.db");
+        \\db.exec("CREATE TABLE IF NOT EXISTS posts (id INTEGER, title TEXT)");
+        \\
+        \\let insert = db.prepare("INSERT INTO posts VALUES (?, ?)");
+        \\insert.bind_all([10, "post1"]);
+        \\insert.step();
+        \\insert.finalize();
+        \\
+        \\let query = db.prepare("SELECT * FROM posts");
+        \\let row = query.step();
+        \\println(row);
+        \\query.finalize();
+        \\
+        \\db.close();
+        \\fs.rm("test2.db");
+    ;
+
+    const stmt_block = try testing.parse(allocator, try allocator.dupe(u8, stmt_test));
+    _ = try interpreter.evalStmt(stmt_block, &env);
+
+    const expected_stmt_output =
+        \\[obj]: {
+        \\ id: 10
+        \\ title: post1
+        \\}
+        \\
+    ;
+
+    try testing.expectEqualStrings(expected_stmt_output, output_buffer.items);
 }
