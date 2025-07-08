@@ -249,7 +249,7 @@ fn sqliteColumns(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
     var columns = std.ArrayList(Value).init(env.allocator);
 
     while (c.sqlite3_step(stmt) == c.SQLITE_ROW) {
-        const text_ptr = c.sqlite3_column_text(stmt, 1); // column name is index 1
+        const text_ptr = c.sqlite3_column_text(stmt, 1);
         const text_len = c.sqlite3_column_bytes(stmt, 1);
         const slice = text_ptr[0..@intCast(text_len)];
         const name = try env.allocator.dupe(u8, slice);
