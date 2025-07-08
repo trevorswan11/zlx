@@ -7,6 +7,6 @@
 [submodule "libs/zig-raylib"]
 	path = libs/zig-raylib
 	url = https://github.com/Not-Nik/raylib-zig
-[submodule "libs/sqlite3"]
-	path = libs/sqlite3
+[submodule "libs/sqlite"]
+	path = libs/sqlite
 	url = https://github.com/trevorswan11/sqlite3
