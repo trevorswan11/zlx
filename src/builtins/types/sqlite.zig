@@ -71,11 +71,6 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 fn sqliteConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    if (args.len != 1) {
-        try writer_err.print("sqlite(filename) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
     const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "ctor"))[0];
     const path = try env.allocator.dupeZ(u8, val);
 
@@ -292,6 +287,9 @@ fn sqliteClose(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
 // sql statement definition and usage
 
+/// MACOS portability fix, pointer type '?*const fn (?*anyopaque) callconv(.c) void' requires aligned address
+const SQLITE_TRANSIENT: ?*const fn (?*anyopaque) callconv(.C) void = @ptrFromInt(@as(u32, @bitCast(@as(i32, -1))));
+
 pub const StatementInstance = struct {
     stmt: ?*c.sqlite3_stmt = null,
     db: ?*c.sqlite3 = null,
@@ -366,7 +364,7 @@ fn stmtBind(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const index: c_int = 1;
     const rc = switch (val) {
         .number => c.sqlite3_bind_double(inst.stmt, index, val.number),
-        .string => c.sqlite3_bind_text(inst.stmt, index, val.string.ptr, @intCast(val.string.len), c.SQLITE_TRANSIENT),
+        .string => c.sqlite3_bind_text(inst.stmt, index, val.string.ptr, @intCast(val.string.len), SQLITE_TRANSIENT),
         .nil => c.sqlite3_bind_null(inst.stmt, index),
         else => {
             try writer_err.print("Unsupported bind value type\n", .{});
@@ -386,7 +384,7 @@ fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
     const writer_err = driver.getWriterErr();
 
     if (args.len != 1) {
-        try writer_err.print("statement.bindAll(vals) expects 1 argument but got {d}\n", .{args.len});
+        try writer_err.print("statement.bind_all(vals) expects 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -394,7 +392,7 @@ fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
     const inst = try getStmtInstance(this);
 
     if (val != .array) {
-        try writer_err.print("bindAll() expects an array argument\n", .{});
+        try writer_err.print("bind_all() expects an array argument\n", .{});
         return error.TypeMismatch;
     }
 
@@ -409,13 +407,13 @@ fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
             .string => c.sqlite3_bind_text(inst.stmt, index, item.string.ptr, @intCast(item.string.len), c.SQLITE_TRANSIENT),
             .nil => c.sqlite3_bind_null(inst.stmt, index),
             else => {
-                try writer_err.print("Unsupported bindAll value at index {d}\n", .{i});
+                try writer_err.print("Unsupported bind_all value at index {d}\n", .{i});
                 return error.UnsupportedBindValue;
             },
         };
 
         if (rc != c.SQLITE_OK) {
-            try writer_err.print("sqlite.bindAll() failed at index {d}\n", .{i});
+            try writer_err.print("sqlite.bind_all() failed at index {d}\n", .{i});
             return error.SqliteBindFailed;
         }
     }
