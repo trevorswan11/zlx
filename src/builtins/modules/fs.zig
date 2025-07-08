@@ -351,7 +351,7 @@ test "fs_builtin" {
     const block = try testing.parse(allocator, source);
     _ = try eval.evalStmt(block, &env);
 
-    const expected = try std.fmt.allocPrint(allocator,
+    const expected =
         \\true
         \\hello world
         \\true
@@ -362,7 +362,7 @@ test "fs_builtin" {
         \\false
         \\false
         \\
-    , .{});
+    ;
 
     try testing.expectEqualStrings(expected, output_buffer.items);
 }

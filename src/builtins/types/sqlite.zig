@@ -30,23 +30,37 @@ var SQLITE_METHODS: std.StringHashMap(StdMethod) = undefined;
 var SQLITE_TYPE: Value = undefined;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
-    SQLITE_METHODS = std.StringHashMap(StdMethod).init(allocator);
-    
     // SQL-only methods
+    SQLITE_METHODS = std.StringHashMap(StdMethod).init(allocator);
+
     try SQLITE_METHODS.put("exec", sqliteExec);
     try SQLITE_METHODS.put("query", sqliteQuery);
     try SQLITE_METHODS.put("tables", sqliteTables);
     try SQLITE_METHODS.put("columns", sqliteColumns);
     try SQLITE_METHODS.put("close", sqliteClose);
 
-    // SQL-statement methods
-    try SQLITE_METHODS.put("prepare", sqlitePrepare);
-
     SQLITE_TYPE = .{
         .std_struct = .{
             .name = "sqlite",
             .constructor = sqliteConstructor,
             .methods = SQLITE_METHODS,
+        },
+    };
+
+    // SQL-statement methods
+    try SQLITE_METHODS.put("prepare", sqlitePrepare);
+
+    STATEMENT_METHODS = std.StringHashMap(StdMethod).init(allocator);
+
+    try STATEMENT_METHODS.put("bind", stmtBind);
+    try STATEMENT_METHODS.put("step", stmtStep);
+    try STATEMENT_METHODS.put("finalize", stmtFinalize);
+
+    STATEMENT_TYPE = .{
+        .std_struct = .{
+            .name = "statement",
+            .constructor = builtins.nullModuleFn,
+            .methods = STATEMENT_METHODS,
         },
     };
 
@@ -61,8 +75,8 @@ fn sqliteConstructor(args: []const *ast.Expr, env: *Environment) !Value {
         return error.ArgumentCountMismatch;
     }
 
-    const val = try eval.evalExpr(args[0], env);
-    const path = try env.allocator.dupe(u8, val.string);
+    const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "ctor"))[0];
+    const path = try env.allocator.dupeZ(u8, val);
 
     var db: ?*c.sqlite3 = null;
     const rc = c.sqlite3_open(path.ptr, &db);
@@ -147,7 +161,8 @@ fn sqliteQuery(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
         var i: c_int = 0;
         while (i < column_count) : (i += 1) {
             const col_name_ptr = c.sqlite3_column_name(stmt, i);
-            const col_name = std.mem.span(col_name_ptr);
+            const col_slice = std.mem.span(col_name_ptr);
+            const col_name = try env.allocator.dupe(u8, col_slice);
 
             const col_type = c.sqlite3_column_type(stmt, i);
             var nested_val: Value = .nil;
@@ -335,4 +350,170 @@ fn sqlitePrepare(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
             .fields = fields,
         },
     };
+}
+
+fn stmtBind(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    if (args.len != 1) {
+        try writer_err.print("statement.bind(val) expects 1 argument but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const val = try eval.evalExpr(args[0], env);
+    const inst = try getStmtInstance(this);
+
+    const index: c_int = 1;
+    const rc = switch (val) {
+        .number => c.sqlite3_bind_double(inst.stmt, index, val.number),
+        .string => c.sqlite3_bind_text(inst.stmt, index, val.string.ptr, @intCast(val.string.len), c.SQLITE_TRANSIENT),
+        .nil => c.sqlite3_bind_null(inst.stmt, index),
+        else => {
+            try writer_err.print("Unsupported bind value type\n", .{});
+            return error.UnsupportedBindValue;
+        },
+    };
+
+    if (rc != c.SQLITE_OK) {
+        try writer_err.print("sqlite.bind() failed\n", .{});
+        return error.SqliteBindFailed;
+    }
+
+    return .nil;
+}
+
+fn stmtStep(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    const inst = try getStmtInstance(this);
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != 0) {
+        try writer_err.print("statement.step() expects 0 arguments but got {d}\n", .{args.len});
+        return error.ArgumentCountMismatch;
+    }
+
+    const rc = c.sqlite3_step(inst.stmt);
+
+    if (rc == c.SQLITE_ROW) {
+        var row = std.StringHashMap(Value).init(env.allocator);
+        const col_count = c.sqlite3_column_count(inst.stmt);
+        var i: c_int = 0;
+        while (i < col_count) : (i += 1) {
+            const name_slice = std.mem.span(c.sqlite3_column_name(inst.stmt, i));
+            const name = try env.allocator.dupe(u8, name_slice);
+            const col_type = c.sqlite3_column_type(inst.stmt, i);
+
+            const val: Value = switch (col_type) {
+                c.SQLITE_INTEGER => .{
+                    .number = @floatFromInt(c.sqlite3_column_int64(inst.stmt, i)),
+                },
+                c.SQLITE_FLOAT => .{
+                    .number = c.sqlite3_column_double(inst.stmt, i),
+                },
+                c.SQLITE_TEXT => blk: {
+                    const text_ptr = c.sqlite3_column_text(inst.stmt, i);
+                    const text_len = c.sqlite3_column_bytes(inst.stmt, i);
+                    const str = text_ptr[0..@intCast(text_len)];
+                    break :blk .{
+                        .string = try env.allocator.dupe(u8, str),
+                    };
+                },
+                c.SQLITE_NULL => .nil,
+                else => {
+                    try writer_err.print("Unsupported column type\n", .{});
+                    return error.UnsupportedColumnType;
+                },
+            };
+
+            try row.put(name, val);
+        }
+        return .{ .object = row };
+    } else if (rc == c.SQLITE_DONE) {
+        return .nil;
+    } else {
+        try writer_err.print("sqlite.step() failed\n", .{});
+        return error.SqliteStepFailed;
+    }
+}
+
+fn stmtFinalize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+    if (args.len != 0) return error.ArgumentCountMismatch;
+    const inst = try getStmtInstance(this);
+
+    if (inst.stmt) |stmt| {
+        _ = c.sqlite3_finalize(stmt);
+        inst.stmt = null;
+    }
+
+    return .nil;
+}
+
+// === TESTING ===
+
+const testing = @import("../../testing/testing.zig");
+
+test "sqlite_builtin" {
+    if (true) return;
+    var arena = std.heap.ArenaAllocator.init(testing.allocator());
+    const allocator = arena.allocator();
+    defer arena.deinit();
+
+    var env = Environment.init(allocator, null);
+    defer env.deinit();
+
+    var output_buffer = std.ArrayList(u8).init(allocator);
+    defer output_buffer.deinit();
+    const writer = output_buffer.writer().any();
+    driver.setWriterOut(writer);
+
+    var tmp_dir = std.testing.tmpDir(.{});
+    defer tmp_dir.cleanup();
+
+    const path: []const u8 = &tmp_dir.sub_path;
+    errdefer {
+        var exists = true;
+        std.fs.cwd().access(path, .{}) catch {
+            exists = false;
+        };
+        if (exists) {
+            std.fs.cwd().deleteTree(path) catch {};
+        }
+    }
+
+    const source = try std.fmt.allocPrint(allocator,
+        \\import sqlite;
+        \\
+        \\const p = "{s}";
+        \\println(p);
+        \\let db = new sqlite(p + "/test.db");
+        \\db.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER, name TEXT)");
+        \\db.exec("INSERT INTO users VALUES (1, 'alice')");
+        \\db.exec("INSERT INTO users VALUES (2, 'bob')");
+        \\
+        \\let rows = db.query("SELECT * FROM users");
+        \\println(rows);
+        \\
+        \\let names = db.columns("users");
+        \\println(names);
+        \\
+        \\let tables = db.tables();
+        \\db.close();
+        \\println(tables);
+    , .{path});
+
+    const block = try testing.parse(allocator, try allocator.dupe(u8, source));
+    _ = try interpreter.evalStmt(block, &env);
+
+    const expected =
+        \\["[obj]: {
+        \\id: 1
+        \\name: alice
+        \\}", "[obj]: {
+        \\id: 2
+        \\name: bob
+        \\}"]
+        \\["id", "name"]
+        \\["users"]
+        \\
+    ;
+
+    try testing.expectEqualStrings(expected, output_buffer.items);
 }

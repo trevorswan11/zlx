@@ -252,3 +252,9 @@ pub fn getStdStructName(value: *Value) ![]const u8 {
     const result = instance._type.std_struct;
     return result.name;
 }
+
+pub fn nullModuleFn(_: []const *ast.Expr, _: *Environment) !Value {
+    const writer_err = driver.getWriterErr();
+    try writer_err.print("Uninstantiatable Module Fn: Cannot use new on this value\n", .{});
+    return error.UninstantiatableModuleFn;
+}

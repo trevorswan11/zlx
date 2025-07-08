@@ -1,5 +1,21 @@
 import sqlite;
-let db = new sqlite("test.db");
+import time;
+import fs;
+
+const test_path = format("test_{}.db", time.now());
+let db = new sqlite(test_path);
 db.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER, name TEXT)");
-db.exec("INSERT INTO users VALUES (1, 'Alice')");
+db.exec("INSERT INTO users VALUES (1, 'alice')");
+db.exec("INSERT INTO users VALUES (2, 'bob')");
+
+let rows = db.query("SELECT * FROM users");
+println(rows);
+
+let names = db.columns("users");
+println(names);
+
+let tables = db.tables();
+println(tables);
+
 db.close();
+fs.rm(test_path);
