@@ -28,6 +28,19 @@ pub fn build(b: *std.Build) void {
     });
     exe.root_module.addImport("dsa", dsa_mod);
 
+    // sqlite c library
+    exe.addCSourceFiles(.{
+        .files = &.{"libs/sqlite/sqlite3.c"},
+        .flags = &.{},
+    });
+    exe.addIncludePath(.{
+        .src_path = .{
+            .owner = b,
+            .sub_path = "libs/sqlite",
+        },
+    });
+    exe.linkLibC();
+
     // Add steps
     addRunStep(b, exe);
     addTestStep(b, exe_mod);

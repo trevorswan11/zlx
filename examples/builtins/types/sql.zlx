@@ -1,0 +1,5 @@
+import sqlite;
+let db = new sqlite("test.db");
+db.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER, name TEXT)");
+db.exec("INSERT INTO users VALUES (1, 'Alice')");
+db.close();

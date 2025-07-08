@@ -381,15 +381,6 @@ pub fn stripSuffix(s: []const u8, suffix: []const u8) []const u8 {
     return s;
 }
 
-pub fn toNullTerminatedString(allocator: std.mem.Allocator, input: []const u8) ![:0]const u8 {
-    var buffer = try allocator.alloc(u8, input.len + 1);
-    for (input, 0..) |c, i| {
-        buffer[i] = c;
-    }
-    buffer[input.len] = 0;
-    return buffer[0..input.len :0];
-}
-
 pub fn unescapeString(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     var result = std.ArrayList(u8).init(allocator);
     var i: usize = 0;

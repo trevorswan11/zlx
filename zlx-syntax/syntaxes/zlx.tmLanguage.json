@@ -52,7 +52,7 @@
     "builtin_structs": {
       "patterns": [
         {
-          "match": "\\b(adjacency_list|adjacency_matrix|array_list|deque|graph|map|set|linked_list|heap|queue|stack|treap|vector|matrix)\\b",
+          "match": "\\b(adjacency_list|adjacency_matrix|array_list|deque|graph|map|set|linked_list|heap|queue|stack|treap|vector|matrix|sqlite)\\b",
           "name": "support.type.struct.builtin.zlx"
         }
       ]

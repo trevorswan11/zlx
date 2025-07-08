@@ -231,6 +231,10 @@ pub const builtin_modules = [_]BuiltinModule{
         .name = "matrix",
         .loader = @import("types/matrix.zig").load,
     },
+    .{
+        .name = "sqlite",
+        .loader = @import("types/sqlite.zig").load,
+    },
 };
 
 pub fn getStdStructName(value: *Value) ![]const u8 {

@@ -49,10 +49,11 @@ In an attempt to make a highly portable but usable program for my personal use, 
 Please remember that ZLX does not run as an administrator/root by default, and you may have to use an elevated shell to compress protected directories or files.
 
 ## External Libraries
-This project has three independent dependencies:
+This project has multiple independent dependencies:
 1.  [zig-regex](https://github.com/tiehuis/zig-regex), a simple regex library for Zig. While the `README` of this library mentions it is a work in progress, it met this project's needs perfectly. That being said, I hope to be able to make this a zero-dependency project if and when the Zig team adds a Regex module to the standard library. 
 2. [zig-containers](https://github.com/trevorswan11/zig-containers) which drives the standard libraries builtin data structures and compression tool.
 3. [raylib-zig](https://github.com/Not-Nik/raylib-zig) which drives the plotting module through basic window creation. This is only linked during the build process if building from the plotting branch
+4. [sqlite](https://sqlite.org/download.html) powers the `sql` module. It is a C library imported using zig's C interop ability  
 
 ## Syntax Highlighting
 While you can edit the source code for any zlx file in any editor, you can download the [zlx-syntax](https://marketplace.visualstudio.com/items?itemName=kyoshi11.zlx-syntax) extension through vscode to get syntax highlighting! This is a large WIP, but will hopefully grow to show doc strings and support intellisense eventually!
