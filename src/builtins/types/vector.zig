@@ -20,13 +20,18 @@ const expectStringArgs = builtins.expectStringArgs;
 const expectArrayRef = builtins.expectArrayRef;
 const expectNumberArrays = builtins.expectNumberArrays;
 
-fn expectVector(val: *Value, module_name: []const u8, func_name: []const u8) !*VectorInstance {
+fn expectVector(
+    val: *Value,
+    module_name: []const u8,
+    func_name: []const u8,
+    arg_str: []const u8,
+) !*VectorInstance {
     const writer_err = driver.getWriterErr();
     const name = try builtins.getStdStructName(val);
     if (std.mem.eql(u8, name, "vector")) {
         return try getVectorInstance(val);
     } else {
-        try writer_err.print("{s} module: {s} expected a vector argument but got a(n) {s}\n", .{ module_name, func_name, name });
+        try writer_err.print("{s} module: {s}({s}) expected a vector argument but got a(n) {s}\n", .{ module_name, func_name, arg_str, name });
         return error.ExpectedVectorArg;
     }
 }
@@ -84,8 +89,8 @@ fn vectorConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const vec: []const f64 = blk: switch (args.len) {
         // Vector can be created out of an array
         1 => {
-            const arg_arrays = try expectArrayArgs(args, env, 1, "vector", "ctor");
-            const vals = (try expectNumberArrays(env.allocator, arg_arrays, "vector", "ctor"))[0];
+            const arg_arrays = try expectArrayArgs(args, env, 1, "vector", "ctor", "array");
+            const vals = (try expectNumberArrays(env.allocator, arg_arrays, "vector", "ctor", "array"))[0];
             if (vals.len == 0 or vals.len > 4) {
                 try writer_err.print("vector(array) expects an array of size 4 or less, found an array length {d}\n", .{vals.len});
                 return error.ArraySizeMismatch;
@@ -93,9 +98,9 @@ fn vectorConstructor(args: []const *ast.Expr, env: *Environment) !Value {
             break :blk vals;
         },
 
-        2 => break :blk try expectNumberArgs(args, env, 2, "vector", "ctor"),
-        3 => break :blk try expectNumberArgs(args, env, 3, "vector", "ctor"),
-        4 => break :blk try expectNumberArgs(args, env, 4, "vector", "ctor"),
+        2 => break :blk try expectNumberArgs(args, env, 2, "vector", "ctor", "x, y"),
+        3 => break :blk try expectNumberArgs(args, env, 3, "vector", "ctor", "x, y, z"),
+        4 => break :blk try expectNumberArgs(args, env, 4, "vector", "ctor", "x, y, z, w"),
         else => {
             try writer_err.print("vector(args..) expects a maximum of 4 arguments but got {d}\n", .{args.len});
             return error.ArgumentCountMismatch;
@@ -134,8 +139,8 @@ fn vectorConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 pub fn vectorAdd(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    var other_val = (try expectValues(args, env, 1, "vector", "add"))[0];
-    const other = try expectVector(&other_val, "vector", "add");
+    var other_val = (try expectValues(args, env, 1, "vector", "add", "other_vec"))[0];
+    const other = try expectVector(&other_val, "vector", "add", "other_vec");
 
     const inst = try getVectorInstance(this);
     const a = inst.vector;
@@ -155,8 +160,8 @@ pub fn vectorAdd(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 pub fn vectorSub(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    var other_val = (try expectValues(args, env, 1, "vector", "sub"))[0];
-    const other = try expectVector(&other_val, "vector", "sub");
+    var other_val = (try expectValues(args, env, 1, "vector", "sub", "other_vec"))[0];
+    const other = try expectVector(&other_val, "vector", "sub", "other_vec");
 
     const inst = try getVectorInstance(this);
     const a = inst.vector;
@@ -176,8 +181,8 @@ pub fn vectorSub(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 pub fn vectorDot(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    var other_val = (try expectValues(args, env, 1, "vector", "dot"))[0];
-    const other = try expectVector(&other_val, "vector", "dot");
+    var other_val = (try expectValues(args, env, 1, "vector", "dot", "other_vec"))[0];
+    const other = try expectVector(&other_val, "vector", "dot", "other_vec");
 
     const inst = try getVectorInstance(this);
     const a = inst.vector;
@@ -199,7 +204,7 @@ pub fn vectorDot(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
 pub fn vectorScale(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getVectorInstance(this);
-    const scalar = (try expectNumberArgs(args, env, 1, "vector", "scale"))[0];
+    const scalar = (try expectNumberArgs(args, env, 1, "vector", "scale", "number"))[0];
     for (inst.vector.items) |*item| {
         item.* *= scalar;
     }
@@ -207,7 +212,7 @@ pub fn vectorScale(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 }
 
 pub fn vectorNorm(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    _ = try expectValues(args, env, 0, "vector", "norm");
+    _ = try expectValues(args, env, 0, "vector", "norm", "");
 
     const inst = try getVectorInstance(this);
     const vec = inst.vector;
@@ -224,7 +229,7 @@ pub fn vectorNorm(this: *Value, args: []const *ast.Expr, env: *Environment) !Val
 
 pub fn vectorNormalize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    _ = try expectValues(args, env, 0, "vector", "normalize");
+    _ = try expectValues(args, env, 0, "vector", "normalize", "");
 
     const inst = try getVectorInstance(this);
     const vec = inst.vector;
@@ -250,8 +255,8 @@ pub fn vectorNormalize(this: *Value, args: []const *ast.Expr, env: *Environment)
 pub fn vectorProject(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    var other_val = (try expectValues(args, env, 1, "vector", "project"))[0];
-    const onto = try expectVector(&other_val, "vector", "project");
+    var other_val = (try expectValues(args, env, 1, "vector", "project", "onto_vec"))[0];
+    const onto = try expectVector(&other_val, "vector", "project", "onto_vec");
 
     const inst = try getVectorInstance(this);
     const a = inst.vector;
@@ -285,8 +290,8 @@ pub fn vectorProject(this: *Value, args: []const *ast.Expr, env: *Environment) !
 pub fn vectorAngle(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    var other_val = (try expectValues(args, env, 1, "vector", "angle"))[0];
-    const other = try expectVector(&other_val, "vector", "angle");
+    var other_val = (try expectValues(args, env, 1, "vector", "angle", "other_vec"))[0];
+    const other = try expectVector(&other_val, "vector", "angle", "other_vec");
 
     const inst = try getVectorInstance(this);
     const a = inst.vector;
@@ -324,8 +329,8 @@ pub fn vectorAngle(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 pub fn vectorCross(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    var other_val = (try expectValues(args, env, 1, "vector", "project"))[0];
-    const other = try expectVector(&other_val, "vector", "cross");
+    var other_val = (try expectValues(args, env, 1, "vector", "cross", "other_vec"))[0];
+    const other = try expectVector(&other_val, "vector", "cross", "other_vec");
 
     const inst = try getVectorInstance(this);
     const a = inst.vector;
@@ -350,8 +355,8 @@ pub fn vectorCross(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 }
 
 pub fn vectorEquals(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    var other_val = (try expectValues(args, env, 1, "vector", "project"))[0];
-    const other = try expectVector(&other_val, "vector", "equals");
+    var other_val = (try expectValues(args, env, 1, "vector", "project", "other_vec"))[0];
+    const other = try expectVector(&other_val, "vector", "equals", "other_vec");
 
     const inst = try getVectorInstance(this);
     const a = inst.vector;
@@ -375,19 +380,25 @@ pub fn vectorEquals(this: *Value, args: []const *ast.Expr, env: *Environment) !V
 }
 
 pub fn vectorSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const parts = try expectNumberArgs(args, env, 2, "vector", "set");
+    const writer_err = driver.getWriterErr();
+    const parts = try expectNumberArgs(args, env, 2, "vector", "set", "index, value");
     const index_val = parts[0];
     const val_val = parts[1];
     const index: usize = @intFromFloat(index_val);
 
     const inst = try getVectorInstance(this);
+    if (index >= inst.vector.items.len) {
+        try writer_err.print("vector.set(index, value): index {d} out of bounds for vector of length {d}\n", .{ index, inst.vector.items.len });
+        return error.IndexOutOfBounds;
+    }
+
     inst.vector.items[index] = val_val;
     return this.*;
 }
 
 pub fn vectorGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    const index_val = (try expectNumberArgs(args, env, 1, "vector", "get"))[0];
+    const index_val = (try expectNumberArgs(args, env, 1, "vector", "get", "index"))[0];
     const index: usize = @intFromFloat(index_val);
 
     const inst = try getVectorInstance(this);
@@ -402,7 +413,7 @@ pub fn vectorGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 }
 
 pub fn vectorSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    _ = try expectValues(args, env, 0, "vector", "size");
+    _ = try expectValues(args, env, 0, "vector", "size", "");
 
     const inst = try getVectorInstance(this);
     return .{
@@ -411,7 +422,7 @@ pub fn vectorSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Val
 }
 
 pub fn vectorItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    _ = try expectValues(args, env, 0, "vector", "items");
+    _ = try expectValues(args, env, 0, "vector", "items", "");
 
     const inst = try getVectorInstance(this);
     var result = std.ArrayList(Value).init(env.allocator);
@@ -427,7 +438,7 @@ pub fn vectorItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 }
 
 pub fn vectorStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    _ = try expectValues(args, env, 0, "vector", "str");
+    _ = try expectValues(args, env, 0, "vector", "str", "");
 
     const inst = try getVectorInstance(this);
     return .{

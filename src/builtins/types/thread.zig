@@ -11,3 +11,8 @@ const Value = interpreter.Value;
 
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
+
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;

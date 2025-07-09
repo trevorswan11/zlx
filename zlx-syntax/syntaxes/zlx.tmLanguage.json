@@ -36,7 +36,7 @@
     "builtin_functions": {
       "patterns": [
         {
-          "match": "\\b(print|println|len|ref|range|to_string|to_number|to_bool|format|to_ascii|from_ascii)\\b",
+          "match": "\\b(print|println|len|ref|range|to_string|to_number|to_bool|format|to_ascii|from_ascii|zip)\\b",
           "name": "support.function.builtin.zlx"
         }
       ]

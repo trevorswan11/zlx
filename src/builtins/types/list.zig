@@ -139,19 +139,19 @@ fn listPopTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 }
 
 fn listGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const index_val= (try builtins.expectNumberArgs(args, env, 1, "list", "get"))[0];
+    const index_val = (try builtins.expectNumberArgs(args, env, 1, "list", "get"))[0];
     const inst = try getListInstance(this);
     return try inst.list.get(@intFromFloat(index_val));
 }
 
 fn listRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const index_val= (try builtins.expectNumberArgs(args, env, 1, "list", "remove"))[0];
+    const index_val = (try builtins.expectNumberArgs(args, env, 1, "list", "remove"))[0];
     const inst = try getListInstance(this);
     return try inst.list.remove(@intFromFloat(index_val));
 }
 
 fn listDiscard(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const index_val= (try builtins.expectNumberArgs(args, env, 1, "list", "discard"))[0];
+    const index_val = (try builtins.expectNumberArgs(args, env, 1, "list", "discard"))[0];
     const inst = try getListInstance(this);
     try inst.list.discard(@intFromFloat(index_val));
     return .nil;

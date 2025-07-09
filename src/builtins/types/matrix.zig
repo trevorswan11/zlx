@@ -17,13 +17,18 @@ const expectNumberArgs = builtins.expectNumberArgs;
 const expectArrayArgs = builtins.expectArrayArgs;
 const expectNumberArrays = builtins.expectNumberArrays;
 
-fn expectMatrix(val: *Value, module_name: []const u8, func_name: []const u8) !*MatrixInstance {
+fn expectMatrix(
+    val: *Value,
+    module_name: []const u8,
+    func_name: []const u8,
+    arg_str: []const u8,
+) !*MatrixInstance {
     const writer_err = driver.getWriterErr();
     const name = try builtins.getStdStructName(val);
     if (std.mem.eql(u8, name, "matrix")) {
         return try getMatrixInstance(val);
     } else {
-        try writer_err.print("{s} module: {s} expected a matrix argument but got a(n) {s}\n", .{ module_name, func_name, name });
+        try writer_err.print("{s} module: {s}({s}) expected a matrix argument but got a(n) {s}\n", .{ module_name, func_name, arg_str, name });
         return error.ExpectedMatrixArg;
     }
 }
@@ -179,7 +184,7 @@ fn matrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 
 pub fn matrixGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    const parts= try builtins.expectNumberArgs(args, env, 2, "matrix", "get");
+    const parts = try builtins.expectNumberArgs(args, env, 2, "matrix", "get");
 
     const row: i64 = @intFromFloat(parts[0]);
     const col: i64 = @intFromFloat(parts[1]);

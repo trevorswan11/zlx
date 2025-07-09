@@ -130,7 +130,7 @@ fn adjMatrixRemoveEdge(this: *Value, args: []const *ast.Expr, env: *Environment)
 
 fn adjMatrixContainsEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    
+
     const parts = try builtins.expectNumberArgs(args, env, 2, "adj_matrix", "contains_edge");
     const from = parts[0];
     const to = parts[1];

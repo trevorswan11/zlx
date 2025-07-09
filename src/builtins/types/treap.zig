@@ -57,11 +57,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn treapConstructor(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "treap", "ctor", "");
 
     const treap = Treap.init(env.allocator);
     const wrapped = try env.allocator.create(TreapInstance);
@@ -92,14 +88,14 @@ fn treapConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn treapInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const val = (try expectValues(args, env, 1, "treap", "insert"))[0];
+    const val = (try expectValues(args, env, 1, "treap", "insert", "value"))[0];
     const inst = try getTreapInstance(this);
     try inst.treap.insert(val);
     return .nil;
 }
 
 fn treapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const val = (try expectValues(args, env, 1, "treap", "insert"))[0];
+    const val = (try expectValues(args, env, 1, "treap", "contains", "value"))[0];
     const inst = try getTreapInstance(this);
     return .{
         .boolean = inst.treap.contains(val),
@@ -107,80 +103,50 @@ fn treapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 }
 
 fn treapRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const val = (try expectValues(args, env, 1, "treap", "insert"))[0];
+    const val = (try expectValues(args, env, 1, "treap", "remove", "value"))[0];
     const inst = try getTreapInstance(this);
     try inst.treap.remove(val);
     return .nil;
 }
 
-fn treapSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn treapSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "treap", "size", "");
     const inst = try getTreapInstance(this);
     return .{
         .number = @floatFromInt(inst.treap.size()),
     };
 }
 
-fn treapEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap.empty() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn treapEmpty(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "treap", "empty", "");
     const inst = try getTreapInstance(this);
     return .{
         .boolean = inst.treap.size() == 0,
     };
 }
 
-fn treapHeight(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap.height() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn treapHeight(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "treap", "height", "");
     const inst = try getTreapInstance(this);
     return .{
         .number = @floatFromInt(inst.treap.height()),
     };
 }
 
-fn treapMin(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap.min() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn treapMin(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "treap", "min", "");
     const inst = try getTreapInstance(this);
     return inst.treap.findMin() orelse .nil;
 }
 
-fn treapMax(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap.max() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn treapMax(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "treap", "max", "");
     const inst = try getTreapInstance(this);
     return inst.treap.findMax() orelse .nil;
 }
 
-fn treapClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap.clear() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn treapClear(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "treap", "clear", "");
     const inst = try getTreapInstance(this);
     inst.treap.clear();
     return .nil;
@@ -201,25 +167,15 @@ fn preorderListImpl(t: Treap, node: ?*Treap.Node, list: *std.ArrayList(Value)) !
 }
 
 pub fn treapItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap.items() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "treap", "items", "");
     const inst = try getTreapInstance(this);
     return .{
         .array = try preorderList(env.allocator, inst.treap),
     };
 }
 
-fn treapStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("treap.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn treapStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "treap", "str", "");
     const inst = try getTreapInstance(this);
     return .{
         .string = try toString(inst.treap),

@@ -14,14 +14,15 @@ pub fn expectValues(
     count: usize,
     module_name: []const u8,
     func_name: []const u8,
+    arg_str: []const u8,
 ) ![]const Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len != count) {
         if (count == 0) {
-            try writer_err.print("{s} module: {s} takes no arguments, got {d}\n", .{ module_name, func_name, args.len });
+            try writer_err.print("{s} module: {s}() takes no arguments, got {d}\n", .{ module_name, func_name, args.len });
         } else {
-            try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
+            try writer_err.print("{s} module: {s}({s}) expected {d} argument(s), got {d}\n", .{ module_name, func_name, arg_str, count, args.len });
         }
         return error.ArgumentCountMismatch;
     }
@@ -43,11 +44,12 @@ pub fn expectStringArgs(
     count: usize,
     module_name: []const u8,
     func_name: []const u8,
+    arg_str: []const u8,
 ) ![]const []const u8 {
     const writer_err = driver.getWriterErr();
 
     if (args.len != count) {
-        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
+        try writer_err.print("{s} module: {s}({s}) expected {d} argument(s), got {d}\n", .{ module_name, func_name, arg_str, count, args.len });
         return error.ArgumentCountMismatch;
     }
 
@@ -57,7 +59,7 @@ pub fn expectStringArgs(
     for (args, 0..) |arg, idx| {
         const val = try eval.evalExpr(arg, env);
         if (val != .string) {
-            try writer_err.print("{s} module: {s} expected a string, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
+            try writer_err.print("{s} module: {s}({s}) expected a string, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, arg_str, @tagName(val), idx });
             return error.TypeMismatch;
         }
         try result.append(val.string);
@@ -72,11 +74,12 @@ pub fn expectArrayArgs(
     count: usize,
     module_name: []const u8,
     func_name: []const u8,
+    arg_str: []const u8,
 ) ![]const std.ArrayList(Value) {
     const writer_err = driver.getWriterErr();
 
     if (args.len != count) {
-        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
+        try writer_err.print("{s} module: {s}({s}) expected {d} argument(s), got {d}\n", .{ module_name, func_name, arg_str, count, args.len });
         return error.ArgumentCountMismatch;
     }
 
@@ -86,7 +89,7 @@ pub fn expectArrayArgs(
     for (args, 0..) |arg, idx| {
         const val = try eval.evalExpr(arg, env);
         if (val != .array) {
-            try writer_err.print("{s} module: {s} expected an array, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
+            try writer_err.print("{s} module: {s}({s}) expected an array, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, arg_str, @tagName(val), idx });
             return error.TypeMismatch;
         }
         try result.append(val.array);
@@ -101,11 +104,12 @@ pub fn expectNumberArgs(
     count: usize,
     module_name: []const u8,
     func_name: []const u8,
+    arg_str: []const u8,
 ) ![]const f64 {
     const writer_err = driver.getWriterErr();
 
     if (args.len != count) {
-        try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
+        try writer_err.print("{s} module: {s}({s}) expected {d} argument(s), got {d}\n", .{ module_name, func_name, arg_str, count, args.len });
         return error.ArgumentCountMismatch;
     }
 
@@ -115,7 +119,7 @@ pub fn expectNumberArgs(
     for (args, 0..) |arg, idx| {
         const val = try eval.evalExpr(arg, env);
         if (val != .number) {
-            try writer_err.print("{s} module: {s} expected an array, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, @tagName(val), idx });
+            try writer_err.print("{s} module: {s}({s}) expected an array, got a(n) {s} @ arg {d}\n", .{ module_name, func_name, arg_str, @tagName(val), idx });
             return error.TypeMismatch;
         }
         try result.append(val.number);
@@ -129,6 +133,7 @@ pub fn expectNumberArrays(
     arrays: []const std.ArrayList(Value),
     module_name: []const u8,
     func_name: []const u8,
+    arg_str: []const u8,
 ) ![]const []const f64 {
     const writer_err = driver.getWriterErr();
     var result = std.ArrayList([]const f64).init(allocator);
@@ -139,7 +144,7 @@ pub fn expectNumberArrays(
         defer nums.deinit();
         for (arr.items, 0..) |val, idx| {
             if (val != .number) {
-                try writer_err.print("{s} module: {s} expected array packed with numbers but found type {s} @ index {d}\n", .{ module_name, func_name, @tagName(val), idx });
+                try writer_err.print("{s} module: {s}({s}) expected array packed with numbers but found type {s} @ index {d}\n", .{ module_name, func_name, arg_str, @tagName(val), idx });
                 return error.TypeMismatch;
             }
             try nums.append(val.number);
@@ -150,16 +155,22 @@ pub fn expectNumberArrays(
     return try result.toOwnedSlice();
 }
 
-pub fn expectArrayRef(args: []const *ast.Expr, env: *Environment) !*std.ArrayList(Value) {
+pub fn expectArrayRef(
+    args: []const *ast.Expr,
+    env: *Environment,
+    module_name: []const u8,
+    func_name: []const u8,
+    arg_str: []const u8,
+) !*std.ArrayList(Value) {
     const writer_err = driver.getWriterErr();
     if (args.len < 1) {
-        try writer_err.print("array module: expected at least one argument, got {d}\n", .{args.len});
+        try writer_err.print("{s} module: {s}({s}) expected at least one argument, got {d}\n", .{ module_name, func_name, arg_str, args.len });
         return error.ArgumentCountMismatch;
     }
 
     const val = try eval.evalExpr(args[0], env);
     if (val != .reference or val.reference.* != .array) {
-        try writer_err.print("array module: expression evaluation returned a value that is not a reference to an array\n", .{});
+        try writer_err.print("{s} module: in {s}({s}), expression evaluation returned a value that is not a reference to an array\n", .{ module_name, func_name, arg_str });
         if (val == .reference) {
             try writer_err.print("  Found a reference to a(n) {s}\n", .{@tagName(val)});
         } else {

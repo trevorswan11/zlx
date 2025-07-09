@@ -119,7 +119,7 @@ fn arrayListInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 }
 
 fn arrayListRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const index_val= (try builtins.expectNumberArgs(args, env, 1, "array_list", "remove"))[0];
+    const index_val = (try builtins.expectNumberArgs(args, env, 1, "array_list", "remove"))[0];
     const inst = try getArrayListInstance(this);
     return try inst.array.remove(@intFromFloat(index_val));
 }
@@ -136,7 +136,7 @@ fn arrayListPop(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 }
 
 fn arrayListGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const index_val= (try builtins.expectNumberArgs(args, env, 1, "array_list", "get"))[0];
+    const index_val = (try builtins.expectNumberArgs(args, env, 1, "array_list", "get"))[0];
     const inst = try getArrayListInstance(this);
     return try inst.array.get(@intFromFloat(index_val));
 }

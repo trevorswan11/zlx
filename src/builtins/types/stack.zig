@@ -12,6 +12,11 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
 const Stack = @import("dsa").Stack(Value);
 pub const StackInstance = struct {
     stack: Stack,
@@ -50,12 +55,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn stackConstructor(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("stack() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "stack", "ctor", "");
     const stack = try Stack.init(env.allocator);
     const wrapped = try env.allocator.create(StackInstance);
     wrapped.* = .{
@@ -85,87 +85,51 @@ fn stackConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn stackPush(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("stack.push(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const value = try eval.evalExpr(args[0], env);
+    const value = (try expectValues(args, env, 1, "stack", "push", "value"))[0];
     const inst = try getStackInstance(this);
     try inst.stack.push(value);
     return .nil;
 }
 
-fn stackPop(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("stack.pop() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn stackPop(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "stack", "pop", "");
     const inst = try getStackInstance(this);
     const result = inst.stack.pop();
     return result orelse .nil;
 }
 
-fn stackPeek(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("stack.peek() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn stackPeek(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "stack", "peek", "");
     const inst = try getStackInstance(this);
     const result = inst.stack.peek();
     return result orelse .nil;
 }
 
-fn stackSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("stack.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn stackSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "stack", "size", "");
     const inst = try getStackInstance(this);
     return .{
         .number = @floatFromInt(inst.stack.list.len),
     };
 }
 
-fn stackEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("stack.empty() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn stackEmpty(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "stack", "empty", "");
     const inst = try getStackInstance(this);
     return .{
         .boolean = inst.stack.list.empty(),
     };
 }
 
-fn stackClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("stack.clear() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn stackClear(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "stack", "clear", "");
     const inst = try getStackInstance(this);
     inst.stack.list.clear();
     return .nil;
 }
 
 pub fn stackItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("stack.items() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "stack", "items", "");
     const inst = try getStackInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -179,13 +143,8 @@ pub fn stackItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Val
     };
 }
 
-fn stackStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("stack.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn stackStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "stack", "str", "");
     const inst = try getStackInstance(this);
     const strFn = @import("list.zig").toString;
     return .{
