@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @cImport({
+    @cDefine("SQLITE_TRANSIENT", "((sqlite3_destructor_type)-1)");
     @cInclude("sqlite3.h");
 });
 
@@ -288,7 +289,7 @@ fn sqliteClose(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 // sql statement definition and usage
 
 /// MACOS portability fix, pointer type '?*const fn (?*anyopaque) callconv(.c) void' requires aligned address
-const SQLITE_TRANSIENT: ?*const fn (?*anyopaque) callconv(.C) void = @ptrFromInt(@as(u32, @bitCast(@as(i32, -1))));
+// const SQLITE_TRANSIENT: ?*const fn (?*anyopaque) callconv(.C) void = @ptrFromInt(@as(u32, @bitCast(@as(i32, -1))));
 
 pub const StatementInstance = struct {
     stmt: ?*c.sqlite3_stmt = null,
@@ -364,7 +365,7 @@ fn stmtBind(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const index: c_int = 1;
     const rc = switch (val) {
         .number => c.sqlite3_bind_double(inst.stmt, index, val.number),
-        .string => c.sqlite3_bind_text(inst.stmt, index, val.string.ptr, @intCast(val.string.len), SQLITE_TRANSIENT),
+        .string => c.sqlite3_bind_text(inst.stmt, index, val.string.ptr, @intCast(val.string.len), c.SQLITE_TRANSIENT),
         .nil => c.sqlite3_bind_null(inst.stmt, index),
         else => {
             try writer_err.print("Unsupported bind value type\n", .{});
