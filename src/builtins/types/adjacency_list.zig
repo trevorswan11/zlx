@@ -12,6 +12,11 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
 const AdjacencyList = @import("dsa").AdjacencyList(Value, interpreter.ValueContext);
 pub const AdjacencyListInstance = struct {
     graph: AdjacencyList,
@@ -49,11 +54,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn adjListConstructor(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("adjacency_list() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "adj_list", "ctor", "");
 
     const graph = AdjacencyList.init(env.allocator);
     const wrapped = try env.allocator.create(AdjacencyListInstance);
@@ -84,27 +85,18 @@ fn adjListConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn adjListAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("adj_list.add_edge(val_from, val_to) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const parts = try expectValues(args, env, 2, "adj_list", "add_edge", "from_id, to_id");
+    const from = parts[0];
+    const to = parts[1];
 
-    const from = try interpreter.evalExpr(args[0], env);
-    const to = try interpreter.evalExpr(args[1], env);
     const inst = try getGraphInstance(this);
     try inst.graph.addEdge(from, to);
     return .nil;
 }
 
 fn adjListGetNeighbors(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("adj_list.get_neighbors(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const node = (try expectValues(args, env, 1, "adj_list", "get_neighbors", "node_id"))[0];
 
-    const node = try interpreter.evalExpr(args[0], env);
     const inst = try getGraphInstance(this);
     const neighbors = inst.graph.getNeighbors(node);
     if (neighbors) |list| {
@@ -121,64 +113,38 @@ fn adjListGetNeighbors(this: *Value, args: []const *ast.Expr, env: *Environment)
 }
 
 fn adjListContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("adj_list.contains(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const node = try interpreter.evalExpr(args[0], env);
+    const node = (try expectValues(args, env, 1, "adj_list", "contains", "node_id"))[0];
     const inst = try getGraphInstance(this);
     return .{
         .boolean = inst.graph.containsNode(node),
     };
 }
 
-fn adjListClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("adjacency_list.clear() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn adjListClear(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "adj_list", "clear", "");
     const inst = try getGraphInstance(this);
     inst.graph.clear();
     return .nil;
 }
 
-fn adjListSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("adjacency_list.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn adjListSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "adj_list", "size", "");
     const inst = try getGraphInstance(this);
     return .{
         .number = @floatFromInt(inst.graph.size()),
     };
 }
 
-fn adjListEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("adjacency_list.empty() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn adjListEmpty(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "adj_list", "empty", "");
     const inst = try getGraphInstance(this);
     return .{
         .boolean = inst.graph.size() == 0,
     };
 }
 
-fn adjListStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("adjacency_list.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn adjListStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "adj_list", "str", "");
     const inst = try getGraphInstance(this);
     return .{
         .string = try toString(inst.graph),

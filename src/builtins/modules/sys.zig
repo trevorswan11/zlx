@@ -12,6 +12,10 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
 
 var process_env: std.process.EnvMap = undefined;
 
@@ -32,11 +36,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn argsHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("sys.args() expects 0 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "sys", "args", "");
+
     const sys_args = try std.process.argsAlloc(env.allocator);
     var array = std.ArrayList(Value).init(env.allocator);
     for (sys_args) |arg| {
@@ -52,59 +53,25 @@ fn argsHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn getenvHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("sys.getenv(key) expects 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const key = try eval.evalExpr(args[0], env);
-    if (key != .string) {
-        try writer_err.print("sys.getenv(key) expects a string argument, got a(n) {s}\n", .{@tagName(key)});
-        return error.TypeMismatch;
-    }
-
-    const val = process_env.get(key.string) orelse return .nil;
+    const key = (try expectStringArgs(args, env, 1, "sys", "getenv", "key"))[0];
+    const val = process_env.get(key) orelse return .nil;
     return .{
         .string = val,
     };
 }
 
 fn setenvHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("sys.setenv(key, value) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const parts = try expectStringArgs(args, env, 2, "sys", "setenv", "key, val");
+    const key = parts[0];
+    const val = parts[1];
 
-    const key = try eval.evalExpr(args[0], env);
-    const val = try eval.evalExpr(args[1], env);
-
-    if (key != .string or val != .string) {
-        try writer_err.print("sys.setenv(key, value) expects two string arguments\n", .{});
-        try writer_err.print("  Key: {s}\n", .{try key.toString(env.allocator)});
-        try writer_err.print("  Value: {s}\n", .{try val.toString(env.allocator)});
-        return error.TypeMismatch;
-    }
-
-    try process_env.put(key.string, val.string);
+    try process_env.put(key, val);
     return .nil;
 }
 
 fn unsetenvHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("sys.unsetenv(key) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const key = try eval.evalExpr(args[0], env);
-    if (key != .string) {
-        try writer_err.print("sys.unsetenv(key) expects a string argument, got a(n) {s}\n", .{@tagName(key)});
-        return error.TypeMismatch;
-    }
-
-    process_env.remove(key.string);
+    const key = (try expectStringArgs(args, env, 1, "sys", "getenv", "key"))[0];
+    process_env.remove(key);
     return .nil;
 }
 
@@ -113,19 +80,8 @@ fn runHandler(
     env: *interpreter.Environment,
 ) !Value {
     const writer_err = driver.getWriterErr();
+    const command = (try expectStringArgs(args, env, 1, "sys", "run", "cmd"))[0];
 
-    if (args.len != 1) {
-        try writer_err.print("sys.run(cmd) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const cmd_val = try eval.evalExpr(args[0], env);
-    if (cmd_val != .string) {
-        try writer_err.print("sys.run(cmd) expects a string argument, got {s}\n", .{@tagName(cmd_val)});
-        return error.TypeMismatch;
-    }
-
-    const command = cmd_val.string;
     var arg_list = std.ArrayList([]const u8).init(env.allocator);
 
     // Prepend shell command
@@ -161,7 +117,7 @@ fn runHandler(
         .argv = arg_list.items,
         .env_map = &tmp_env,
     }) catch |err| {
-        try writer_err.print("Failed to run subprocess: {!}\n", .{err});
+        try writer_err.print("sys.run(cmd): failed to run subprocess: {!}\n", .{err});
         return .nil;
     };
 
@@ -180,21 +136,8 @@ fn runHandler(
 
 fn inputHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_out = driver.getWriterOut();
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != 1) {
-        try writer_err.print("sys.input(prompt) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const prompt_val = try eval.evalExpr(args[0], env);
-    if (prompt_val != .string) {
-        try writer_err.print("sys.input(prompt) expects a string argument\n", .{});
-        try writer_err.print("  Got: {s}\n", .{try prompt_val.toString(env.allocator)});
-        return error.TypeMismatch;
-    }
-
-    try writer_out.print("{s}", .{prompt_val.string});
+    const prompt_val = (try expectStringArgs(args, env, 1, "sys", "input", "prompt"))[0];
+    try writer_out.print("{s}", .{prompt_val});
 
     const stdin = std.io.getStdIn().reader();
     const input_line = try stdin.readUntilDelimiterOrEofAlloc(env.allocator, '\n', 1024);

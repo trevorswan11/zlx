@@ -12,6 +12,11 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
 const ArrayList = @import("dsa").Array(Value);
 pub const ArrayListInstance = struct {
     array: ArrayList,
@@ -26,6 +31,8 @@ fn getArrayListInstance(this: *Value) !*ArrayListInstance {
 
 var ARRAY_LIST_METHODS: std.StringHashMap(StdMethod) = undefined;
 var ARRAY_LIST_TYPE: Value = undefined;
+
+const DEFAULT_CAPACITY: usize = 8;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     ARRAY_LIST_METHODS = std.StringHashMap(StdMethod).init(allocator);
@@ -54,9 +61,9 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
 fn arrayListConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const capacity: usize = if (args.len == 1) blk: {
-        const num = (try builtins.expectNumberArgs(args, env, 1, "array_list", "ctor"))[0];
+        const num = (try builtins.expectNumberArgs(args, env, 1, "array_list", "ctor", "capacity"))[0];
         break :blk @intFromFloat(num);
-    } else 8;
+    } else DEFAULT_CAPACITY;
 
     const array = try ArrayList.init(env.allocator, capacity);
     const wrapped = try env.allocator.create(ArrayListInstance);
@@ -87,111 +94,65 @@ fn arrayListConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn arrayListPush(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("array_list.push(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try interpreter.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "array_list", "push", "value"))[0];
     const inst = try getArrayListInstance(this);
     try inst.array.push(val);
     return .nil;
 }
 
 fn arrayListInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("array_list.insert(index, value) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const index_val = try interpreter.evalExpr(args[0], env);
-    const value = try interpreter.evalExpr(args[1], env);
-    if (index_val != .number) {
-        try writer_err.print("array_list.insert(index, value) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
-        return error.TypeMismatch;
-    }
+    const index = (try expectNumberArgs(args[0..1], env, 1, "array_list", "set", "index, value"))[0];
+    const value = (try expectValues(args[1..], env, 1, "array_list", "set", "index, value"))[0];
 
     const inst = try getArrayListInstance(this);
-    try inst.array.insert(@intFromFloat(index_val.number), value);
+    try inst.array.insert(@intFromFloat(index), value);
     return .nil;
 }
 
 fn arrayListRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const index_val = (try builtins.expectNumberArgs(args, env, 1, "array_list", "remove"))[0];
+    const index_val = (try builtins.expectNumberArgs(args, env, 1, "array_list", "remove", "index"))[0];
     const inst = try getArrayListInstance(this);
     return try inst.array.remove(@intFromFloat(index_val));
 }
 
-fn arrayListPop(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("array_list.pop() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn arrayListPop(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "array_list", "pop", "");
     const inst = try getArrayListInstance(this);
     return try inst.array.pop();
 }
 
 fn arrayListGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const index_val = (try builtins.expectNumberArgs(args, env, 1, "array_list", "get"))[0];
+    const index_val = (try builtins.expectNumberArgs(args, env, 1, "array_list", "get", "index"))[0];
     const inst = try getArrayListInstance(this);
     return try inst.array.get(@intFromFloat(index_val));
 }
 
 fn arrayListSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("array_list.set(index, value) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const index_val = try interpreter.evalExpr(args[0], env);
-    const value = try interpreter.evalExpr(args[1], env);
-    if (index_val != .number) {
-        try writer_err.print("array_list.set(index, value) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
-        return error.TypeMismatch;
-    }
+    const index = (try expectNumberArgs(args[0..1], env, 1, "array_list", "set", "index, value"))[0];
+    const value = (try expectValues(args[1..], env, 1, "array_list", "set", "index, value"))[0];
 
     const inst = try getArrayListInstance(this);
-    try inst.array.set(@intFromFloat(index_val.number), value);
+    try inst.array.set(@intFromFloat(index), value);
     return .nil;
 }
 
-fn arrayListClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("array_list.clear() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn arrayListClear(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "array_list", "clear", "");
     const inst = try getArrayListInstance(this);
     inst.array.clear();
     return .nil;
 }
 
-fn arrayListEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("array_list.empty() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn arrayListEmpty(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "array_list", "empty", "");
     const inst = try getArrayListInstance(this);
     return .{
         .boolean = inst.array.empty(),
     };
 }
 
-fn arrayListSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("array_list.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn arrayListSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "array_list", "size", "");
     const inst = try getArrayListInstance(this);
     return .{
         .number = @floatFromInt(inst.array.len),
@@ -199,12 +160,7 @@ fn arrayListSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value 
 }
 
 pub fn arrayListItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("array_list.items() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "array_list", "items", "");
     const inst = try getArrayListInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -217,13 +173,8 @@ pub fn arrayListItems(this: *Value, args: []const *ast.Expr, env: *Environment) 
     };
 }
 
-fn arrayListStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("array_list.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn arrayListStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "array_list", "str", "");
     const inst = try getArrayListInstance(this);
     return .{
         .string = try inst.array.toString(),

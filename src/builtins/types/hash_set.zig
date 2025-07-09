@@ -56,7 +56,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
 fn setConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    
+
     const set = try HashSet.init(env.allocator);
     const wrapped = try env.allocator.create(HashSetInstance);
     wrapped.* = .{

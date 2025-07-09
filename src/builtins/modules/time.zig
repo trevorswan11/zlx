@@ -12,7 +12,11 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
+const expectValues = builtins.expectValues;
 const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
 const loadConstants = time_constants.loadConstants;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
@@ -32,25 +36,16 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn nowHandler(args: []const *ast.Expr, _: *Environment) anyerror!Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("time.now() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn nowHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    _ = try expectValues(args, env, 0, "time", "now", "");
     const now = std.time.timestamp();
     return .{
         .number = @floatFromInt(now),
     };
 }
 
-fn millisHandler(args: []const *ast.Expr, _: *Environment) anyerror!Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("time.millis() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+fn millisHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    _ = try expectValues(args, env, 0, "time", "millis", "");
 
     const now_ns = std.time.nanoTimestamp();
     const millis = @as(f64, @floatFromInt(now_ns)) / 1_000_000.0;
@@ -60,7 +55,7 @@ fn millisHandler(args: []const *ast.Expr, _: *Environment) anyerror!Value {
 }
 
 fn sleepHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const seconds = (try expectNumberArgs(args, env, 1, "time", "sleep"))[0];
+    const seconds = (try expectNumberArgs(args, env, 1, "time", "sleep", "time_s"))[0];
     const nanos: u64 = @intFromFloat(seconds * 1_000_000_000.0);
 
     std.time.sleep(nanos);
@@ -68,20 +63,15 @@ fn sleepHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 }
 
 fn sleepMsHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const ms = (try expectNumberArgs(args, env, 1, "time", "sleep_ms"))[0];
+    const ms = (try expectNumberArgs(args, env, 1, "time", "sleep_ms", "time_ms"))[0];
     const nanos: u64 = @intFromFloat(ms * 1_000_000.0);
 
     std.time.sleep(nanos);
     return .nil;
 }
 
-fn timestampHandler(args: []const *ast.Expr, _: *Environment) anyerror!Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("time.timestamp() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn timestampHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    _ = try expectValues(args, env, 0, "time", "timestamp", "");
     const now = std.time.nanoTimestamp();
     return .{
         .number = @floatFromInt(now),

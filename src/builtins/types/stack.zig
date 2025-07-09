@@ -56,7 +56,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
 fn stackConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     _ = try expectValues(args, env, 0, "stack", "ctor", "");
-    
+
     const stack = try Stack.init(env.allocator);
     const wrapped = try env.allocator.create(StackInstance);
     wrapped.* = .{
