@@ -5,6 +5,7 @@ const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
 const matrix_helpers = @import("../helpers/matrix.zig");
+const vector = @import("vector.zig");
 
 const eval = interpreter.eval;
 const Environment = interpreter.Environment;
@@ -13,8 +14,12 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
 const expectNumberArgs = builtins.expectNumberArgs;
 const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
+const expectArrayRef = builtins.expectArrayRef;
 const expectNumberArrays = builtins.expectNumberArrays;
 
 fn expectMatrix(
@@ -82,7 +87,7 @@ fn matrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
     if (args.len == 0) {
-        try writer_err.print("matrix(args..) expects at least 1 argument but got 0\n", .{});
+        try writer_err.print("matrix.ctor(args..): expected at least 1 argument but got 0\n", .{});
         return error.ArgumentCountMismatch;
     }
 
@@ -93,7 +98,7 @@ fn matrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
             if (val == .number) {
                 const dim: usize = @intFromFloat(val.number);
                 if (dim < 1) {
-                    try writer_err.print("matrix(dim): dimension must be at least 1, got {d}\n", .{dim});
+                    try writer_err.print("matrix.ctor(dim): dimension must be at least 1, got {d}\n", .{dim});
                     return error.ArraySizeMismatch;
                 }
 
@@ -112,35 +117,35 @@ fn matrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
             }
 
             // Case 2: matrix([ [..], [..] ]) — nested rows
-            const outer_array = try expectArrayArgs(args, env, 1, "matrix", "ctor");
-            break :blk try expectNumberArrays(env.allocator, outer_array, "matrix", "ctor");
+            const outer_array = try expectArrayArgs(args, env, 1, "matrix", "ctor", "nested_arrays");
+            break :blk try expectNumberArrays(env.allocator, outer_array, "matrix", "ctor", "nested_arrays");
         }
 
         // Case 3: matrix([..], [..], ...) — multiple row arrays
         if (args.len >= 2) {
-            const rows = try expectArrayArgs(args, env, args.len, "matrix", "ctor");
-            break :blk try expectNumberArrays(env.allocator, rows, "matrix", "ctor");
+            const rows = try expectArrayArgs(args, env, args.len, "matrix", "ctor", "row_arrays");
+            break :blk try expectNumberArrays(env.allocator, rows, "matrix", "ctor", "row_arrays");
         }
 
-        try writer_err.print("matrix(args..) expects either 1 nested array or at least 2 row arrays, got {d}\n", .{args.len});
+        try writer_err.print("matrix.ctor(args..): expected either 1 nested array or at least 2 row arrays, got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     };
 
     const row_count = nested.len;
     if (row_count < 1) {
-        try writer_err.print("matrix(args..): matrix must have at least 1 rows, got {d}\n", .{row_count});
+        try writer_err.print("matrix.ctor(args..): matrix must have at least 1 rows, got {d}\n", .{row_count});
         return error.ArraySizeMismatch;
     }
 
     const col_count = nested[0].len;
     if (col_count < 1) {
-        try writer_err.print("matrix(args..): matrix rows must have at least 1 columns, got {d} in first row\n", .{col_count});
+        try writer_err.print("matrix.ctor(args..): matrix rows must have at least 1 columns, got {d} in first row\n", .{col_count});
         return error.ArraySizeMismatch;
     }
 
     for (nested, 0..) |row, i| {
         if (row.len != col_count) {
-            try writer_err.print("matrix(args..): matrix row {d} has {d} columns, expected {d}\n", .{ i, row.len, col_count });
+            try writer_err.print("matrix.ctor(args..): matrix row {d} has {d} columns, expected {d}\n", .{ i, row.len, col_count });
             return error.ArraySizeMismatch;
         }
     }
@@ -184,14 +189,14 @@ fn matrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 
 pub fn matrixGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    const parts = try builtins.expectNumberArgs(args, env, 2, "matrix", "get");
+    const parts = try expectNumberArgs(args, env, 2, "matrix", "get", "row, col");
 
     const row: i64 = @intFromFloat(parts[0]);
     const col: i64 = @intFromFloat(parts[1]);
 
     const inst = try getMatrixInstance(this);
     if (row >= inst.matrix.len or col >= inst.matrix[0].items.len) {
-        try writer_err.print("matrix.get({d}, {d}) out of bounds\n", .{ row, col });
+        try writer_err.print("matrix.get(row, col): indices ({d}, {d}) out of bounds\n", .{ row, col });
         return error.IndexOutOfBounds;
     }
 
@@ -202,39 +207,24 @@ pub fn matrixGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
 pub fn matrixSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 3) {
-        try writer_err.print("matrix.set(row, col, value) expects 3 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const parts = try expectNumberArgs(args, env, 3, "matrix", "set", "row, col, value");
 
-    const row_val = try eval.evalExpr(args[0], env);
-    const col_val = try eval.evalExpr(args[1], env);
-    const value_val = try eval.evalExpr(args[2], env);
-
-    if (row_val != .number or col_val != .number or value_val != .number) {
-        try writer_err.print("matrix.set(row, col, value) expects all numeric arguments\n", .{});
-        return error.TypeMismatch;
-    }
-
-    const row: i64 = @intFromFloat(row_val.number);
-    const col: i64 = @intFromFloat(col_val.number);
+    const row: i64 = @intFromFloat(parts[0]);
+    const col: i64 = @intFromFloat(parts[1]);
+    const val = parts[2];
 
     const inst = try getMatrixInstance(this);
     if (row >= inst.matrix.len or col >= inst.matrix[0].items.len) {
-        try writer_err.print("matrix.set({d}, {d}) out of bounds\n", .{ row, col });
+        try writer_err.print("matrix.set(row, col, value): indices ({d}, {d}) out of bounds\n", .{ row, col });
         return error.IndexOutOfBounds;
     }
 
-    inst.matrix[@intCast(row)].items[@intCast(col)] = value_val.number;
+    inst.matrix[@intCast(row)].items[@intCast(col)] = val;
     return this.*;
 }
 
 pub fn matrixTranspose(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("matrix.transpose() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "matrix", "transpose", "");
 
     const inst = try getMatrixInstance(this);
     const rows = inst.rows;
@@ -282,15 +272,9 @@ pub fn matrixTranspose(this: *Value, args: []const *ast.Expr, env: *Environment)
 }
 
 pub fn matrixEquals(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("matrix.equals(other_matrix) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "matrix", "equals", "other_matrix"))[0];
     const a = try getMatrixInstance(this);
-    const b = try expectMatrix(&other_val, "matrix", "equals");
+    const b = try expectMatrix(&other_val, "matrix", "equals", "other_matrix");
 
     if (a.matrix.len != b.matrix.len or a.matrix[0].items.len != b.matrix[0].items.len)
         return .{
@@ -314,18 +298,18 @@ pub fn matrixEquals(this: *Value, args: []const *ast.Expr, env: *Environment) !V
 
 pub fn matrixAdd(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("matrix.add(other_matrix) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "matrix", "add", "other_matrix"))[0];
     const a = try getMatrixInstance(this);
-    const b = try expectMatrix(&other_val, "matrix", "add");
+    const b = try expectMatrix(&other_val, "matrix", "add", "other_matrix");
 
-    if (a.matrix.len != b.matrix.len or a.matrix[0].items.len != b.matrix[0].items.len) {
-        try writer_err.print("matrix.add(): size mismatch\n", .{});
-        return error.VectorSizeMismatch;
+    if (a.rows != b.rows or a.cols != b.cols) {
+        try writer_err.print("matrix.add(other_matrix): incompatible dimensions {d}x{d} and {d}x{d}\n", .{
+            a.rows,
+            a.cols,
+            b.rows,
+            b.cols,
+        });
+        return error.InvalidShape;
     }
 
     for (a.matrix, 0..) |row_a, i| {
@@ -339,18 +323,18 @@ pub fn matrixAdd(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
 pub fn matrixSub(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("matrix.sub(other_matrix) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "matrix", "sub", "other_matrix"))[0];
     const a = try getMatrixInstance(this);
-    const b = try expectMatrix(&other_val, "matrix", "sub");
+    const b = try expectMatrix(&other_val, "matrix", "sub", "other_matrix");
 
-    if (a.matrix.len != b.matrix.len or a.matrix[0].items.len != b.matrix[0].items.len) {
-        try writer_err.print("matrix.sub(): size mismatch\n", .{});
-        return error.VectorSizeMismatch;
+    if (a.rows != b.rows or a.cols != b.cols) {
+        try writer_err.print("matrix.sub(other_matrix): incompatible dimensions {d}x{d} and {d}x{d}\n", .{
+            a.rows,
+            a.cols,
+            b.rows,
+            b.cols,
+        });
+        return error.InvalidShape;
     }
 
     for (a.matrix, 0..) |row_a, i| {
@@ -363,7 +347,7 @@ pub fn matrixSub(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 }
 
 pub fn matrixScale(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const scalar = (try expectNumberArgs(args, env, 1, "matrix", "scale"))[0];
+    const scalar = (try expectNumberArgs(args, env, 1, "matrix", "scale", "scalar"))[0];
     const inst = try getMatrixInstance(this);
 
     for (inst.matrix) |row| {
@@ -377,16 +361,11 @@ pub fn matrixScale(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 
 pub fn matrixMul(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("matrix.mul(other_matrix|vector) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
     const inst = try getMatrixInstance(this);
+    var rhs_val = (try expectValues(args, env, 1, "matrix", "mul", "other_matrix|vector"))[0];
     const lhs_rows = inst.rows;
     const lhs_cols = inst.cols;
-
-    var rhs_val = try eval.evalExpr(args[0], env);
 
     // === Matrix * Matrix ===
     if (rhs_val == .std_instance and std.mem.eql(u8, try builtins.getStdStructName(&rhs_val), "matrix")) {
@@ -395,7 +374,7 @@ pub fn matrixMul(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
         const rhs_cols = rhs.cols;
 
         if (lhs_cols != rhs_rows) {
-            try writer_err.print("matrix.mul(matrix): incompatible dimensions {d}x{d} * {d}x{d}\n", .{ lhs_rows, lhs_cols, rhs_rows, rhs_cols });
+            try writer_err.print("matrix.mul(other_matrix): incompatible dimensions {d}x{d} * {d}x{d}\n", .{ lhs_rows, lhs_cols, rhs_rows, rhs_cols });
             return error.InvalidShape;
         }
 
@@ -443,7 +422,6 @@ pub fn matrixMul(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
     // === Matrix * Vector ===
     if (rhs_val == .std_instance and std.mem.eql(u8, try builtins.getStdStructName(&rhs_val), "vector")) {
-        const vector = @import("vector.zig");
         const rhs = try vector.getVectorInstance(&rhs_val);
         const rhs_len = rhs.vector.items.len;
 
@@ -486,17 +464,13 @@ pub fn matrixMul(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
         };
     }
 
-    try writer_err.print("matrix.mul(other): expected matrix or vector, got {s}\n", .{@tagName(rhs_val)});
+    try writer_err.print("matrix.mul(other_matrix|vector): expected matrix or vector, got a(n) {s}\n", .{@tagName(rhs_val)});
     return error.TypeMismatch;
 }
 
 pub fn matrixInverse(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("matrix.inverse() takes no arguments\n", .{});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "matrix", "inverse", "");
     const inst = try getMatrixInstance(this);
     const n = inst.rows;
     const m = inst.cols;
@@ -547,12 +521,7 @@ pub fn matrixInverse(this: *Value, args: []const *ast.Expr, env: *Environment) !
 }
 
 fn matrixItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("matrix.items() expects 0 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "matrix", "items", "");
     const inst = try getMatrixInstance(this);
     var result = try std.ArrayList(Value).initCapacity(env.allocator, inst.size);
     for (inst.matrix) |row| {
@@ -573,39 +542,24 @@ fn matrixItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
     };
 }
 
-fn matrixSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("matrix.size() expects 0 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn matrixSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "matrix", "size", "");
     const inst = try getMatrixInstance(this);
     return .{
         .number = @floatFromInt(inst.size),
     };
 }
 
-pub fn matrixRows(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("matrix.rows() expects 0 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+pub fn matrixRows(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "matrix", "rows", "");
     const inst = try getMatrixInstance(this);
     return .{
         .number = @floatFromInt(inst.rows),
     };
 }
 
-pub fn matrixCols(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("matrix.cols() expects 0 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+pub fn matrixCols(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "matrix", "cols", "");
     const inst = try getMatrixInstance(this);
     return .{
         .number = @floatFromInt(inst.cols),
@@ -613,12 +567,7 @@ pub fn matrixCols(this: *Value, args: []const *ast.Expr, _: *Environment) !Value
 }
 
 fn matrixStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("matrix.str() expects 0 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "matrix", "str", "");
     const inst = try getMatrixInstance(this);
     return .{
         .string = try toString(env.allocator, inst),

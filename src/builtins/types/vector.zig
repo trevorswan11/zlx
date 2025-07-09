@@ -82,7 +82,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 fn vectorConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len == 0) {
-        try writer_err.print("vector(args..) expects at least 1 arguments but got 0\n", .{});
+        try writer_err.print("vector.ctor(args..): expected at least 1 arguments but got 0\n", .{});
         return error.ArgumentCountMismatch;
     }
 
@@ -147,7 +147,7 @@ pub fn vectorAdd(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
     const b = other.vector;
 
     if (a.items.len != b.items.len) {
-        try writer_err.print("Cannot add vector of length {d} to vector of length {d}\n", .{ a.items.len, b.items.len });
+        try writer_err.print("vector.add(other_vec): cannot add vector of length {d} to vector of length {d}\n", .{ a.items.len, b.items.len });
         return error.VectorSizeMismatch;
     }
 
@@ -168,7 +168,7 @@ pub fn vectorSub(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
     const b = other.vector;
 
     if (a.items.len != b.items.len) {
-        try writer_err.print("Cannot sub vector of length {d} to vector of length {d}\n", .{ a.items.len, b.items.len });
+        try writer_err.print("vector.sub(other_vec): cannot sub vector of length {d} to vector of length {d}\n", .{ a.items.len, b.items.len });
         return error.VectorSizeMismatch;
     }
 
@@ -189,7 +189,7 @@ pub fn vectorDot(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
     const b = other.vector;
 
     if (a.items.len != b.items.len) {
-        try writer_err.print("Cannot dot vector of length {d} to vector of length {d}\n", .{ a.items.len, b.items.len });
+        try writer_err.print("vector.dot(other_vec): cannot dot vector of length {d} to vector of length {d}\n", .{ a.items.len, b.items.len });
         return error.VectorSizeMismatch;
     }
 
@@ -204,7 +204,7 @@ pub fn vectorDot(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
 pub fn vectorScale(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const inst = try getVectorInstance(this);
-    const scalar = (try expectNumberArgs(args, env, 1, "vector", "scale", "number"))[0];
+    const scalar = (try expectNumberArgs(args, env, 1, "vector", "scale", "scalar"))[0];
     for (inst.vector.items) |*item| {
         item.* *= scalar;
     }
@@ -241,7 +241,7 @@ pub fn vectorNormalize(this: *Value, args: []const *ast.Expr, env: *Environment)
 
     const norm = std.math.sqrt(sum_sq);
     if (norm == 0) {
-        try writer_err.print("vector.normalize() failed: zero vector has no direction\n", .{});
+        try writer_err.print("vector.normalize(): zero vector has no direction\n", .{});
         return error.DivisionByZero;
     }
 

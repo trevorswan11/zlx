@@ -12,6 +12,11 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
 const HashSet = @import("dsa").HashSet(Value, interpreter.ValueContext);
 pub const HashSetInstance = struct {
     set: HashSet,
@@ -51,6 +56,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 
 fn setConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
+    
     const set = try HashSet.init(env.allocator);
     const wrapped = try env.allocator.create(HashSetInstance);
     wrapped.* = .{
@@ -58,7 +64,7 @@ fn setConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     };
 
     if (args.len > 1) {
-        try writer_err.print("set(optional_array) expects at most 1 argument but got {d}\n", .{args.len});
+        try writer_err.print("set.ctor(optional_array): expected at most 1 argument but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -67,7 +73,7 @@ fn setConstructor(args: []const *ast.Expr, env: *Environment) !Value {
         const raw_input = input.deref();
 
         if (raw_input != .array) {
-            try writer_err.print("set(array) expects an array argument but got a(n) {s}\n", .{@tagName(raw_input)});
+            try writer_err.print("set.ctor(array): expected an array argument but got a(n) {s}\n", .{@tagName(raw_input)});
             return error.TypeMismatch;
         }
 
@@ -99,26 +105,14 @@ fn setConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn setInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("set.insert(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try interpreter.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "set", "insert", "value"))[0];
     const inst = try getSetInstance(this);
     try inst.set.insert(val);
     return .nil;
 }
 
 fn setRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("set.remove(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try interpreter.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "set", "remove", "value"))[0];
     const inst = try getSetInstance(this);
     return .{
         .boolean = inst.set.remove(val),
@@ -126,51 +120,30 @@ fn setRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn setContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("set.contains(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try interpreter.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "set", "contains", "value"))[0];
     const inst = try getSetInstance(this);
     return .{
         .boolean = inst.set.contains(val),
     };
 }
 
-fn setClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("set.clear() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn setClear(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "set", "size", "");
     const inst = try getSetInstance(this);
     inst.set.clear();
     return .nil;
 }
 
-fn setSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("set.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn setSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "set", "size", "");
     const inst = try getSetInstance(this);
     return .{
         .number = @floatFromInt(inst.set.size()),
     };
 }
 
-fn setEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("set.empty() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn setEmpty(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "set", "empty", "");
     const inst = try getSetInstance(this);
     return .{
         .boolean = inst.set.empty(),
@@ -178,12 +151,7 @@ fn setEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 }
 
 pub fn setItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("set.items() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "set", "items", "");
     const inst = try getSetInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -197,13 +165,8 @@ pub fn setItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
     };
 }
 
-fn setStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("set.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn setStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "set", "str", "");
     const inst = try getSetInstance(this);
     return .{
         .string = try toString(inst.set),

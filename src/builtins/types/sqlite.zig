@@ -82,13 +82,13 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 fn sqliteConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "ctor", "filepath"))[0];
+    const val = (try expectStringArgs(args, env, 1, "sqlite", "ctor", "filepath"))[0];
     const path = try env.allocator.dupeZ(u8, val);
 
     var db: ?*c.sqlite3 = null;
     const rc = c.sqlite3_open(path.ptr, &db);
     if (rc != c.SQLITE_OK) {
-        try writer_err.print("sqlite open failed: {s}\n", .{c.sqlite3_errstr(rc)});
+        try writer_err.print("sqlite.ctor(filepath) failed: {s}\n", .{c.sqlite3_errstr(rc)});
         return error.SqliteOpenFailed;
     }
 
@@ -122,7 +122,7 @@ fn sqliteConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 fn sqliteExec(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "exec", "sql_string"))[0];
+    const val = (try expectStringArgs(args, env, 1, "sqlite", "exec", "sql_string"))[0];
     const sql = try env.allocator.dupeZ(u8, val);
     const inst = try getSqliteInstance(this);
 
@@ -138,14 +138,14 @@ fn sqliteExec(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
 fn sqliteQuery(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "query", "sql_string"))[0];
+    const val = (try expectStringArgs(args, env, 1, "sqlite", "query", "sql_string"))[0];
     const sql = try env.allocator.dupeZ(u8, val);
     const inst = try getSqliteInstance(this);
 
     var stmt: ?*c.sqlite3_stmt = null;
     const rc_prepare = c.sqlite3_prepare_v2(inst.db, sql, -1, &stmt, null);
     if (rc_prepare != c.SQLITE_OK) {
-        try writer_err.print("sqlite.query(sql_string): prepare failed: {s}\n", .{c.sqlite3_errmsg(inst.db)});
+        try writer_err.print("sqlite.query(sql_string) failed: {s}\n", .{c.sqlite3_errmsg(inst.db)});
         return error.SqlitePrepareFailed;
     }
     defer _ = c.sqlite3_finalize(stmt);
@@ -188,7 +188,7 @@ fn sqliteQuery(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
                     nested_val = .nil;
                 },
                 else => {
-                    try writer_err.print("Unsupported column type in sqlite.query(sql_string)\n", .{});
+                    try writer_err.print("sqlite.query(sql_string): unsupported column type\n", .{});
                     return error.UnsupportedColumnType;
                 },
             }
@@ -215,7 +215,7 @@ fn sqliteTables(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
     var stmt: ?*c.sqlite3_stmt = null;
     const rc = c.sqlite3_prepare_v2(inst.db, sql, -1, &stmt, null);
     if (rc != c.SQLITE_OK) {
-        try writer_err.print("sqlite.tables() prepare failed: {s}\n", .{c.sqlite3_errmsg(inst.db)});
+        try writer_err.print("sqlite.tables() failed: {s}\n", .{c.sqlite3_errmsg(inst.db)});
         return error.SqlitePrepareFailed;
     }
     defer _ = c.sqlite3_finalize(stmt);
@@ -227,7 +227,9 @@ fn sqliteTables(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
         const text_len = c.sqlite3_column_bytes(stmt, 0);
         const slice = text_ptr[0..@intCast(text_len)];
         const name = try env.allocator.dupe(u8, slice);
-        try tables.append(.{ .string = name });
+        try tables.append(.{
+            .string = name,
+        });
     }
 
     return .{
@@ -238,7 +240,7 @@ fn sqliteTables(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
 fn sqliteColumns(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "columns"))[0];
+    const val = (try expectStringArgs(args, env, 1, "sqlite", "columns", "table_name"))[0];
     const table_name = try std.fmt.allocPrint(env.allocator, "PRAGMA table_info({s});", .{val});
 
     const inst = try getSqliteInstance(this);
@@ -246,7 +248,7 @@ fn sqliteColumns(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
     var stmt: ?*c.sqlite3_stmt = null;
     const rc = c.sqlite3_prepare_v2(inst.db, table_name.ptr, -1, &stmt, null);
     if (rc != c.SQLITE_OK) {
-        try writer_err.print("sqlite.columns() prepare failed: {s}\n", .{c.sqlite3_errmsg(inst.db)});
+        try writer_err.print("sqlite.columns(table_name) failed: {s}\n", .{c.sqlite3_errmsg(inst.db)});
         return error.SqlitePrepareFailed;
     }
     defer _ = c.sqlite3_finalize(stmt);
@@ -299,7 +301,7 @@ var STATEMENT_TYPE: Value = undefined;
 fn sqlitePrepare(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "prepare", "sql_string"))[0];
+    const val = (try expectStringArgs(args, env, 1, "sqlite", "prepare", "sql_string"))[0];
     const sql = try env.allocator.dupeZ(u8, val);
     const db_inst = try getSqliteInstance(this);
 
@@ -349,7 +351,7 @@ fn stmtBind(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
         .string => c.sqlite3_bind_text(inst.stmt, index, value.string.ptr, @intCast(value.string.len), SQLITE_TRANSIENT),
         .nil => c.sqlite3_bind_null(inst.stmt, index),
         else => {
-            try writer_err.print("Unsupported bind value type\n", .{});
+            try writer_err.print("sqlite.stmt.bind(value): unsupported bind value type '{s}'\n", .{@tagName(value)});
             return error.UnsupportedBindValue;
         },
     };
@@ -365,7 +367,7 @@ fn stmtBind(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
 fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    const val = (try builtins.expectArrayArgs(args, env, 1, "sqlite.stmt", "bind_all", "array"))[0];
+    const val = (try expectArrayArgs(args, env, 1, "sqlite.stmt", "bind_all", "array"))[0];
     const inst = try getStmtInstance(this);
 
     const vals = val.items;
@@ -379,7 +381,7 @@ fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
             .string => c.sqlite3_bind_text(inst.stmt, index, item.string.ptr, @intCast(item.string.len), SQLITE_TRANSIENT),
             .nil => c.sqlite3_bind_null(inst.stmt, index),
             else => {
-                try writer_err.print("Unsupported bind_all value at index {d}\n", .{i});
+                try writer_err.print("sqlite.stmt.bind_all(array): unsupported bind_all value '{s}' at index {d}\n", .{ @tagName(item), i });
                 return error.UnsupportedBindValue;
             },
         };
@@ -394,14 +396,10 @@ fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
 }
 
 fn stmtStep(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const inst = try getStmtInstance(this);
     const writer_err = driver.getWriterErr();
+    _ = try expectValues(args, env, 0, "sqlite.stmt", "step", "");
 
-    if (args.len != 0) {
-        try writer_err.print("statement.step() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    const inst = try getStmtInstance(this);
     const rc = c.sqlite3_step(inst.stmt);
 
     if (rc == c.SQLITE_ROW) {
@@ -430,7 +428,7 @@ fn stmtStep(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
                 },
                 c.SQLITE_NULL => .nil,
                 else => {
-                    try writer_err.print("Unsupported column type\n", .{});
+                    try writer_err.print("sqlite.stmt.step(): unsupported column type\n", .{});
                     return error.UnsupportedColumnType;
                 },
             };
@@ -441,13 +439,13 @@ fn stmtStep(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     } else if (rc == c.SQLITE_DONE) {
         return .nil;
     } else {
-        try writer_err.print("sqlite.step() failed\n", .{});
+        try writer_err.print("sqlite.stmt.step() failed\n", .{});
         return error.SqliteStepFailed;
     }
 }
 
-fn stmtFinalize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    if (args.len != 0) return error.ArgumentCountMismatch;
+fn stmtFinalize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "sqlite.stmt", "finalize", "");
     const inst = try getStmtInstance(this);
 
     if (inst.stmt) |stmt| {

@@ -12,6 +12,11 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
 const Deque = @import("dsa").Deque(Value);
 pub const DequeInstance = struct {
     deque: Deque,
@@ -53,11 +58,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn dequeConstructor(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "deque", "ctor", "");
 
     const deque = try Deque.init(env.allocator);
     const wrapped = try env.allocator.create(DequeInstance);
@@ -88,107 +89,60 @@ fn dequeConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn dequePushHead(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("deque.push_head(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try interpreter.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "list", "push_head", "value"))[0];
     const inst = try getDequeInstance(this);
     try inst.deque.pushHead(val);
     return .nil;
 }
 
 fn dequePushTail(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("deque.push_tail(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try interpreter.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "list", "push_tail", "value"))[0];
     const inst = try getDequeInstance(this);
     try inst.deque.pushTail(val);
     return .nil;
 }
 
-fn dequePopHead(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.pop_head() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn dequePopHead(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "deque", "pop_head", "");
     const deque = try getDequeInstance(this);
     return deque.deque.popHead() orelse .nil;
 }
 
-fn dequePopTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.pop_tail() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn dequePopTail(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "deque", "pop_tail", "");
     const inst = try getDequeInstance(this);
     return inst.deque.popTail() orelse .nil;
 }
 
-fn dequePeekHead(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.peek_head() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn dequePeekHead(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "deque", "peek_head", "");
     const inst = try getDequeInstance(this);
     return inst.deque.peekHead() orelse .nil;
 }
 
-fn dequePeekTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.peek_tail() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn dequePeekTail(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "deque", "peek_tail", "");
     const inst = try getDequeInstance(this);
     return inst.deque.peekTail() orelse .nil;
 }
 
-fn dequeClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.clear() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn dequeClear(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "deque", "clear", "");
     const inst = try getDequeInstance(this);
     inst.deque.list.clear();
     return .nil;
 }
 
-fn dequeEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.empty() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn dequeEmpty(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "deque", "empty", "");
     const inst = try getDequeInstance(this);
     return .{
         .boolean = inst.deque.list.empty(),
     };
 }
 
-fn dequeSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn dequeSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "deque", "size", "");
     const inst = try getDequeInstance(this);
     return .{
         .number = @floatFromInt(inst.deque.list.len),
@@ -196,12 +150,7 @@ fn dequeSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 }
 
 pub fn dequeItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.items() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "deque", "items", "");
     const inst = try getDequeInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -215,13 +164,8 @@ pub fn dequeItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Val
     };
 }
 
-fn dequeStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("deque.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn dequeStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "deque", "str", "");
     const inst = try getDequeInstance(this);
     return .{
         .string = try inst.deque.toString(),

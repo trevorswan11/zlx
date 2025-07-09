@@ -12,6 +12,11 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
 const PriorityQueue = @import("dsa").PriorityQueue(Value, Value.less);
 pub const PriorityQueueInstance = struct {
     pq: PriorityQueue,
@@ -52,7 +57,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 fn pqConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len > 1) {
-        try writer_err.print("heap(max_at_top) expects 0 or 1 arguments but got {d}\n", .{args.len});
+        try writer_err.print("heap.ctor(max_at_top): expected 0 or 1 arguments but got {d}\n", .{args.len});
         return error.ArgumentCountMismatch;
     }
 
@@ -65,7 +70,7 @@ fn pqConstructor(args: []const *ast.Expr, env: *Environment) !Value {
     };
 
     if (max != .boolean) {
-        try writer_err.print("heap(max_at_top) expects a boolean argument but got a(n) {s}\n", .{@tagName(max)});
+        try writer_err.print("heap.ctor(max_at_top): expected a boolean argument but got a(n) {s}\n", .{@tagName(max)});
         return error.TypeMismatch;
     }
 
@@ -98,25 +103,14 @@ fn pqConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn pqInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("heap.insert(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const value = try eval.evalExpr(args[0], env);
+    const value = (try expectValues(args, env, 1, "pq", "insert", "value"))[0];
     const inst = try getPriorityQueueInstance(this);
     try inst.pq.insert(value);
     return .nil;
 }
 
-fn pqPoll(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("pq.poll() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn pqPoll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "pq", "poll", "");
     const inst = try getPriorityQueueInstance(this);
     if (try inst.pq.poll()) |popped| {
         return popped;
@@ -125,62 +119,37 @@ fn pqPoll(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
     }
 }
 
-fn pqPeek(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("pq.peek() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn pqPeek(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "pq", "peek", "");
     const inst = try getPriorityQueueInstance(this);
     return if (inst.pq.size() == 0) .nil else try inst.pq.peek();
 }
 
-fn pqSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("pq.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn pqSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "pq", "size", "");
     const inst = try getPriorityQueueInstance(this);
     return .{
         .number = @floatFromInt(inst.pq.size()),
     };
 }
 
-fn pqEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("pq.empty() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn pqEmpty(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "pq", "empty", "");
     const inst = try getPriorityQueueInstance(this);
     return .{
         .boolean = inst.pq.empty(),
     };
 }
 
-fn pqClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("pq.clear() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn pqClear(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "pq", "clear", "");
     const inst = try getPriorityQueueInstance(this);
     while (try inst.pq.poll()) |_| {}
     return .nil;
 }
 
 pub fn pqItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("pq.items() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "pq", "items", "");
     const inst = try getPriorityQueueInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -193,13 +162,8 @@ pub fn pqItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
     };
 }
 
-fn pqStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("pq.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn pqStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "pq", "str", "");
     const inst = try getPriorityQueueInstance(this);
     return .{
         .string = try inst.pq.toString(),

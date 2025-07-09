@@ -12,6 +12,11 @@ const Value = interpreter.Value;
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
 const HashMap = @import("dsa").HashMap(Value, Value, interpreter.ValueContext);
 pub const HashMapInstance = struct {
     map: HashMap,
@@ -51,11 +56,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn mapConstructor(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("map() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "map", "ctor", "");
 
     const map = try HashMap.init(env.allocator);
     const wrapped = try env.allocator.create(HashMapInstance);
@@ -86,89 +87,52 @@ fn mapConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn mapPut(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("map.put(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const parts = try expectValues(args, env, 2, "map", "put", "key, val");
+    const key = parts[0];
+    const val = parts[1];
 
-    const key = try interpreter.evalExpr(args[0], env);
-    const val = try interpreter.evalExpr(args[1], env);
     const inst = try getMapInstance(this);
     try inst.map.put(key, val);
     return .nil;
 }
 
 fn mapGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("map.get(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const key = try interpreter.evalExpr(args[0], env);
+    const key = (try expectValues(args, env, 1, "map", "get", "key"))[0];
     const inst = try getMapInstance(this);
     return inst.map.find(key) orelse .nil;
 }
 
 fn mapRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("map.remove(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const key = try interpreter.evalExpr(args[0], env);
+    const key = (try expectValues(args, env, 1, "map", "remove", "key"))[0];
     const inst = try getMapInstance(this);
     return inst.map.remove(key) orelse .nil;
 }
 
 fn mapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("map.contains(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const key = try interpreter.evalExpr(args[0], env);
+    const key = (try expectValues(args, env, 1, "map", "contains", "key"))[0];
     const inst = try getMapInstance(this);
     return .{
         .boolean = inst.map.containsKey(key),
     };
 }
 
-fn mapClear(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("map.clear() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn mapClear(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "map", "clear", "");
     const inst = try getMapInstance(this);
     inst.map.clear();
     return .nil;
 }
 
-fn mapSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("map.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn mapSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "map", "size", "");
     const inst = try getMapInstance(this);
     return .{
         .number = @floatFromInt(inst.map.size()),
     };
 }
 
-fn mapEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("map.empty() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn mapEmpty(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "map", "empty", "");
     const inst = try getMapInstance(this);
     return .{
         .boolean = inst.map.size() == 0,
@@ -176,12 +140,7 @@ fn mapEmpty(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 }
 
 pub fn mapItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("map.items() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+    _ = try expectValues(args, env, 0, "map", "items", "");
     const inst = try getMapInstance(this);
     var vals = std.ArrayList(Value).init(env.allocator);
 
@@ -200,13 +159,8 @@ pub fn mapItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
     };
 }
 
-fn mapStr(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("map.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
+fn mapStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "map", "str", "");
     const inst = try getMapInstance(this);
     return .{
         .string = try toString(inst.map),
