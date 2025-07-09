@@ -1,6 +1,5 @@
 const std = @import("std");
 const c = @cImport({
-    @cDefine("SQLITE_TRANSIENT", "((sqlite3_destructor_type)-1)");
     @cInclude("sqlite3.h");
 });
 
@@ -8,12 +7,18 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-
 const eval = interpreter.eval;
+
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
+
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
+
+// MACOS portability fix, pointer type '?*const fn (?*anyopaque) callconv(.c) void' requires aligned address
+const sqlite3_destructor_type = ?*const fn (?*anyopaque) callconv(.C) void;
+fn sqlite3_transient_dummy(_: ?*anyopaque) callconv(.C) void {}
+const SQLITE_TRANSIENT = @as(sqlite3_destructor_type, @ptrCast(@alignCast(&sqlite3_transient_dummy)));
 
 // general sql definition and usage
 
@@ -288,9 +293,6 @@ fn sqliteClose(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 
 // sql statement definition and usage
 
-/// MACOS portability fix, pointer type '?*const fn (?*anyopaque) callconv(.c) void' requires aligned address
-// const SQLITE_TRANSIENT: ?*const fn (?*anyopaque) callconv(.C) void = @ptrFromInt(@as(u32, @bitCast(@as(i32, -1))));
-
 pub const StatementInstance = struct {
     stmt: ?*c.sqlite3_stmt = null,
     db: ?*c.sqlite3 = null,
@@ -365,7 +367,7 @@ fn stmtBind(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const index: c_int = 1;
     const rc = switch (val) {
         .number => c.sqlite3_bind_double(inst.stmt, index, val.number),
-        .string => c.sqlite3_bind_text(inst.stmt, index, val.string.ptr, @intCast(val.string.len), c.SQLITE_TRANSIENT),
+        .string => c.sqlite3_bind_text(inst.stmt, index, val.string.ptr, @intCast(val.string.len), SQLITE_TRANSIENT),
         .nil => c.sqlite3_bind_null(inst.stmt, index),
         else => {
             try writer_err.print("Unsupported bind value type\n", .{});
@@ -405,7 +407,7 @@ fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value 
 
         const rc = switch (item) {
             .number => c.sqlite3_bind_double(inst.stmt, index, item.number),
-            .string => c.sqlite3_bind_text(inst.stmt, index, item.string.ptr, @intCast(item.string.len), c.SQLITE_TRANSIENT),
+            .string => c.sqlite3_bind_text(inst.stmt, index, item.string.ptr, @intCast(item.string.len), SQLITE_TRANSIENT),
             .nil => c.sqlite3_bind_null(inst.stmt, index),
             else => {
                 try writer_err.print("Unsupported bind_all value at index {d}\n", .{i});
