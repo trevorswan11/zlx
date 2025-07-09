@@ -4,16 +4,20 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-const eval = interpreter.eval;
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
 
+const expectValues = builtins.expectValues;
 const expectNumberArgs = builtins.expectNumberArgs;
 const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
+const expectArrayRef = builtins.expectArrayRef;
 const expectNumberArrays = builtins.expectNumberArrays;
 
 fn expectVector(val: *Value, module_name: []const u8, func_name: []const u8) !*VectorInstance {
@@ -129,15 +133,11 @@ fn vectorConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 
 pub fn vectorAdd(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.add(other_vec) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
-    const inst = try getVectorInstance(this);
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "vector", "add"))[0];
     const other = try expectVector(&other_val, "vector", "add");
 
+    const inst = try getVectorInstance(this);
     const a = inst.vector;
     const b = other.vector;
 
@@ -154,15 +154,11 @@ pub fn vectorAdd(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
 pub fn vectorSub(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.sub(other_vec) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
-    const inst = try getVectorInstance(this);
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "vector", "sub"))[0];
     const other = try expectVector(&other_val, "vector", "sub");
 
+    const inst = try getVectorInstance(this);
     const a = inst.vector;
     const b = other.vector;
 
@@ -179,15 +175,11 @@ pub fn vectorSub(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 
 pub fn vectorDot(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.dot(other_vec) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
-    const inst = try getVectorInstance(this);
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "vector", "dot"))[0];
     const other = try expectVector(&other_val, "vector", "dot");
 
+    const inst = try getVectorInstance(this);
     const a = inst.vector;
     const b = other.vector;
 
@@ -206,12 +198,6 @@ pub fn vectorDot(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 }
 
 pub fn vectorScale(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.scale(scalar) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
     const inst = try getVectorInstance(this);
     const scalar = (try expectNumberArgs(args, env, 1, "vector", "scale"))[0];
     for (inst.vector.items) |*item| {
@@ -220,12 +206,8 @@ pub fn vectorScale(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
     return this.*;
 }
 
-pub fn vectorNorm(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("vector.norm() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+pub fn vectorNorm(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "vector", "norm");
 
     const inst = try getVectorInstance(this);
     const vec = inst.vector;
@@ -240,12 +222,9 @@ pub fn vectorNorm(this: *Value, args: []const *ast.Expr, _: *Environment) !Value
     };
 }
 
-pub fn vectorNormalize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
+pub fn vectorNormalize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("vector.normalize() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "vector", "normalize");
 
     const inst = try getVectorInstance(this);
     const vec = inst.vector;
@@ -270,15 +249,11 @@ pub fn vectorNormalize(this: *Value, args: []const *ast.Expr, _: *Environment) !
 
 pub fn vectorProject(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.project(onto_vec) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
-    const inst = try getVectorInstance(this);
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "vector", "project"))[0];
     const onto = try expectVector(&other_val, "vector", "project");
 
+    const inst = try getVectorInstance(this);
     const a = inst.vector;
     const b = onto.vector;
 
@@ -309,15 +284,11 @@ pub fn vectorProject(this: *Value, args: []const *ast.Expr, env: *Environment) !
 
 pub fn vectorAngle(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.angle(other_vec) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
-    const inst = try getVectorInstance(this);
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "vector", "angle"))[0];
     const other = try expectVector(&other_val, "vector", "angle");
 
+    const inst = try getVectorInstance(this);
     const a = inst.vector;
     const b = other.vector;
 
@@ -352,15 +323,11 @@ pub fn vectorAngle(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 
 pub fn vectorCross(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.cross(other_vec) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
-    const inst = try getVectorInstance(this);
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "vector", "project"))[0];
     const other = try expectVector(&other_val, "vector", "cross");
 
+    const inst = try getVectorInstance(this);
     const a = inst.vector;
     const b = other.vector;
 
@@ -383,16 +350,10 @@ pub fn vectorCross(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 }
 
 pub fn vectorEquals(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.equals(other_vec) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const inst = try getVectorInstance(this);
-    var other_val = try eval.evalExpr(args[0], env);
+    var other_val = (try expectValues(args, env, 1, "vector", "project"))[0];
     const other = try expectVector(&other_val, "vector", "equals");
 
+    const inst = try getVectorInstance(this);
     const a = inst.vector;
     const b = other.vector;
 
@@ -414,47 +375,22 @@ pub fn vectorEquals(this: *Value, args: []const *ast.Expr, env: *Environment) !V
 }
 
 pub fn vectorSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("vector.set(index, value) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const parts = try expectNumberArgs(args, env, 2, "vector", "set");
+    const index_val = parts[0];
+    const val_val = parts[1];
+    const index: usize = @intFromFloat(index_val);
 
     const inst = try getVectorInstance(this);
-    const idx_val = try eval.evalExpr(args[0], env);
-    const val_val = try eval.evalExpr(args[1], env);
-
-    if (idx_val != .number or val_val != .number) {
-        try writer_err.print("vector.set(int, float) got invalid types ({s}, {s})\n", .{ @tagName(idx_val), @tagName(val_val) });
-        return error.InvalidArgumentType;
-    }
-
-    const index: usize = @intFromFloat(idx_val.number);
-    if (index >= inst.vector.items.len) {
-        try writer_err.print("Index {d} out of bounds for vector of length {d}\n", .{ index, inst.vector.items.len });
-        return error.IndexOutOfBounds;
-    }
-
-    inst.vector.items[index] = val_val.number;
+    inst.vector.items[index] = val_val;
     return this.*;
 }
 
 pub fn vectorGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("vector.get(index) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const index_val = (try expectNumberArgs(args, env, 1, "vector", "get"))[0];
+    const index: usize = @intFromFloat(index_val);
 
     const inst = try getVectorInstance(this);
-    const idx_val = try eval.evalExpr(args[0], env);
-
-    if (idx_val != .number) {
-        try writer_err.print("vector.get(index) expects a numeric index\n", .{});
-        return error.InvalidArgumentType;
-    }
-
-    const index: usize = @intFromFloat(idx_val.number);
     if (index >= inst.vector.items.len) {
         try writer_err.print("vector.get(index): index {d} out of bounds for vector of length {d}\n", .{ index, inst.vector.items.len });
         return error.IndexOutOfBounds;
@@ -465,12 +401,8 @@ pub fn vectorGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
     };
 }
 
-pub fn vectorSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("vector.size() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+pub fn vectorSize(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "vector", "size");
 
     const inst = try getVectorInstance(this);
     return .{
@@ -479,11 +411,7 @@ pub fn vectorSize(this: *Value, args: []const *ast.Expr, _: *Environment) !Value
 }
 
 pub fn vectorItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("vector.items() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "vector", "items");
 
     const inst = try getVectorInstance(this);
     var result = std.ArrayList(Value).init(env.allocator);
@@ -499,11 +427,7 @@ pub fn vectorItems(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 }
 
 pub fn vectorStr(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("vector.str() expects 0 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 0, "vector", "str");
 
     const inst = try getVectorInstance(this);
     return .{

@@ -31,10 +31,12 @@ pub const FloatContext = struct {
 
 // === Forward Expect Helpers ===
 
+pub const expectValues = expect_helpers.expectValues;
 pub const expectStringArgs = expect_helpers.expectStringArgs;
 pub const expectArrayArgs = expect_helpers.expectArrayArgs;
-pub const expectArrayRef = expect_helpers.expectArrayRef;
 pub const expectNumberArgs = expect_helpers.expectNumberArgs;
+
+pub const expectArrayRef = expect_helpers.expectArrayRef;
 pub const expectNumberArrays = expect_helpers.expectNumberArrays;
 
 // === Builtin Functions ===

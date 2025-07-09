@@ -78,30 +78,33 @@ for os in operating_sys {
 commands = commands.items();
 folder_names = folder_names.items();
 
-for command_num in 0..len(commands) {
-    // Compile the program and move into the correct output file
-    let start_compile = time.millis();
-    let out = sys.run(array.join(commands[command_num], " "));
-    if out.stderr != "" {
-        println("Process errored with:");
-        print(out.stderr);
-        break;
-    }
-    let end_compile = time.millis();
-    println(format("Compilation {} took {} ms", command_num + 1, end_compile - start_compile));
-
-    const bin = path.join(target_path, "bin");
-    let exe_path = "";
-    for file in fs.list_all_files(bin) {
-        if string.ends_with(file, "zlx") || string.ends_with(file, "zlx.exe") {
-            exe_path = file;
+fn compile(start, end) {
+    for command_num in start..end {
+        // Compile the program and move into the correct output file
+        let start_compile = time.millis();
+        let out = sys.run(array.join(commands[command_num], " "));
+        if out.stderr != "" {
+            println("Process errored with:");
+            print(out.stderr);
+            break;
         }
+        let end_compile = time.millis();
+        println(format("Compilation {} took {} ms", command_num + 1, end_compile - start_compile));
+
+        const bin = path.join(target_path, "bin");
+        let exe_path = "";
+        for file in fs.list_all_files(bin) {
+            if string.ends_with(file, "zlx") || string.ends_with(file, "zlx.exe") {
+                exe_path = file;
+            }
+        }
+        let release_path = folder_names[command_num];
+        let release_file = path.join(release_path, path.basename(exe_path));
+        fs.copy(exe_path, release_file);
+        fs.rm(bin);
     }
-    let release_path = folder_names[command_num];
-    let release_file = path.join(release_path, path.basename(exe_path));
-    fs.copy(exe_path, release_file);
-    fs.rm(bin);
 }
+
 println();
 
 for compiled, idx in fs.list(target_path) {

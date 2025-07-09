@@ -4,8 +4,8 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-const eval = interpreter.eval;
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
@@ -92,23 +92,14 @@ fn adjMatrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 
 fn adjMatrixAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("adj_matrix.add_edge(val_from, val_to) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
-    const from = try interpreter.evalExpr(args[0], env);
-    const to = try interpreter.evalExpr(args[1], env);
-    if (from != .number or to != .number) {
-        try writer_err.print("adj_matrix.add_edge(val_from, val_to) expects two number arguments but got:\n", .{});
-        try writer_err.print("  From: {s}\n", .{@tagName(from)});
-        try writer_err.print("  To: {s}\n", .{@tagName(to)});
-        return error.TypeMismatch;
-    }
+    const parts = try builtins.expectNumberArgs(args, env, 2, "adj_matrix", "add_edge");
+    const from = parts[0];
+    const to = parts[1];
 
     const inst = try getMatrixInstance(this);
-    const i: usize = @intFromFloat(from.number);
-    const j: usize = @intFromFloat(to.number);
+    const i: usize = @intFromFloat(from);
+    const j: usize = @intFromFloat(to);
     if (i >= inst.matrix.size or j >= inst.matrix.size) {
         try writer_err.print("adj_matrix.add_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.matrix.size });
         return error.IndexOutOfBounds;
@@ -120,23 +111,14 @@ fn adjMatrixAddEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !V
 
 fn adjMatrixRemoveEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("adj_matrix.remove_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
-    const from = try interpreter.evalExpr(args[0], env);
-    const to = try interpreter.evalExpr(args[1], env);
-    if (from != .number or to != .number) {
-        try writer_err.print("adj_matrix.remove_edge(val_from, val_to) expects two number arguments but got:\n", .{});
-        try writer_err.print("  From: {s}\n", .{@tagName(from)});
-        try writer_err.print("  To: {s}\n", .{@tagName(to)});
-        return error.TypeMismatch;
-    }
+    const parts = try builtins.expectNumberArgs(args, env, 2, "adj_matrix", "remove_edge");
+    const from = parts[0];
+    const to = parts[1];
 
     const inst = try getMatrixInstance(this);
-    const i: usize = @intFromFloat(from.number);
-    const j: usize = @intFromFloat(to.number);
+    const i: usize = @intFromFloat(from);
+    const j: usize = @intFromFloat(to);
     if (i >= inst.matrix.size or j >= inst.matrix.size) {
         try writer_err.print("adj_matrix.remove_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, args.len });
         return error.IndexOutOfBounds;
@@ -148,23 +130,14 @@ fn adjMatrixRemoveEdge(this: *Value, args: []const *ast.Expr, env: *Environment)
 
 fn adjMatrixContainsEdge(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("adj_matrix.contains_edge(val_from, val_to) expects 2 arguments but got a(n) {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const from = try interpreter.evalExpr(args[0], env);
-    const to = try interpreter.evalExpr(args[1], env);
-    if (from != .number or to != .number) {
-        try writer_err.print("adj_matrix.contains_edge(val_from, val_to) expects two number arguments but got:\n", .{});
-        try writer_err.print("  From: {s}\n", .{@tagName(from)});
-        try writer_err.print("  To: {s}\n", .{@tagName(to)});
-        return error.TypeMismatch;
-    }
+    
+    const parts = try builtins.expectNumberArgs(args, env, 2, "adj_matrix", "contains_edge");
+    const from = parts[0];
+    const to = parts[1];
 
     const inst = try getMatrixInstance(this);
-    const i: usize = @intFromFloat(from.number);
-    const j: usize = @intFromFloat(to.number);
+    const i: usize = @intFromFloat(from);
+    const j: usize = @intFromFloat(to);
     if (i >= inst.matrix.size or j >= inst.matrix.size) {
         try writer_err.print("adj_matrix.contains_edge(val_from, val_to): Indices ({d}, {d}) out of bounds for matrix size {d}\n", .{ i, j, inst.matrix.size });
         return error.IndexOutOfBounds;

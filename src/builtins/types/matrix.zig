@@ -5,8 +5,8 @@ const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
 const matrix_helpers = @import("../helpers/matrix.zig");
-const eval = interpreter.eval;
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
@@ -179,20 +179,10 @@ fn matrixConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 
 pub fn matrixGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("matrix.get(row, col) expects 2 arguments but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const parts= try builtins.expectNumberArgs(args, env, 2, "matrix", "get");
 
-    const row_val = try eval.evalExpr(args[0], env);
-    const col_val = try eval.evalExpr(args[1], env);
-    if (row_val != .number or col_val != .number) {
-        try writer_err.print("matrix.get(row, col) expects numeric indices, got: ({s}, {s})\n", .{ @tagName(row_val), @tagName(col_val) });
-        return error.TypeMismatch;
-    }
-
-    const row: i64 = @intFromFloat(row_val.number);
-    const col: i64 = @intFromFloat(col_val.number);
+    const row: i64 = @intFromFloat(parts[0]);
+    const col: i64 = @intFromFloat(parts[1]);
 
     const inst = try getMatrixInstance(this);
     if (row >= inst.matrix.len or col >= inst.matrix[0].items.len) {
@@ -368,12 +358,6 @@ pub fn matrixSub(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 }
 
 pub fn matrixScale(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("matrix.scale(scalar) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
     const scalar = (try expectNumberArgs(args, env, 1, "matrix", "scale"))[0];
     const inst = try getMatrixInstance(this);
 

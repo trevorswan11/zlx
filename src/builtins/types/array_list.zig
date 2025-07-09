@@ -4,8 +4,8 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-const eval = interpreter.eval;
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
@@ -53,14 +53,9 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn arrayListConstructor(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
     const capacity: usize = if (args.len == 1) blk: {
-        const val = try interpreter.evalExpr(args[0], env);
-        if (val != .number) {
-            try writer_err.print("array_list(initial_capacity) expects a number arg but got a(n) {s}\n", .{@tagName(val)});
-            return error.TypeMismatch;
-        }
-        break :blk @intFromFloat(val.number);
+        const num = (try builtins.expectNumberArgs(args, env, 1, "array_list", "ctor"))[0];
+        break :blk @intFromFloat(num);
     } else 8;
 
     const array = try ArrayList.init(env.allocator, capacity);
@@ -124,20 +119,9 @@ fn arrayListInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Va
 }
 
 fn arrayListRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("array_list.remove(index) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) {
-        try writer_err.print("array_list.remove(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
-        return error.TypeMismatch;
-    }
-
+    const index_val= (try builtins.expectNumberArgs(args, env, 1, "array_list", "remove"))[0];
     const inst = try getArrayListInstance(this);
-    return try inst.array.remove(@intFromFloat(index_val.number));
+    return try inst.array.remove(@intFromFloat(index_val));
 }
 
 fn arrayListPop(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
@@ -152,20 +136,9 @@ fn arrayListPop(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 }
 
 fn arrayListGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("array_list.get(index) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) {
-        try writer_err.print("array_list.get(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
-        return error.TypeMismatch;
-    }
-
+    const index_val= (try builtins.expectNumberArgs(args, env, 1, "array_list", "get"))[0];
     const inst = try getArrayListInstance(this);
-    return try inst.array.get(@intFromFloat(index_val.number));
+    return try inst.array.get(@intFromFloat(index_val));
 }
 
 fn arrayListSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {

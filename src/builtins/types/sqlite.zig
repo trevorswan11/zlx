@@ -7,8 +7,8 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-const eval = interpreter.eval;
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
@@ -116,10 +116,6 @@ fn sqliteConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 
 fn sqliteExec(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("sqlite.exec(sql) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
     const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "exec"))[0];
     const sql = try env.allocator.dupeZ(u8, val);
@@ -136,11 +132,6 @@ fn sqliteExec(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
 
 fn sqliteQuery(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-
-    if (args.len != 1) {
-        try writer_err.print("sqlite.query(sql) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
     const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "query"))[0];
     const sql = try env.allocator.dupeZ(u8, val);
@@ -245,10 +236,6 @@ fn sqliteTables(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
 
 fn sqliteColumns(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("sqlite.columns(table_name) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
     const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "columns"))[0];
     const table_name = try std.fmt.allocPrint(env.allocator, "PRAGMA table_info({s});", .{val});
@@ -310,10 +297,6 @@ var STATEMENT_TYPE: Value = undefined;
 /// Pseudo-load function for sql statements
 fn sqlitePrepare(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("sqlite.prepare(sql) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
 
     const val = (try builtins.expectStringArgs(args, env, 1, "sqlite", "prepare"))[0];
     const sql = try env.allocator.dupeZ(u8, val);
@@ -386,20 +369,10 @@ fn stmtBind(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
 fn stmtBindAll(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    if (args.len != 1) {
-        try writer_err.print("statement.bind_all(vals) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try builtins.expectArrayArgs(args, env, 1, "sqlite.stmt", "bind_all"))[0];
     const inst = try getStmtInstance(this);
 
-    if (val != .array) {
-        try writer_err.print("bind_all() expects an array argument\n", .{});
-        return error.TypeMismatch;
-    }
-
-    const vals = val.array.items;
+    const vals = val.items;
     var i: usize = 0;
     while (i < vals.len) : (i += 1) {
         const index: c_int = @intCast(i + 1);

@@ -8,6 +8,35 @@ const driver = @import("../../utils/driver.zig");
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
+pub fn expectValues(
+    args: []const *ast.Expr,
+    env: *Environment,
+    count: usize,
+    module_name: []const u8,
+    func_name: []const u8,
+) ![]const Value {
+    const writer_err = driver.getWriterErr();
+
+    if (args.len != count) {
+        if (count == 0) {
+            try writer_err.print("{s} module: {s} takes no arguments, got {d}\n", .{ module_name, func_name, args.len });
+        } else {
+            try writer_err.print("{s} module: {s} expected {d} argument(s), got {d}\n", .{ module_name, func_name, count, args.len });
+        }
+        return error.ArgumentCountMismatch;
+    }
+
+    var result = std.ArrayList(Value).init(env.allocator);
+    defer result.deinit();
+
+    for (args) |arg| {
+        const val = try eval.evalExpr(arg, env);
+        try result.append(val);
+    }
+
+    return try result.toOwnedSlice();
+}
+
 pub fn expectStringArgs(
     args: []const *ast.Expr,
     env: *Environment,

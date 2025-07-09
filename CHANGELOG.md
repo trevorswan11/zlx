@@ -93,3 +93,4 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Created `zip` function that takes in multiple arrays and returns a single array with each entry having `[[arr1[i], arr2[i + 1], etc...], ...]`
 - Added `sqlite3` as a dependency to enable the `sqlite` as a builtin module
 - Switched to zig's `zlib` compression algorithm
+- Removed a lot of code repetition in builtin module and type handlers

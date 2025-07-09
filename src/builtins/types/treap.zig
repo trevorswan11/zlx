@@ -4,13 +4,18 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-const eval = interpreter.eval;
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
 const StdMethod = builtins.StdMethod;
 const StdCtor = builtins.StdCtor;
+
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
 
 const Treap = @import("dsa").Treap(Value, Value.less, Value.eql);
 pub const TreapInstance = struct {
@@ -87,26 +92,14 @@ fn treapConstructor(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn treapInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("treap.insert(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "treap", "insert"))[0];
     const inst = try getTreapInstance(this);
     try inst.treap.insert(val);
     return .nil;
 }
 
 fn treapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("treap.contains(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "treap", "insert"))[0];
     const inst = try getTreapInstance(this);
     return .{
         .boolean = inst.treap.contains(val),
@@ -114,13 +107,7 @@ fn treapContains(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 }
 
 fn treapRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("treap.remove(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "treap", "insert"))[0];
     const inst = try getTreapInstance(this);
     try inst.treap.remove(val);
     return .nil;

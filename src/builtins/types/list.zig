@@ -4,8 +4,8 @@ const ast = @import("../../parser/ast.zig");
 const interpreter = @import("../../interpreter/interpreter.zig");
 const driver = @import("../../utils/driver.zig");
 const builtins = @import("../builtins.zig");
-const eval = interpreter.eval;
 
+const eval = interpreter.eval;
 const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
@@ -139,54 +139,21 @@ fn listPopTail(this: *Value, args: []const *ast.Expr, _: *Environment) !Value {
 }
 
 fn listGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("list.get(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) {
-        try writer_err.print("list.get(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
-        return error.TypeMismatch;
-    }
-
+    const index_val= (try builtins.expectNumberArgs(args, env, 1, "list", "get"))[0];
     const inst = try getListInstance(this);
-    return try inst.list.get(@intFromFloat(index_val.number));
+    return try inst.list.get(@intFromFloat(index_val));
 }
 
 fn listRemove(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("list.remove(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) {
-        try writer_err.print("list.remove(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
-        return error.TypeMismatch;
-    }
-
+    const index_val= (try builtins.expectNumberArgs(args, env, 1, "list", "remove"))[0];
     const inst = try getListInstance(this);
-    return try inst.list.remove(@intFromFloat(index_val.number));
+    return try inst.list.remove(@intFromFloat(index_val));
 }
 
 fn listDiscard(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("list.discard(value) expects 1 argument but got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const index_val = try interpreter.evalExpr(args[0], env);
-    if (index_val != .number) {
-        try writer_err.print("list.discard(index) expects a number index but got a(n) {s}\n", .{@tagName(index_val)});
-        return error.TypeMismatch;
-    }
-
+    const index_val= (try builtins.expectNumberArgs(args, env, 1, "list", "discard"))[0];
     const inst = try getListInstance(this);
-    try inst.list.discard(@intFromFloat(index_val.number));
+    try inst.list.discard(@intFromFloat(index_val));
     return .nil;
 }
 
