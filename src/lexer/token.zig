@@ -227,6 +227,10 @@ pub const Token = struct {
         try reserved.put("queue", .IDENTIFIER);
         try reserved.put("stack", .IDENTIFIER);
         try reserved.put("treap", .IDENTIFIER);
+        try reserved.put("vector", .IDENTIFIER);
+        try reserved.put("matrix", .IDENTIFIER);
+        try reserved.put("sqlite", .IDENTIFIER);
+        try reserved.put("thread", .IDENTIFIER);
 
         reserved_identifiers = reserved;
         return reserved;
