@@ -337,7 +337,7 @@
                 </li>
 
                 <li>
-                    <a href="#dsa">Data Structures</a>
+                    <a href="#dsa">Data Structures & Types</a>
                     <ul>
                         <li><a href="#std_array_list">ArrayList</a></li>
                         <li><a href="#std_set">HashSet</a></li>
@@ -353,6 +353,7 @@
                         <li><a href="#std_deque">Deque</a></li>
                         <li><a href="#std_vector">Vector</a></li>
                         <li><a href="#std_matrix">Matrix</a></li>
+                        <li><a href="#std_thread">Thread</a></li>
                     </ul>
                 </li>
             </ul>
@@ -1663,6 +1664,30 @@ m.scale(0.5);
 let transposed = m.transpose();
 let stringified = m.str();
             </code></pre>
+
+            <h3 id="std_thread">Thread</h3>
+            <p><strong>Summary:</strong> A module for running functions asynchronously in separate threads. ZLX is not
+                inherently thread safe, and it is VERY easy to run into CPU hogging/overworking and memory corruption.
+                This should only be used if you know exactly what you're doing.</p>
+            <p><strong>Constructor:</strong><br><code>let t = new thread(fn_val, arg1, arg2, ...);</code></p>
+            <p><strong>Methods:</strong></p>
+            <ul>
+                <li><code>t.join()</code>: Waits for the thread to finish execution.</li>
+                <li><code>t.done()</code>: Returns <code>true</code> if the thread has finished running.</li>
+            </ul>
+            <p><strong>Example:</strong></p>
+            <pre><code>
+import thread;
+
+let say = fn(msg) {
+    println(format("msg: {}", msg));
+};
+
+let t = new thread(say, "hello from thread!");
+t.join();
+let is_done = t.done();
+            </code></pre>
+
 
         </section>
 

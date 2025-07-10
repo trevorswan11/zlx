@@ -101,4 +101,7 @@ All notably significant or outstanding changes to the zlx language will be docum
 - Removed `raylib` as a dependency and deleted `plotting` branch
     - Writing a cross platform plotting library is beyond the scope of this project
     - I cannot develop the main branch and march towards release 1.0.0 while working on plotting, and it's just really not something I'm interested in
+- Created threading library which can be accessed through the `thread` standard library struct
+    - ZLX is not thread-safe, and I will not be changing it to act in a thread-safe manner
+    - This module throws foot guns at you, have fun!
     

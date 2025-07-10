@@ -44,7 +44,7 @@
     "builtin_modules": {
       "patterns": [
         {
-          "match": "\\b(array|debug|fs|math|path|random|string|sys|time|csv|json|stat|plot)\\b",
+          "match": "\\b(array|debug|fs|math|path|random|string|sys|time|csv|json|stat)\\b",
           "name": "support.type.builtin.zlx"
         }
       ]
@@ -52,7 +52,7 @@
     "builtin_structs": {
       "patterns": [
         {
-          "match": "\\b(adjacency_list|adjacency_matrix|array_list|deque|graph|map|set|linked_list|heap|queue|stack|treap|vector|matrix|sqlite)\\b",
+          "match": "\\b(adjacency_list|adjacency_matrix|array_list|deque|graph|map|set|linked_list|heap|queue|stack|treap|vector|matrix|sqlite|thread)\\b",
           "name": "support.type.struct.builtin.zlx"
         }
       ]

@@ -237,10 +237,10 @@ pub const builtin_modules = [_]BuiltinModule{
         .name = "sqlite",
         .loader = @import("types/sqlite.zig").load,
     },
-    // .{
-    //     .name = "thread",
-    //     .loader = @import("types/thread.zig").load,
-    // },
+    .{
+        .name = "thread",
+        .loader = @import("types/thread.zig").load,
+    },
 };
 
 pub fn getStdStructName(value: *Value) ![]const u8 {

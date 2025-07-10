@@ -1,0 +1,8 @@
+import thread;
+
+let say = fn(msg) {
+    println(format("msg: {}", msg));
+};
+let t = new thread(say, "hello from thread!");
+t.join();
+let is_done = t.done();

@@ -133,6 +133,17 @@ pub const Value = union(enum) {
         }
     }
 
+    pub fn isCallable(value: Value) bool {
+        return switch (value) {
+            .builtin,
+            .function,
+            .bound_method,
+            .bound_std_method,
+            => true,
+            else => false,
+        };
+    }
+
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
         var str_builder = std.ArrayList(u8).init(allocator);
         defer str_builder.deinit();
@@ -426,6 +437,27 @@ pub const ValueContext = struct {
         return a.eql(b);
     }
 };
+
+pub fn cloneEnvironment(original: *Environment) !*Environment {
+    const allocator = original.allocator;
+
+    const clone = try allocator.create(Environment);
+    clone.* = Environment.init(allocator, original.parent);
+
+    // Copy all variable bindings
+    var iter = original.values.iterator();
+    while (iter.next()) |entry| {
+        try clone.values.put(entry.key_ptr.*, entry.value_ptr.*);
+    }
+
+    // Copy constant markers
+    var citer = original.constants.iterator();
+    while (citer.next()) |entry| {
+        try clone.constants.put(entry.key_ptr.*, {});
+    }
+
+    return clone;
+}
 
 pub const Environment = struct {
     const Self = @This();

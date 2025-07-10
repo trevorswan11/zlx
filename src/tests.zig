@@ -39,6 +39,7 @@ test {
     _ = @import("builtins/types/stack.zig");
     _ = @import("builtins/types/treap.zig");
     _ = @import("builtins/types/sqlite.zig");
+    _ = @import("builtins/types/thread.zig");
 
     // General Behavior - Tests located in `testing` directory
     _ = @import("testing/testing.zig");

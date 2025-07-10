@@ -11,7 +11,6 @@ const version = "0.6.0";
 const target_path = path.join("release", "targets");
 const compressed_path = path.join("release", "compressed");
 
-// Fs prep
 if fs.exists(target_path) {
     fs.rm(target_path);
 }
@@ -22,20 +21,11 @@ if fs.exists(compressed_path) {
 }
 fs.mkdir(compressed_path);
 
-// Targets
 const win = ["x86_64", "aarch64", "x86"];
-
 const mac = ["x86_64", "aarch64"];
-
 const lin = [
-    "x86_64",
-    "arm",
-    "aarch64",
-    "x86",
-    "riscv64",
-    "powerpc64le",
-    "loongarch64",
-    "s390x",
+    "x86_64", "arm", "aarch64", "x86",
+    "riscv64", "powerpc64le", "loongarch64", "s390x"
 ];
 
 const targets = {
@@ -46,7 +36,6 @@ const targets = {
 
 const operating_sys = ["linux", "macos", "windows"];
 
-// Command line args
 const root = "zig build";
 const release_mode = "--release=safe";
 const target_format = "-Dtarget={}-{}";
@@ -80,7 +69,6 @@ folder_names = folder_names.items();
 
 fn compile(start, end) {
     for command_num in start..end {
-        // Compile the program and move into the correct output file
         let start_compile = time.millis();
         let out = sys.run(array.join(commands[command_num], " "));
         if out.stderr != "" {
@@ -103,10 +91,10 @@ fn compile(start, end) {
         fs.copy(exe_path, release_file);
         fs.rm(bin);
     }
+    println("Compilation complete!\n");
 }
 
-println();
-
+compile(0, len(commands));
 for compiled, idx in fs.list(target_path) {
     let compiled_name = path.basename(compiled);
     let start_compression = time.millis();
