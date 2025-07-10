@@ -16,3 +16,9 @@ const expectValues = builtins.expectValues;
 const expectNumberArgs = builtins.expectNumberArgs;
 const expectArrayArgs = builtins.expectArrayArgs;
 const expectStringArgs = builtins.expectStringArgs;
+
+/// Internal state for each thread instance
+const ThreadInstance = struct {
+    thread: std.Thread,
+    done: *bool,
+};

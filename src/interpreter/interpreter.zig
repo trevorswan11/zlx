@@ -10,15 +10,17 @@ pub const evalExpr = eval.evalExpr;
 pub const evalStmt = eval.evalStmt;
 
 pub const Value = union(enum) {
+    const FunctionVal = struct {
+        parameters: []const []const u8,
+        body: std.ArrayList(*ast.Stmt),
+        closure: *Environment,
+    };
+
     number: f64,
     string: []const u8,
     boolean: bool,
     array: std.ArrayList(Value),
-    function: struct {
-        parameters: []const []const u8,
-        body: std.ArrayList(*ast.Stmt),
-        closure: *Environment,
-    },
+    function: FunctionVal,
     object: std.StringHashMap(Value),
     structure: struct {
         name: []const u8,
@@ -57,6 +59,79 @@ pub const Value = union(enum) {
         second: *Value,
     },
     nil,
+
+    pub fn callFn(callee: Value, args: []*ast.Expr, env: *Environment) !Value {
+        const writer_err = driver.getWriterErr();
+        switch (callee) {
+            .builtin => |handler| {
+                return try handler(args, env);
+            },
+            .function => |func| {
+                if (func.parameters.len != args.len) {
+                    try writer_err.print("Function expected {d} parameters, but {d} were given\n", .{ func.parameters.len, args.len });
+                    return error.ArityMismatch;
+                }
+
+                var call_arena = std.heap.ArenaAllocator.init(env.allocator);
+                defer call_arena.deinit();
+                const call_allocator = call_arena.allocator();
+
+                var call_env = Environment.init(call_allocator, func.closure);
+                for (func.parameters, 0..) |param, i| {
+                    const arg_val = try evalExpr(args[i], env);
+                    try call_env.define(param, arg_val);
+                }
+
+                var result: Value = .nil;
+                for (func.body.items) |stmt| {
+                    result = try evalStmt(stmt, &call_env);
+                    if (result == .return_value) {
+                        return result.return_value.*;
+                    }
+                }
+
+                return result;
+            },
+            .bound_method => |bm| {
+                const fn_decl = bm.method.function_decl;
+
+                if (fn_decl.parameters.items.len != args.len) {
+                    try writer_err.print("Function expected {d} parameters, but {d} were given\n", .{ fn_decl.parameters.items.len, args.len });
+                    return error.ArityMismatch;
+                }
+
+                var method_arena = std.heap.ArenaAllocator.init(env.allocator);
+                defer method_arena.deinit();
+                const method_allocator = method_arena.allocator();
+
+                var method_env = Environment.init(method_allocator, env);
+                try method_env.define("this", .{
+                    .reference = try env.allocator.create(Value),
+                });
+                try method_env.assign("this", bm.instance.*);
+
+                for (fn_decl.parameters.items, 0..) |param, i| {
+                    const arg_val = try evalExpr(args[i], env);
+                    try method_env.define(param.name, arg_val);
+                }
+
+                var result: Value = .nil;
+                for (fn_decl.body.items) |stmt| {
+                    result = try evalStmt(stmt, &method_env);
+                }
+
+                return result;
+            },
+            .bound_std_method => {
+                const bound = callee.bound_std_method;
+                return try bound.method(bound.instance, args, env);
+            },
+            else => {
+                try writer_err.print("Cannot invoke call on type {s}\n", .{@tagName(callee)});
+                return error.InvalidCallTarget;
+            },
+        }
+    }
 
     fn stringArray(list: std.ArrayList(Value), allocator: std.mem.Allocator) ![]u8 {
         var str_builder = std.ArrayList(u8).init(allocator);

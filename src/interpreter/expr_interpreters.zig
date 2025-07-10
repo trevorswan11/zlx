@@ -134,76 +134,7 @@ pub fn call(c: *ast.CallExpr, env: *Environment) !Value {
     }
 
     const callee_val = try evalExpr(c.method, env);
-    const writer_err = driver.getWriterErr();
-    switch (callee_val) {
-        .builtin => |handler| {
-            return try handler(c.arguments.items, env);
-        },
-        .function => |func| {
-            if (func.parameters.len != c.arguments.items.len) {
-                try writer_err.print("Function expected {d} parameters, but {d} were given\n", .{ func.parameters.len, c.arguments.items.len });
-                return error.ArityMismatch;
-            }
-
-            var call_arena = std.heap.ArenaAllocator.init(env.allocator);
-            defer call_arena.deinit();
-            const call_allocator = call_arena.allocator();
-
-            var call_env = Environment.init(call_allocator, func.closure);
-            for (func.parameters, 0..) |param, i| {
-                const arg_val = try evalExpr(c.arguments.items[i], env);
-                try call_env.define(param, arg_val);
-            }
-
-            var result: Value = .nil;
-            for (func.body.items) |stmt| {
-                result = try evalStmt(stmt, &call_env);
-                if (result == .return_value) {
-                    return result.return_value.*;
-                }
-            }
-
-            return result;
-        },
-        .bound_method => |bm| {
-            const fn_decl = bm.method.function_decl;
-
-            if (fn_decl.parameters.items.len != c.arguments.items.len) {
-                try writer_err.print("Function expected {d} parameters, but {d} were given\n", .{ fn_decl.parameters.items.len, c.arguments.items.len });
-                return error.ArityMismatch;
-            }
-
-            var method_arena = std.heap.ArenaAllocator.init(env.allocator);
-            defer method_arena.deinit();
-            const method_allocator = method_arena.allocator();
-
-            var method_env = Environment.init(method_allocator, env);
-            try method_env.define("this", .{
-                .reference = try env.allocator.create(Value),
-            });
-            try method_env.assign("this", bm.instance.*);
-
-            for (fn_decl.parameters.items, 0..) |param, i| {
-                const arg_val = try evalExpr(c.arguments.items[i], env);
-                try method_env.define(param.name, arg_val);
-            }
-
-            var result: Value = .nil;
-            for (fn_decl.body.items) |stmt| {
-                result = try evalStmt(stmt, &method_env);
-            }
-
-            return result;
-        },
-        .bound_std_method => {
-            const bound = callee_val.bound_std_method;
-            return try bound.method(bound.instance, c.arguments.items, env);
-        },
-        else => {
-            try writer_err.print("Cannot invoke call on type {s}\n", .{@tagName(callee_val)});
-            return error.InvalidCallTarget;
-        },
-    }
+    return try callee_val.callFn(c.arguments.items, env);
 }
 
 pub fn prefix(p: *ast.PrefixExpr, env: *Environment) !Value {
