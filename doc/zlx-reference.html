@@ -804,11 +804,11 @@ println(y);                     // 4
 
             <h3 id="fs-list">list(path)</h3>
             <p>Returns an array of names of entries (files and directories) in the given directory <code>path</code>.
-                This is a non-recursive listing. <code>ls</code> is an alias for this.</p>
+                This is a non-recursive listing. <code>ls</code> is an alias for this.</p> Defaults to "." as the path.
 
             <h3 id="fs-list_all_files">list_all_files(path)</h3>
             <p>Recursively returns an array of all file paths within the directory <code>path</code>, including files in
-                nested subdirectories. <code>lsa</code> is an alias for this.</p>
+                nested subdirectories. <code>lsa</code> is an alias for this.</p> Defaults to "." as the path.
 
             <h3 id="fs-mkdir">mkdir(path)</h3>
             <p>Creates a new directory at <code>path</code>. If parent directories do not exist, an error is thrown

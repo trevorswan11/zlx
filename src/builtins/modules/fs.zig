@@ -87,7 +87,11 @@ fn removeHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 }
 
 fn listHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const path = (try expectStringArgs(args, env, 1, "fs", "list", "dir"))[0];
+    const path: []const u8 = if (args.len == 0) blk: {
+        break :blk ".";
+    } else blk: {
+        break :blk (try expectStringArgs(args, env, 1, "fs", "list", "dir"))[0];
+    };
     var dir = try std.fs.cwd().openDir(
         path,
         .{
@@ -253,7 +257,11 @@ fn appendHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 }
 
 fn listAllFilesHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const start_path = (try expectStringArgs(args, env, 1, "fs", "list_all_files", "dir"))[0];
+    const start_path: []const u8 = if (args.len == 0) blk: {
+        break :blk ".";
+    } else blk: {
+        break :blk (try expectStringArgs(args, env, 1, "fs", "list_all_files", "dir"))[0];
+    };
     var result = std.ArrayList(Value).init(env.allocator);
 
     const cwd = std.fs.cwd();

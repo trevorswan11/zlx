@@ -108,3 +108,4 @@ All notably significant or outstanding changes to the zlx language will be docum
 ## [0.6.1]
 - Added log_base to math
 - You can now type the name of important standard library structs to see a list of bound method names (not full signature)
+- `fs.ls` and `fs.lsa` now work with 0 args, defaulting to the "." directory
