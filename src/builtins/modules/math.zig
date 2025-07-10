@@ -40,6 +40,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     try pack(&map, "floor", floorHandler);
     try pack(&map, "ceil", ceilHandler);
     try pack(&map, "round", roundHandler);
+    try pack(&map, "log_base", logBaseHandler);
 
     // Binary functions
     try pack(&map, "pow", powHandler);
@@ -167,6 +168,16 @@ fn maxHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const vals = try expectNumberArgs(args, env, 2, "math", "max", "num");
     return .{
         .number = @max(vals[0], vals[1]),
+    };
+}
+
+fn logBaseHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
+    const vals = try expectNumberArgs(args, env, 2, "math", "log_base", "base, num");
+    const base = vals[0];
+    const num = vals[1];
+
+    return .{
+        .number = std.math.log(f64, base, num),
     };
 }
 

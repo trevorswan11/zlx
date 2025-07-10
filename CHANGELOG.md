@@ -105,3 +105,6 @@ All notably significant or outstanding changes to the zlx language will be docum
     - ZLX is not thread-safe, and I will not be changing it to act in a thread-safe manner
     - This module throws foot guns at you, have fun!
     
+## [0.6.1]
+- Added log_base to math
+- You can now type the name of important standard library structs to see a list of bound method names (not full signature)

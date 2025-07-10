@@ -267,6 +267,24 @@ pub const Value = union(enum) {
         });
     }
 
+    fn stringStdStruct(methods: std.StringHashMap(builtins.StdMethod), allocator: std.mem.Allocator) ![]u8 {
+        var str_builder = std.ArrayList(u8).init(allocator);
+        defer str_builder.deinit();
+
+        try str_builder.appendSlice("[std_instance]: {\n");
+        var itr = methods.iterator();
+        while (itr.next()) |e| {
+            try str_builder.append(' ');
+            try str_builder.appendSlice(e.key_ptr.*);
+            try str_builder.appendSlice(": ");
+            try str_builder.appendSlice("<Builtin Module>");
+            try str_builder.appendSlice("\n");
+        }
+        try str_builder.append('}');
+
+        return try str_builder.toOwnedSlice();
+    }
+
     pub fn toString(self: Value, allocator: std.mem.Allocator) anyerror![]u8 {
         return switch (self) {
             .number => |n| try std.fmt.allocPrint(allocator, "{d}", .{n}),
@@ -283,7 +301,7 @@ pub const Value = union(enum) {
             .continue_signal => |_| try std.fmt.allocPrint(allocator, "continue", .{}),
             .return_value => |r| try stringReturn(r, allocator),
             .typed_val => |t| try stringTyped(t.value, t._type, allocator),
-            .std_struct => try std.fmt.allocPrint(allocator, "<Standard Library Struct>", .{}),
+            .std_struct => |s| try stringStdStruct(s.methods, allocator),
             .std_instance => try std.fmt.allocPrint(allocator, "<Standard Library Instance>", .{}),
             .bound_std_method => |bm| try stringBoundMethod(bm.instance, allocator),
             .pair => |p| try stringPair(p.first, p.second, allocator),
