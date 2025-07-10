@@ -11,14 +11,17 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
 const expectStringArgs = builtins.expectStringArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
 
     try pack(&map, "assert", assertHandler);
-    try pack(&map, "assertEqual", assertEqualHandler);
-    try pack(&map, "assertNotEqual", assertNotEqualHandler);
+    try pack(&map, "assert_equal", assertEqualHandler);
+    try pack(&map, "assert_not_equal", assertNotEqualHandler);
     try pack(&map, "fail", failHandler);
 
     return .{
@@ -41,12 +44,8 @@ fn assertHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 
     if (!condition_val.boolean) {
         if (args.len == 2) {
-            const msg_val = try eval.evalExpr(args[1], env);
-            if (msg_val != .string) {
-                try writer_err.print("debug.assert(condition, message) expects a string as the second argument, got a(n) {s}\n", .{@tagName(msg_val)});
-                return error.TypeMismatch;
-            }
-            try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
+            const msg = (try expectStringArgs(args[1..], env, 1, "debug", "assert", "condition, message"))[0];
+            try writer_err.print("Assertion failed: {s}\n", .{msg});
         } else {
             try writer_err.print("Assertion failed.\n", .{});
         }
@@ -63,17 +62,14 @@ fn assertEqualHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value
         return error.ArgumentCountMismatch;
     }
 
-    const a = try eval.evalExpr(args[0], env);
-    const b = try eval.evalExpr(args[1], env);
+    const val_parts = try expectValues(args[0..2], env, 2, "debug", "assert_equal", "value_1, value_2, optional_message");
+    const a = val_parts[0];
+    const b = val_parts[1];
 
     if (!a.eql(b)) {
         if (args.len == 3) {
-            const msg_val = try eval.evalExpr(args[2], env);
-            if (msg_val != .string) {
-                try writer_err.print("debug.assertEqual(value_1, value_2, message) expects a string as the third argument, got a(n) {s}\n", .{@tagName(msg_val)});
-                return error.TypeMismatch;
-            }
-            try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
+            const msg = (try expectStringArgs(args[2..], env, 1, "debug", "assert_equal", "value_1, value_2, message"))[0];
+            try writer_err.print("Assertion failed: {s}\n", .{msg});
             try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
             try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
         } else {
@@ -99,12 +95,8 @@ fn assertNotEqualHandler(args: []const *ast.Expr, env: *Environment) anyerror!Va
 
     if (a.eql(b)) {
         if (args.len == 3) {
-            const msg_val = try eval.evalExpr(args[2], env);
-            if (msg_val != .string) {
-                try writer_err.print("debug.assertNotEqual(value_1, value_2, message) expects a string as the third argument, got a(n) {s}\n", .{@tagName(msg_val)});
-                return error.TypeMismatch;
-            }
-            try writer_err.print("Assertion failed: {s}\n", .{msg_val.string});
+            const msg = (try expectStringArgs(args[2..], env, 1, "debug", "assert_not_equal", "value_1, value_2, message"))[0];
+            try writer_err.print("Assertion failed: {s}\n", .{msg});
             try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
             try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
         } else {
@@ -126,7 +118,7 @@ fn failHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     }
 
     if (args.len == 1) {
-        const message = try expectStringArgs(args, env, 1, "debug", "fail");
+        const message = (try expectStringArgs(args, env, 1, "debug", "fail", "message"))[0];
         try writer_err.print("{s}\n", .{message});
     }
     return error.Fail;
@@ -153,9 +145,9 @@ test "debug_builtin" {
         \\import debug;
         \\
         \\debug.assert(true);
-        \\debug.assertEqual(1 + 1, 2);
+        \\debug.assert_equal(1 + 1, 2);
         \\debug.assert(1 < 2);
-        \\debug.assertNotEqual(2 * 2, 5);
+        \\debug.assert_not_equal(2 * 2, 5);
         \\debug.assert(1 > 2, "bad math");
     ;
 

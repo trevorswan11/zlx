@@ -11,6 +11,10 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -24,12 +28,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
     };
 }
 
-fn randHandler(args: []const *ast.Expr, _: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 0) {
-        try writer_err.print("random.rand() expects 0 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+fn randHandler(args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 0, "random", "rand", "");
 
     var prng = std.Random.DefaultPrng.init(@intCast(std.time.nanoTimestamp()));
     const rand_val = prng.random().float(f64);
@@ -40,23 +40,10 @@ fn randHandler(args: []const *ast.Expr, _: *Environment) !Value {
 
 fn randintHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("random.randint(start_inclusive, end_inclusive) expects 2 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const parts = try expectNumberArgs(args, env, 2, "random", "rand", "start_inclusive, end_inclusive");
 
-    const a = try interpreter.eval.evalExpr(args[0], env);
-    const b = try interpreter.eval.evalExpr(args[1], env);
-
-    if (a != .number or b != .number) {
-        try writer_err.print("random.randint(start_inclusive, end_inclusive) expects number arguments\n", .{});
-        try writer_err.print("  Left: {s}\n", .{try a.toString(env.allocator)});
-        try writer_err.print("  Right: {s}\n", .{try b.toString(env.allocator)});
-        return error.TypeMismatch;
-    }
-
-    const min: i64 = @intFromFloat(a.number);
-    const max: i64 = @intFromFloat(b.number);
+    const min: i64 = @intFromFloat(parts[0]);
+    const max: i64 = @intFromFloat(parts[1]);
 
     if (min >= max) {
         try writer_err.print("random.randint(start_inclusive, end_inclusive) requires min < max, but got min = {d}, max = {d}\n", .{ min, max });
@@ -72,18 +59,8 @@ fn randintHandler(args: []const *ast.Expr, env: *Environment) !Value {
 
 fn choiceHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    if (args.len != 1) {
-        try writer_err.print("random.choice(arr) expects 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const array = (try expectArrayArgs(args, env, 1, "random", "choice", "array"))[0];
 
-    const val = try interpreter.eval.evalExpr(args[0], env);
-    if (val != .array) {
-        try writer_err.print("random.choice(arr) expects an array argument, got a(n) {s}\n", .{@tagName(val)});
-        return error.TypeMismatch;
-    }
-
-    const array = val.array;
     if (array.items.len == 0) {
         try writer_err.print("random.choice(arr) cannot select from an empty array\n", .{});
         return error.OutOfBounds;

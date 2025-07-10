@@ -101,6 +101,7 @@ fn arrayListPush(this: *Value, args: []const *ast.Expr, env: *Environment) !Valu
 }
 
 fn arrayListInsert(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 2, "array_list", "insert", "index, value");
     const index = (try expectNumberArgs(args[0..1], env, 1, "array_list", "set", "index, value"))[0];
     const value = (try expectValues(args[1..], env, 1, "array_list", "set", "index, value"))[0];
 
@@ -128,6 +129,7 @@ fn arrayListGet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value
 }
 
 fn arrayListSet(this: *Value, args: []const *ast.Expr, env: *Environment) !Value {
+    _ = try expectValues(args, env, 2, "array_list", "set", "index, value");
     const index = (try expectNumberArgs(args[0..1], env, 1, "array_list", "set", "index, value"))[0];
     const value = (try expectValues(args[1..], env, 1, "array_list", "set", "index, value"))[0];
 

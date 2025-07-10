@@ -11,6 +11,9 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
 const expectStringArgs = builtins.expectStringArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
@@ -25,15 +28,12 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn parseHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const parts = try expectStringArgs(args, env, 1, "json", "parse");
-    return try parseJson(env.allocator, parts[0]);
+    const str = (try expectStringArgs(args, env, 1, "json", "parse", "str"))[0];
+    return try parseJson(env.allocator, str);
 }
 
 fn stringifyHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    if (args.len != 1) {
-        return error.ArgumentCountMismatch;
-    }
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "json", "stringify", "value"))[0];
     const str = try stringifyJson(env.allocator, val);
     return .{
         .string = str,

@@ -12,8 +12,12 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
+const expectValues = builtins.expectValues;
 const expectNumberArgs = builtins.expectNumberArgs;
 const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
+
+const expectArrayRef = builtins.expectArrayRef;
 const expectNumberArrays = builtins.expectNumberArrays;
 
 const flags = struct {
@@ -54,8 +58,8 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn meanHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const parts = try expectArrayArgs(args, env, 1, "stat", "mean");
-    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "mean"))[0];
+    const parts = try expectArrayArgs(args, env, 1, "stat", "mean", "array");
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "mean", "array"))[0];
 
     return .{
         .number = statistics.mean(float_array),
@@ -63,8 +67,8 @@ fn meanHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn medianHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const parts = try expectArrayArgs(args, env, 1, "stat", "median");
-    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "median"))[0];
+    const parts = try expectArrayArgs(args, env, 1, "stat", "median", "array");
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "median", "array"))[0];
 
     return .{
         .number = try statistics.median(env.allocator, float_array),
@@ -72,8 +76,8 @@ fn medianHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn modeHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const parts = try expectArrayArgs(args, env, 1, "stat", "mode");
-    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "mode"))[0];
+    const parts = try expectArrayArgs(args, env, 1, "stat", "mode", "array");
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "mode", "array"))[0];
     const result = statistics.mode(env.allocator, float_array) catch |err| switch (err) {
         error.NoMode => return .nil,
         else => return err,
@@ -85,8 +89,8 @@ fn modeHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn minHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const parts = try expectArrayArgs(args, env, 1, "stat", "min");
-    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "min"))[0];
+    const parts = try expectArrayArgs(args, env, 1, "stat", "min", "array");
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "min", "array"))[0];
 
     return .{
         .number = statistics.min(float_array),
@@ -94,8 +98,8 @@ fn minHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn maxHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const parts = try expectArrayArgs(args, env, 1, "stat", "max");
-    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "max"))[0];
+    const parts = try expectArrayArgs(args, env, 1, "stat", "max", "array");
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "max", "array"))[0];
 
     return .{
         .number = statistics.max(float_array),
@@ -103,8 +107,8 @@ fn maxHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn rangeHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const parts = try expectArrayArgs(args, env, 1, "stat", "range");
-    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "range"))[0];
+    const parts = try expectArrayArgs(args, env, 1, "stat", "range", "array");
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "range", "array"))[0];
 
     return .{
         .number = statistics.range(float_array),
@@ -112,15 +116,11 @@ fn rangeHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn varianceHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("stat module: variance expects 2 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 2, "stat", "variance", "array, stat.population|stat.sample");
 
-    const parts = try expectArrayArgs(args[0..1], env, 1, "stat", "variance");
-    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "variance"))[0];
-    const population = (try expectNumberArgs(args[1..], env, 1, "stat", "variance"))[0] == flags.population;
+    const parts = try expectArrayArgs(args[0..1], env, 1, "stat", "variance", "array, stat.population|stat.sample");
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "variance", "array, stat.population|stat.sample"))[0];
+    const population = (try expectNumberArgs(args[1..], env, 1, "stat", "variance", "array, stat.population|stat.sample"))[0] == flags.population;
 
     return .{
         .number = if (population) blk: {
@@ -132,15 +132,11 @@ fn varianceHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn stddevHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 2) {
-        try writer_err.print("stat module: stddev expects 2 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 2, "stat", "stddev", "array, stat.population|stat.sample");
 
-    const parts = try expectArrayArgs(args[0..1], env, 1, "stat", "stddev");
-    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "stddev"))[0];
-    const population = (try expectNumberArgs(args[1..], env, 1, "stat", "stddev"))[0] == flags.population;
+    const parts = try expectArrayArgs(args[0..1], env, 1, "stat", "stddev", "array, stat.population|stat.sample");
+    const float_array = (try expectNumberArrays(env.allocator, parts, "stat", "stddev", "array, stat.population|stat.sample"))[0];
+    const population = (try expectNumberArgs(args[1..], env, 1, "stat", "stddev", "array, stat.population|stat.sample"))[0] == flags.population;
 
     return .{
         .number = if (population) blk: {
@@ -152,15 +148,11 @@ fn stddevHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn covarianceHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 3) {
-        try writer_err.print("stat module: covariance expects 3 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 3, "stat", "covariance", "array_one, array_two, stat.population|stat.sample");
 
-    const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "covariance");
-    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "covariance");
-    const population = (try expectNumberArgs(args[2..], env, 1, "stat", "covariance"))[0] == flags.population;
+    const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "covariance", "array_one, array_two, stat.population|stat.sample");
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "covariance", "array_one, array_two, stat.population|stat.sample");
+    const population = (try expectNumberArgs(args[2..], env, 1, "stat", "covariance", "array_one, array_two, stat.population|stat.sample"))[0] == flags.population;
 
     return .{
         .number = if (population) blk: {
@@ -172,15 +164,11 @@ fn covarianceHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn correlationHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 3) {
-        try writer_err.print("stat module: correlation expects 3 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 3, "stat", "correlation", "array_one, array_two, stat.population|stat.sample");
 
-    const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "correlation");
-    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "correlation");
-    const population = (try expectNumberArgs(args[2..], env, 1, "stat", "correlation"))[0] == flags.population;
+    const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "correlation", "array_one, array_two, stat.population|stat.sample");
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "correlation", "array_one, array_two, stat.population|stat.sample");
+    const population = (try expectNumberArgs(args[2..], env, 1, "stat", "correlation", "array_one, array_two, stat.population|stat.sample"))[0] == flags.population;
 
     return .{
         .number = if (population) blk: {
@@ -192,15 +180,11 @@ fn correlationHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn linearRegressionHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-    if (args.len != 3) {
-        try writer_err.print("stat module: linear_regression expects 3 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    _ = try expectValues(args, env, 3, "stat", "correlation", "array_one, array_two, stat.population|stat.sample");
 
-    const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "linear_regression");
-    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "linear_regression");
-    const population = (try expectNumberArgs(args[2..], env, 1, "stat", "linear_regression"))[0] == flags.population;
+    const arr_parts = try expectArrayArgs(args[0..2], env, 2, "stat", "linear_regression", "array_one, array_two, stat.population|stat.sample");
+    const float_arrays = try expectNumberArrays(env.allocator, arr_parts, "stat", "linear_regression", "array_one, array_two, stat.population|stat.sample");
+    const population = (try expectNumberArgs(args[2..], env, 1, "stat", "linear_regression", "array_one, array_two, stat.population|stat.sample"))[0] == flags.population;
     const result = if (population) blk: {
         break :blk statistics.linearRegressionPopulation(float_arrays[0], float_arrays[1]);
     } else blk: {
@@ -224,7 +208,7 @@ fn linearRegressionHandler(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 fn zScoreHandler(args: []const *ast.Expr, env: *Environment) !Value {
-    const parts = try expectNumberArgs(args, env, 3, "stat", "z_score");
+    const parts = try expectNumberArgs(args, env, 3, "stat", "z_score", "val, average, stddev");
 
     return .{
         .number = statistics.zScore(parts[0], parts[1], parts[2]),
@@ -234,17 +218,17 @@ fn zScoreHandler(args: []const *ast.Expr, env: *Environment) !Value {
 fn normalPdfHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len == 1) {
-        const num = (try expectNumberArgs(args, env, 1, "stat", "normal_pdf"))[0];
+        const num = (try expectNumberArgs(args, env, 1, "stat", "normal_pdf", "standard_val"))[0];
         return .{
             .number = statistics.standardNormalPdf(num),
         };
     } else if (args.len == 3) {
-        const parts = try expectNumberArgs(args, env, 3, "stat", "normal_pdf");
+        const parts = try expectNumberArgs(args, env, 3, "stat", "normal_pdf", "val, average, stddev");
         return .{
             .number = statistics.normalPdf(parts[0], parts[1], parts[2]),
         };
     } else {
-        try writer_err.print("stat module: normal_pdf expects 1 or 3 arguments, got {d}", .{args.len});
+        try writer_err.print("stat module: normal_pdf(...) expects 1 or 3 arguments, got {d}", .{args.len});
         return error.ArgumentCountMismatch;
     }
 }
@@ -252,17 +236,17 @@ fn normalPdfHandler(args: []const *ast.Expr, env: *Environment) !Value {
 fn normalCdfHandler(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
     if (args.len == 1) {
-        const num = (try expectNumberArgs(args, env, 1, "stat", "normal_cdf"))[0];
+        const num = (try expectNumberArgs(args, env, 1, "stat", "normal_cdf", "standard_val"))[0];
         return .{
             .number = statistics.standardNormalCdf(num),
         };
     } else if (args.len == 3) {
-        const parts = try expectNumberArgs(args, env, 3, "stat", "normal_pdf");
+        const parts = try expectNumberArgs(args, env, 3, "stat", "normal_pdf", "val, average, stddev");
         return .{
             .number = statistics.normalCdf(parts[0], parts[1], parts[2]),
         };
     } else {
-        try writer_err.print("stat module: normal_cdf expects 1 or 3 arguments, got {d}", .{args.len});
+        try writer_err.print("stat module: normal_cdf(...) expects 1 or 3 arguments, got {d}", .{args.len});
         return error.ArgumentCountMismatch;
     }
 }

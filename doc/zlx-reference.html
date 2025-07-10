@@ -149,13 +149,6 @@
                 <li>
                     <a href="#array">array</a>
                     <ul>
-                        <li><a href="#array-push">push</a></li>
-                        <li><a href="#array-pop">pop</a></li>
-                        <li><a href="#array-insert">insert</a></li>
-                        <li><a href="#array-remove">remove</a></li>
-                        <li><a href="#array-clear">clear</a></li>
-                        <li><a href="#array-get">get</a></li>
-                        <li><a href="#array-set">set</a></li>
                         <li><a href="#array-slice">slice</a></li>
                         <li><a href="#array-join">join</a></li>
                     </ul>
@@ -165,8 +158,8 @@
                     <a href="#debug">debug</a>
                     <ul>
                         <li><a href="#debug-assert">assert</a></li>
-                        <li><a href="#debug-assertEqual">assertEqual</a></li>
-                        <li><a href="#debug-assertNotEqual">assertNotEqual</a></li>
+                        <li><a href="#debug-assert_equal">assert_equal</a></li>
+                        <li><a href="#debug-assert_not_equal">assert_not_equal</a></li>
                         <li><a href="#debug-fail">fail</a></li>
                     </ul>
                 </li>
@@ -249,6 +242,8 @@
                         <li><a href="#string-find">find</a></li>
                         <li><a href="#string-replace">replace</a></li>
                         <li><a href="#string-split">split</a></li>
+                        <li><a href="#string-ltrim">ltrim</a></li>
+                        <li><a href="#string-rtrim">rtrim</a></li>
                         <li><a href="#string-trim">trim</a></li>
                         <li><a href="#string-contains">contains</a></li>
                         <li><a href="#string-starts_with">starts_with</a></li>
@@ -756,37 +751,11 @@ println(y);                     // 4
             </p>
             <!-- Array Module Docs -->
             <h2 id="array">array</h2>
-            <h3 id="array-push">push(ref(arr), value)</h3>
-            <p>Appends <code>value</code> to the end of the array, increasing its length by 1. This is equivalent to
-                adding an item to the tail.</p>
-
-            <h3 id="array-pop">pop(ref(arr))</h3>
-            <p>Removes and returns the last element of the array. Throws an error if the array is empty.</p>
-
-            <h3 id="array-insert">insert(ref(arr), index, value)</h3>
-            <p>Inserts <code>value</code> at the specified <code>index</code>. All elements at or after the index are
-                shifted one position to the right. Index must be in range <code>[0, len]</code>.</p>
-
-            <h3 id="array-remove">remove(ref(arr), index)</h3>
-            <p>Removes the element at the given <code>index</code>, shifting remaining elements to the left to fill the
-                gap. Throws an error if the index is invalid.</p>
-
-            <h3 id="array-clear">clear(ref(arr))</h3>
-            <p>Deletes all elements in the array, making it empty but still usable.</p>
-
-            <h3 id="array-get">get(ref(arr), index)</h3>
-            <p>Returns the value at the given <code>index</code>. Does not modify the array. Throws an error if the
-                index is out of bounds.</p>
-
-            <h3 id="array-set">set(ref(arr), index, value)</h3>
-            <p>Overwrites the element at the specified <code>index</code> with <code>value</code>. Throws an error if
-                the index is out of bounds.</p>
-
-            <h3 id="array-slice">slice(ref(arr), start, end)</h3>
+            <h3 id="array-slice">slice(arr, start, end)</h3>
             <p>Returns a subarray starting at <code>start</code> (inclusive) and ending at <code>end</code> (exclusive).
                 The resulting slice is a new array. Throws an error if the indices are invalid or out of bounds.</p>
 
-            <h3 id="array-join">join(arr|ref(arr), delim)</h3>
+            <h3 id="array-join">join(arr, delim)</h3>
             <p>Returns a string of the array's values separated by <code>delim</code>.</p>
 
             <!-- Debug Module Docs -->
@@ -799,12 +768,12 @@ println(y);                     // 4
             <p>Throws an error if <code>condition</code> is false. Optionally prints <code>message</code> if the
                 assertion fails. This is useful for enforcing program invariants during development or testing.</p>
 
-            <h3 id="debug-assertEqual">assertEqual(expected, actual, message?)</h3>
+            <h3 id="debug-assert_equal">assert_equal(expected, actual, message?)</h3>
             <p>Throws an error if <code>expected</code> and <code>actual</code> are not equal. Optionally prints
                 <code>message</code> on failure. This is commonly used in unit tests to check correctness.
             </p>
 
-            <h3 id="debug-assertNotEqual">assertNotEqual(a, b, message?)</h3>
+            <h3 id="debug-assert_not_equal">assert_not_equal(a, b, message?)</h3>
             <p>Throws an error if <code>a</code> and <code>b</code> are equal. Optionally prints <code>message</code> on
                 failure. Useful for testing that two values differ.</p>
 
@@ -833,11 +802,11 @@ println(y);                     // 4
 
             <h3 id="fs-list">list(path)</h3>
             <p>Returns an array of names of entries (files and directories) in the given directory <code>path</code>.
-                This is a non-recursive listing.</p>
+                This is a non-recursive listing. <code>ls</code> is an alias for this.</p>
 
             <h3 id="fs-list_all_files">list_all_files(path)</h3>
             <p>Recursively returns an array of all file paths within the directory <code>path</code>, including files in
-                nested subdirectories.</p>
+                nested subdirectories. <code>lsa</code> is an alias for this.</p>
 
             <h3 id="fs-mkdir">mkdir(path)</h3>
             <p>Creates a new directory at <code>path</code>. If parent directories do not exist, an error is thrown
@@ -855,7 +824,7 @@ println(y);                     // 4
 
             <h3 id="fs-rename">rename(old_path, new_path)</h3>
             <p>Moves or renames a file or directory from <code>old_path</code> to <code>new_path</code>. If
-                <code>new_path</code> already exists, it will be overwritten.
+                <code>new_path</code> already exists, it will be overwritten. <code>move</code> is an alias for this.
             </p>
 
             <h3 id="fs-is_dir">is_dir(path)</h3>
@@ -1011,6 +980,14 @@ println(y);                     // 4
             <h3 id="string-split">split(str, delimiter)</h3>
             <p>Splits <code>str</code> into an array of substrings, using <code>delimiter</code> as the separator.
                 Returns an array of strings.</p>
+
+            <h3 id="string-ltrim">ltrim(str)</h3>
+            <p>Removes leading whitespace characters from <code>str</code>. Does not affect internal
+                spacing.</p>
+
+            <h3 id="string-rtrim">rtrim(str)</h3>
+            <p>Removes trailing whitespace characters from <code>str</code>. Does not affect internal
+                spacing.</p>
 
             <h3 id="string-trim">trim(str)</h3>
             <p>Removes leading and trailing whitespace characters from <code>str</code>. Does not affect internal
@@ -1253,9 +1230,9 @@ println(y);                     // 4
             <h3 id="len">len</h3>
             <p>The len <code>function</code> returns the length of a string or array. This is self-explanatory</p>
             <h3 id="ref">ref</h3>
-            <p>The <code>ref</code> function takes in any value and packs it into a heap allocated value. This is
-                particularly useful for arrays, allowing them to be used with the array module and mutated freely.
-                This is a copy of the original value, and does not make the input value an actual reference.</p>
+            <p>The <code>ref</code> function takes in any value and packs it into a heap allocated value. This is a copy
+                of the original value, and does not make the input value an actual reference. There is no practical
+                reason to use this function.</p>
 
             <h3 id="deref">deref</h3>
             <p>The <code>deref</code> function takes in a reference and returns the underlying value stored on the heap.
@@ -1315,7 +1292,8 @@ println(y);                     // 4
             <p>The <code>zip</code> function takes multiple arrays and combines them element-wise into a single array of
                 tuples. Each tuple contains the corresponding elements from the input arrays at the same index. The
                 length of the result is equal to the shortest input array. For example,
-                <code>zip([1, 2], ["a", "b", "c"])</code> produces <code>[[1, "a"], [2, "b"]]</code>.</p>
+                <code>zip([1, 2], ["a", "b", "c"])</code> produces <code>[[1, "a"], [2, "b"]]</code>.
+            </p>
 
         </section>
 

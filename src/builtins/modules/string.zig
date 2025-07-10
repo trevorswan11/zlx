@@ -57,7 +57,7 @@ fn sliceHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     const writer_err = driver.getWriterErr();
 
     const str = (try expectStringArgs(args[0..1], env, 1, "string", "slice", "str, start, end"))[0];
-    const parts = try expectNumberArgs(args[2..], env, 2, "string", "slice", "str, start, end");
+    const parts = try expectNumberArgs(args[1..], env, 2, "string", "slice", "str, start, end");
     const start = parts[0];
     const end = parts[1];
 

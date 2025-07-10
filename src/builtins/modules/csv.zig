@@ -11,8 +11,10 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
-const expectStringArgs = builtins.expectStringArgs;
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
 const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -29,7 +31,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn readHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const parts = try expectStringArgs(args, env, 1, "csv", "read");
+    const parts = try expectStringArgs(args, env, 1, "csv", "read", "filepath");
     const filepath = parts[0];
 
     const contents = try driver.readFile(env.allocator, filepath);
@@ -37,7 +39,7 @@ fn readHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 }
 
 fn writeHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const parts = try expectStringArgs(args, env, 2, "csv", "write");
+    const parts = try expectStringArgs(args, env, 2, "csv", "write", "filepath");
     const filepath = parts[0];
     const contents = parts[1];
 
@@ -52,7 +54,7 @@ fn writeHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 }
 
 fn appendHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const parts = try expectStringArgs(args, env, 2, "csv", "append");
+    const parts = try expectStringArgs(args, env, 2, "csv", "append", "filepath, str");
     const filepath = parts[0];
     const contents = try stringifyCSV(env.allocator, .{ .string = parts[1] });
 
@@ -69,14 +71,16 @@ fn appendHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 }
 
 fn parseHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const input = try expectStringArgs(args, env, 1, "csv", "parse");
-    return try parseCSV(env.allocator, input[0]);
+    const input = (try expectStringArgs(args, env, 1, "csv", "parse", "str"))[0];
+    return try parseCSV(env.allocator, input);
 }
 
 fn stringifyHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const input = (try expectArrayArgs(args, env, 1, "csv", "stringify"))[0];
+    const input = (try expectArrayArgs(args, env, 1, "csv", "stringify", "array"))[0];
     return .{
-        .string = try stringifyCSV(env.allocator, .{ .array = input }),
+        .string = try stringifyCSV(env.allocator, .{
+            .array = input,
+        }),
     };
 }
 

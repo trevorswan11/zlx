@@ -11,7 +11,10 @@ const Value = interpreter.Value;
 const BuiltinModuleHandler = builtins.BuiltinModuleHandler;
 
 const pack = builtins.pack;
+const expectValues = builtins.expectValues;
 const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
 
 pub fn load(allocator: std.mem.Allocator) !Value {
     var map = std.StringHashMap(Value).init(allocator);
@@ -50,7 +53,7 @@ pub fn load(allocator: std.mem.Allocator) !Value {
 }
 
 fn sqrtHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const arg = (try expectNumberArgs(args, env, 1, "math", "sqrt"))[0];
+    const arg = (try expectNumberArgs(args, env, 1, "math", "sqrt", "num"))[0];
     if (arg < 0) {
         return .{
             .string = "NaN",
@@ -63,42 +66,42 @@ fn sqrtHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 
 fn absHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = @abs((try expectNumberArgs(args, env, 1, "math", "abs"))[0]),
+        .number = @abs((try expectNumberArgs(args, env, 1, "math", "abs", "num"))[0]),
     };
 }
 
 fn sinHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.sin((try expectNumberArgs(args, env, 1, "math", "sin"))[0]),
+        .number = std.math.sin((try expectNumberArgs(args, env, 1, "math", "sin", "num"))[0]),
     };
 }
 
 fn cosHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.cos((try expectNumberArgs(args, env, 1, "math", "cos"))[0]),
+        .number = std.math.cos((try expectNumberArgs(args, env, 1, "math", "cos", "num"))[0]),
     };
 }
 
 fn tanHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.tan((try expectNumberArgs(args, env, 1, "math", "tan"))[0]),
+        .number = std.math.tan((try expectNumberArgs(args, env, 1, "math", "tan", "num"))[0]),
     };
 }
 
 fn logHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.log(f64, std.math.e, (try expectNumberArgs(args, env, 1, "math", "log"))[0]),
+        .number = std.math.log(f64, std.math.e, (try expectNumberArgs(args, env, 1, "math", "log", "num"))[0]),
     };
 }
 
 fn expHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.exp((try expectNumberArgs(args, env, 1, "math", "exp"))[0]),
+        .number = std.math.exp((try expectNumberArgs(args, env, 1, "math", "exp", "num"))[0]),
     };
 }
 
 fn powHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const vals = try expectNumberArgs(args, env, 2, "math", "pow");
+    const vals = try expectNumberArgs(args, env, 2, "math", "pow", "num");
     return .{
         .number = std.math.pow(f64, vals[0], vals[1]),
     };
@@ -106,24 +109,24 @@ fn powHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 
 fn asinHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.asin((try expectNumberArgs(args, env, 1, "math", "asin"))[0]),
+        .number = std.math.asin((try expectNumberArgs(args, env, 1, "math", "asin", "num"))[0]),
     };
 }
 
 fn acosHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.acos((try expectNumberArgs(args, env, 1, "math", "acos"))[0]),
+        .number = std.math.acos((try expectNumberArgs(args, env, 1, "math", "acos", "num"))[0]),
     };
 }
 
 fn atanHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.atan((try expectNumberArgs(args, env, 1, "math", "atan"))[0]),
+        .number = std.math.atan((try expectNumberArgs(args, env, 1, "math", "atan", "num"))[0]),
     };
 }
 
 fn atan2Handler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const vals = try expectNumberArgs(args, env, 2, "math", "atan2");
+    const vals = try expectNumberArgs(args, env, 2, "math", "atan2", "num");
     return .{
         .number = std.math.atan2(vals[0], vals[1]),
     };
@@ -131,37 +134,37 @@ fn atan2Handler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
 
 fn log10Handler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.log10((try expectNumberArgs(args, env, 1, "math", "log10"))[0]),
+        .number = std.math.log10((try expectNumberArgs(args, env, 1, "math", "log10", "num"))[0]),
     };
 }
 
 fn floorHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.floor((try expectNumberArgs(args, env, 1, "math", "floor"))[0]),
+        .number = std.math.floor((try expectNumberArgs(args, env, 1, "math", "floor", "num"))[0]),
     };
 }
 
 fn ceilHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.ceil((try expectNumberArgs(args, env, 1, "math", "ceil"))[0]),
+        .number = std.math.ceil((try expectNumberArgs(args, env, 1, "math", "ceil", "num"))[0]),
     };
 }
 
 fn roundHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
     return .{
-        .number = std.math.round((try expectNumberArgs(args, env, 1, "math", "round"))[0]),
+        .number = std.math.round((try expectNumberArgs(args, env, 1, "math", "round", "num"))[0]),
     };
 }
 
 fn minHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const vals = try expectNumberArgs(args, env, 2, "math", "min");
+    const vals = try expectNumberArgs(args, env, 2, "math", "min", "num");
     return .{
         .number = @min(vals[0], vals[1]),
     };
 }
 
 fn maxHandler(args: []const *ast.Expr, env: *Environment) anyerror!Value {
-    const vals = try expectNumberArgs(args, env, 2, "math", "max");
+    const vals = try expectNumberArgs(args, env, 2, "math", "max", "num");
     return .{
         .number = @max(vals[0], vals[1]),
     };

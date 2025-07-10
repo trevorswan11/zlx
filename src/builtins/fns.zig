@@ -10,6 +10,10 @@ const Environment = interpreter.Environment;
 const Value = interpreter.Value;
 
 const getStdStructName = builtins.getStdStructName;
+const expectValues = builtins.expectValues;
+const expectNumberArgs = builtins.expectNumberArgs;
+const expectArrayArgs = builtins.expectArrayArgs;
+const expectStringArgs = builtins.expectStringArgs;
 
 pub fn print(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_out = driver.getWriterOut();
@@ -59,27 +63,27 @@ fn toPrintableString(val: Value, env: *Environment) ![]u8 {
 
 pub fn len(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-    var val = try eval.evalExpr(args[0], env);
+    var val = (try expectValues(args, env, 1, "function", "len", "size_supported_val"))[0];
     switch (val) {
         .std_instance => |instance| {
             if (instance._type.std_struct.methods.get("size")) |size_fn| {
                 var mut_val = val;
                 const result = try size_fn(&mut_val, &[_]*ast.Expr{}, env);
                 if (result != .number) {
-                    try writer_err.print("len(arr|str|std_instance) cannot return a {s}\n", .{@tagName(result)});
+                    try writer_err.print("len(size_supported_val) cannot return a {s}\n", .{@tagName(result)});
                     return error.MalformedStdInstance;
                 }
                 return .{
                     .number = result.number,
                 };
             } else {
-                try writer_err.print("len(arr|str|std_instance) cannot be used on standard library type {s} without size method defined\n", .{try getStdStructName(&val)});
+                try writer_err.print("len(size_supported_val) cannot be used on standard library type {s} without size method defined\n", .{try getStdStructName(&val)});
                 return error.MalformedStdInstance;
             }
         },
         else => {
             if (args.len != 1) {
-                try writer_err.print("len(arr|str|std_instance): expected exactly 1 argument, got {d}\n", .{args.len});
+                try writer_err.print("len(size_supported_val): expected exactly 1 argument, got {d}\n", .{args.len});
                 return error.ArgumentCountMismatch;
             }
             return switch (val) {
@@ -90,7 +94,7 @@ pub fn len(args: []const *ast.Expr, env: *Environment) !Value {
                     .number = @floatFromInt(s.len),
                 },
                 else => {
-                    try writer_err.print("len(arr|str|std_instance): only operates on strings and arrays, got a(n) {s}\n", .{@tagName(val)});
+                    try writer_err.print("len(size_supported_val): only operates on strings and arrays, got a(n) {s}\n", .{@tagName(val)});
                     return error.TypeMismatch;
                 },
             };
@@ -99,15 +103,7 @@ pub fn len(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 pub fn ref(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != 1) {
-        try writer_err.print("ref(value): expected exactly 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-
+    const val = (try expectValues(args, env, 1, "function", "ref", "value"))[0];
     if (val == .reference) {
         return val;
     }
@@ -122,13 +118,7 @@ pub fn ref(args: []const *ast.Expr, env: *Environment) !Value {
 
 pub fn deref(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-
-    if (args.len != 1) {
-        try writer_err.print("deref(reference): expected exactly 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "function", "deref", "reference"))[0];
 
     if (val != .reference) {
         try writer_err.print("deref(reference): expected reference, got a(n) {s}\n", .{@tagName(val)});
@@ -140,13 +130,7 @@ pub fn deref(args: []const *ast.Expr, env: *Environment) !Value {
 
 pub fn detype(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-
-    if (args.len != 1) {
-        try writer_err.print("detype(typed_val): expected exactly 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "function", "detype", "typed_val"))[0];
 
     if (val != .typed_val) {
         try writer_err.print("detype(typed_val): expected typed value, got a(n) {s}\n", .{@tagName(val)});
@@ -157,44 +141,23 @@ pub fn detype(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 pub fn raw(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != 1) {
-        try writer_err.print("detype(typed_val): expected exactly 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "function", "raw", "value"))[0];
     return val.raw();
 }
 
 pub fn range(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
 
-    if (args.len == 2) {
-        try writer_err.print("range(start, end, step): expected 3 arguments, got {d}\n", .{args.len});
-        try writer_err.print("  Consider using 'start..end' syntax\n", .{});
-        return error.ArgumentCountMismatch;
-    } else if (args.len != 3) {
-        try writer_err.print("range(start, end, step): expected 3 arguments, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
+    const parts = expectNumberArgs(args, env, 3, "function", "range", "start, end, step") catch |err| {
+        if (args.len == 2) {
+            try writer_err.print("  Consider using 'start..end' syntax\n", .{});
+        }
+        return err;
+    };
 
-    const a = try eval.evalExpr(args[0], env);
-    const b = try eval.evalExpr(args[1], env);
-    const c = try eval.evalExpr(args[2], env);
-
-    if (a != .number or b != .number or c != .number) {
-        try writer_err.print("range(start, end, step): all arguments must be numbers\n", .{});
-        try writer_err.print("  Start = {s}\n", .{@tagName(a)});
-        try writer_err.print("  End = {s}\n", .{@tagName(b)});
-        try writer_err.print("  Step = {s}\n", .{@tagName(c)});
-        return error.TypeMismatch;
-    }
-
-    const start = a.number;
-    const end = b.number;
-    const step = c.number;
+    const start = parts[0];
+    const end = parts[1];
+    const step = parts[2];
 
     if (step == 0) {
         try writer_err.print("range(start, end, step): step cannot be zero\n", .{});
@@ -222,15 +185,8 @@ pub fn range(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 pub fn to_string(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != 1) {
-        try writer_err.print("to_string(value) expects exactly 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-    const str = try val.toString(env.allocator);
+    const val = (try expectValues(args, env, 1, "function", "to_string", "value"))[0];
+    const str = try toPrintableString(val, env);
     return .{
         .string = str,
     };
@@ -238,20 +194,10 @@ pub fn to_string(args: []const *ast.Expr, env: *Environment) !Value {
 
 pub fn to_number(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
+    const str = (try expectStringArgs(args, env, 1, "function", "to_number", "str"))[0];
 
-    if (args.len != 1) {
-        try writer_err.print("to_number(value) expects exactly 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .string) {
-        try writer_err.print("to_number(value) expects a string argument, got a(n) {s}\n", .{@tagName(val)});
-        return error.TypeMismatch;
-    }
-
-    const parsed = std.fmt.parseFloat(f64, val.string) catch {
-        try writer_err.print("to_number(value) failed to parse input: \"{s}\"\n", .{val.string});
+    const parsed = std.fmt.parseFloat(f64, str) catch {
+        try writer_err.print("to_number(value): failed to parse input \"{s}\"\n", .{str});
         return error.ParseFailure;
     };
 
@@ -261,14 +207,7 @@ pub fn to_number(args: []const *ast.Expr, env: *Environment) !Value {
 }
 
 pub fn to_bool(args: []const *ast.Expr, env: *Environment) !Value {
-    const writer_err = driver.getWriterErr();
-
-    if (args.len != 1) {
-        try writer_err.print("to_bool(value) expects exactly 1 argument, got {d}\n", .{args.len});
-        return error.ArgumentCountMismatch;
-    }
-
-    const val = try eval.evalExpr(args[0], env);
+    const val = (try expectValues(args, env, 1, "function", "to_bool", "value"))[0];
     return .{
         .boolean = coerceBool(val, env),
     };
@@ -276,15 +215,15 @@ pub fn to_bool(args: []const *ast.Expr, env: *Environment) !Value {
 
 pub fn to_ascii(args: []const *ast.Expr, env: *interpreter.Environment) !Value {
     const writer_err = driver.getWriterErr();
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .string or val.string.len != 1) {
-        try writer_err.print("to_ascii can only operate on strings of length one, got a(n) {s}\n", .{@tagName(val)});
+    const str = (try expectStringArgs(args, env, 1, "function", "to_ascii", "ascii_char"))[0];
+    if (str.len != 1) {
+        try writer_err.print("to_ascii(ascii_char): {s} is not a valid character. Must be length 1\n", .{str});
         return error.TypeMismatch;
     }
 
-    const code = val.string[0];
+    const code = str[0];
     if (!std.ascii.isAscii(code)) {
-        try writer_err.print("Character {c} is not a valid ascii character\n", .{code});
+        try writer_err.print("to_ascii(ascii_char): {c} is not a valid ascii character\n", .{code});
         return error.OutOfRange;
     }
 
@@ -295,15 +234,11 @@ pub fn to_ascii(args: []const *ast.Expr, env: *interpreter.Environment) !Value {
 
 pub fn from_ascii(args: []const *ast.Expr, env: *interpreter.Environment) !Value {
     const writer_err = driver.getWriterErr();
-    const val = try eval.evalExpr(args[0], env);
-    if (val != .number) {
-        try writer_err.print("from_ascii can only operate on numbers, got a(n) {s}\n", .{@tagName(val)});
-        return error.TypeMismatch;
-    }
+    const num = (try expectNumberArgs(args, env, 1, "function", "from_ascii", "ascii_num"))[0];
 
-    const code: u8 = @intFromFloat(val.number);
+    const code: u8 = @intFromFloat(num);
     if (!std.ascii.isAscii(code)) {
-        try writer_err.print("Value {d} is not a valid ascii code\n", .{code});
+        try writer_err.print("from_ascii(ascii_num): {d} is not a valid ascii code\n", .{code});
         return error.OutOfRange;
     }
 
@@ -325,7 +260,7 @@ pub fn coerceBool(val: Value, env: ?*Environment) bool {
         .std_instance => |_| coerceStdInstance(val, env.?),
         .pair => |p| coerceBool(p.first.*, env) and coerceBool(p.second.*, env),
         .continue_signal => true,
-        .nil, .std_struct, .break_signal => false,
+        .nil, .std_struct, .break_signal, .return_value => false,
         else => true, // objects, references, functions, etc. will be considered 'truthy'
     };
 }
@@ -350,45 +285,35 @@ fn coerceStdInstance(val: Value, env: *Environment) bool {
 
 pub fn format(args: []const *ast.Expr, env: *Environment) !Value {
     const writer_err = driver.getWriterErr();
-
     if (args.len < 1) {
         try writer_err.print("format(format, ...) expects at least 1 argument\n", .{});
         return error.ArgumentCountMismatch;
     }
 
-    const fmt_val = try eval.evalExpr(args[0], env);
-    if (fmt_val != .string) {
-        try writer_err.print("format(format, ...) expects the first argument to be a string format\n", .{});
-        return error.TypeMismatch;
+    const fmt = (try expectStringArgs(args[0..1], env, 1, "function", "format", "format, ..."))[0];
+    const values = try expectValues(args[1..], env, args[1..].len, "function", "format", "format, ...");
+
+    if (values.len == 0) {
+        return .{
+            .string = try env.allocator.dupe(u8, fmt),
+        };
     }
 
-    const fmt = fmt_val.string;
-
-    // Collect values to format
-    var values = std.ArrayList(Value).init(env.allocator);
-    defer values.deinit();
-
-    for (args[1..]) |arg_expr| {
-        try values.append(try eval.evalExpr(arg_expr, env));
-    }
-
-    // Format using writer
     var output = std.ArrayList(u8).init(env.allocator);
     defer output.deinit();
     const writer = output.writer();
 
-    var i: usize = 0; // format argument index
+    var i: usize = 0;
     var pos: usize = 0;
 
     while (pos < fmt.len) {
         if (fmt[pos] == '{' and pos + 1 < fmt.len and fmt[pos + 1] == '}') {
-            // Insert formatted argument
-            if (i >= values.items.len) {
+            if (i >= values.len) {
                 try writer_err.print("Not enough arguments for format string\n", .{});
                 return error.ArgumentCountMismatch;
             }
 
-            try writer.print("{s}", .{try toPrintableString(values.items[i], env)});
+            try writer.print("{s}", .{try toPrintableString(values[i], env)});
             i += 1;
             pos += 2;
         } else {
@@ -411,7 +336,7 @@ pub fn zip(args: []const *ast.Expr, env: *Environment) !Value {
     }
 
     // Collect the arrays and determine the minimum length
-    const arrays = try builtins.expectArrayArgs(args, env, args.len, "", "zip");
+    const arrays = try expectArrayArgs(args, env, args.len, "function", "zip", "arrays...");
     var min_length = arrays[0].items.len;
     for (1..arrays.len) |i| {
         if (arrays[i].items.len < min_length) {
