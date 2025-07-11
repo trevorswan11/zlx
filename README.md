@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  A lexer, parser, language, interpreter, and toolchain written in Zig.
+  A interpreted language and toolchain written in Zig.
 </p>
 
 ### Inspiration
