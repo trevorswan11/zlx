@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  A interpreted language and toolchain written in Zig.
+  An interpreted language written in Zig.
 </p>
 
 ### Inspiration
